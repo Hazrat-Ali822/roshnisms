@@ -60,11 +60,12 @@ MIDDLEWARE = [
     # WhiteNoise serves static files (CSS/JS/images) directly, so the app looks
     # right even with DEBUG off and without a separate web server.
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'core.middleware.TenantDatabaseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'core.middleware.TenantMiddleware',
+    'core.middleware.TenantRoutingMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # Security: force first-login password change, and idle sign-out.

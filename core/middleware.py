@@ -55,21 +55,15 @@ class SessionIdleTimeoutMiddleware:
         return self.get_response(request)
 
 
-class TenantMiddleware:
-    """Extracts tenant subdomain from the request host header and attaches the
-    corresponding School model to request.tenant."""
+class TenantDatabaseMiddleware:
+    """Resolves the tenant school from subdomain or path segment, and switches
+    the database connection accordingly. Attaches request.tenant, request.is_explicit_tenant,
+    and request.is_path_based to the request."""
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # 0. Restrict Django Admin to superusers only
-        if request.path.startswith('/admin/'):
-            user = getattr(request, 'user', None)
-            if not (user and user.is_authenticated and user.is_superuser):
-                from django.core.exceptions import PermissionDenied
-                raise PermissionDenied
-                
         host = request.get_host().split(':')[0]
         parts = host.split('.')
         
@@ -108,13 +102,56 @@ class TenantMiddleware:
                         request.path_info = new_path
                         request.path = new_path
                         
+        request.tenant = school
+        request.is_explicit_tenant = is_explicit_tenant
+        request.is_path_based = is_path_based
+
+        # 4. Database-per-tenant SQLite switcher
+        import sys
+        if 'test' not in sys.argv:
+            import os
+            import shutil
+            import copy
+            from django.db import connections
+            from django.conf import settings
+
+            db_path = os.path.join(settings.BASE_DIR, "db.sqlite3")
+            if school and school.subdomain and school.subdomain != 'default' and not request.path.startswith('/saas-admin/'):
+                db_path = os.path.join(settings.BASE_DIR, f"{school.subdomain}.sqlite3")
+                if not os.path.exists(db_path):
+                    shutil.copyfile(os.path.join(settings.BASE_DIR, "db.sqlite3"), db_path)
+
+            conn = connections['default']
+            conn.close()
+            conn.settings_dict = copy.deepcopy(settings.DATABASES['default'])
+            conn.settings_dict['NAME'] = db_path
+
+        return self.get_response(request)
+
+
+class TenantRoutingMiddleware:
+    """Performs tenant routing, validation, and subscription check once the
+    session and user are loaded."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        # 0. Restrict Django Admin to superusers only
+        if request.path.startswith('/admin/'):
+            user = getattr(request, 'user', None)
+            if not (user and user.is_authenticated and user.is_superuser):
+                from django.core.exceptions import PermissionDenied
+                raise PermissionDenied
+
+        school = getattr(request, 'tenant', None)
+        is_explicit_tenant = getattr(request, 'is_explicit_tenant', False)
+        is_path_based = getattr(request, 'is_path_based', False)
+
         user = getattr(request, 'user', None)
         is_superuser = user.is_superuser if (user and user.is_authenticated) else False
 
         # 3. User session-based routing and verification
-        
-        # If the user is a superuser and visits a school portal (subdomain or path segment),
-        # redirect them away to prevent auto-accessing the school portal as superuser.
         if is_superuser and is_explicit_tenant:
             allowed_paths = [
                 reverse('logout_get'),
@@ -144,14 +181,27 @@ class TenantMiddleware:
                 elif not school:
                     # Keep them on their school
                     school = profile.school
-                    is_explicit_tenant = True
+                    request.tenant = school
                     
-        # NOTE: No fallback to School.objects.first() — if no school is resolved,
-        # this is a SaaS-level request (root domain, /saas-admin/, etc.)
-        # and school stays None intentionally.
+                    import sys
+                    if 'test' not in sys.argv:
+                        import os
+                        import shutil
+                        import copy
+                        from django.db import connections
+                        from django.conf import settings
+
+                        db_path = os.path.join(settings.BASE_DIR, "db.sqlite3")
+                        if school and school.subdomain and school.subdomain != 'default' and not request.path.startswith('/saas-admin/'):
+                            db_path = os.path.join(settings.BASE_DIR, f"{school.subdomain}.sqlite3")
+                            if not os.path.exists(db_path):
+                                shutil.copyfile(os.path.join(settings.BASE_DIR, "db.sqlite3"), db_path)
+
+                        conn = connections['default']
+                        conn.close()
+                        conn.settings_dict = copy.deepcopy(settings.DATABASES['default'])
+                        conn.settings_dict['NAME'] = db_path
             
-        request.tenant = school
-        
         # Calculate subscription status (using the global database record!)
         # Only lock down if it is an explicit school tenant request! The SaaS root/admin itself is never expired.
         from django.utils import timezone
@@ -161,26 +211,6 @@ class TenantMiddleware:
             if (school.subscription_end and school.subscription_end < today) or not school.subscription_active:
                 request.tenant_expired = True
                 
-        # 4. Database-per-tenant SQLite switcher
-        import sys
-        if 'test' not in sys.argv:
-            import os
-            import shutil
-            import copy
-            from django.db import connections
-            from django.conf import settings
-
-            db_path = os.path.join(settings.BASE_DIR, "db.sqlite3")
-            if school and school.subdomain and school.subdomain != 'default' and not request.path.startswith('/saas-admin/'):
-                db_path = os.path.join(settings.BASE_DIR, f"{school.subdomain}.sqlite3")
-                if not os.path.exists(db_path):
-                    shutil.copyfile(os.path.join(settings.BASE_DIR, "db.sqlite3"), db_path)
-
-            conn = connections['default']
-            conn.close()
-            conn.settings_dict = copy.deepcopy(settings.DATABASES['default'])
-            conn.settings_dict['NAME'] = db_path
-                    
         if request.tenant_expired and not is_superuser:
             allowed_paths = [
                 reverse('subscription_expired'),
