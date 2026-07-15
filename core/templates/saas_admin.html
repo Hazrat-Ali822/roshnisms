@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% block heading %}SaaS Admin Panel{% endblock %}
+{% block title %}SaaS Admin Dashboard &middot; Roshni SMS{% endblock %}
 {% block content %}
 <div class="welcome" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap; margin-bottom: 20px;">
   <div>
@@ -7,7 +8,7 @@
     <p>Manage school portal directory instances, global platform subscriptions, and actual billing ledger.</p>
   </div>
   <div style="display: flex; gap: 10px;">
-    <button class="btn-primary btn-auto no-print" onclick="document.getElementById('txnModal').style.display='flex'" style="background-color: var(--accent); border-color: var(--accent);">+ Log Transaction</button>
+    <a class="btn-primary btn-auto no-print" href="{% url 'saas_transaction_add' %}" style="background-color: var(--accent); border-color: var(--accent); text-decoration: none;">+ Log Platform Finance</a>
     <a class="btn-primary btn-auto no-print" href="{% url 'saas_school_add' %}" style="text-decoration:none">+ Register School</a>
   </div>
 </div>
@@ -170,55 +171,6 @@
     </div>
   </div>
 
-</div>
-
-<!-- Log Transaction Modal -->
-<div id="txnModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 10000;">
-  <div class="card card-pad" style="width: 100%; max-width: 450px; background: white; border-radius: 8px;">
-    <h3 style="margin-bottom: 16px;">Log SaaS Platform Transaction</h3>
-    <form method="post">
-      {% csrf_token %}
-      <input type="hidden" name="add_transaction" value="1">
-      
-      <div class="frow">
-        <label for="amount">Amount (Rs)</label>
-        <input type="number" id="amount" name="amount" required placeholder="e.g. 5000" min="1">
-      </div>
-      
-      <div class="frow">
-        <label for="transaction_type">Transaction Type</label>
-        <select id="transaction_type" name="transaction_type" required style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 4px;">
-          <option value="income">Subscription Income (Paid by school)</option>
-          <option value="expense">Platform Expense (Hosting, maintenance, domain)</option>
-        </select>
-      </div>
-
-      <div class="frow">
-        <label for="school">Associated School (Optional)</label>
-        <select id="school" name="school" style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 4px;">
-          <option value="">-- None / General Platform Cost --</option>
-          {% for school in schools %}
-            <option value="{{ school.id }}">{{ school.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="frow">
-        <label for="date">Transaction Date</label>
-        <input type="date" id="date" name="date" value="{{ today|date:'Y-m-d' }}" required>
-      </div>
-
-      <div class="frow">
-        <label for="description">Description / Notes</label>
-        <input type="text" id="description" name="description" placeholder="e.g. Received cash payment for July">
-      </div>
-
-      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-        <button type="button" class="btn-ghost" onclick="document.getElementById('txnModal').style.display='none'">Cancel</button>
-        <button type="submit" class="btn-primary" style="margin-top: 0;">Save Transaction</button>
-      </div>
-    </form>
-  </div>
 </div>
 
 <!-- Chart.js and rendering scripts -->

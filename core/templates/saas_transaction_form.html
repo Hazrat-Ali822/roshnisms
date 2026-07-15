@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block heading %}Log SaaS Transaction{% endblock %}
+{% block title %}Log Transaction &middot; Roshni SMS{% endblock %}
+{% block content %}
+<div class="welcome">
+  <h1>Log SaaS Transaction</h1>
+  <p>Record platform-level billing income, server hosting fees, API charges, or other operational expenses.</p>
+</div>
+
+<div class="card" style="max-width: 600px; margin: 0 auto 30px auto; padding: 30px;">
+  <form method="post" class="fcol">
+    {% csrf_token %}
+    
+    <div class="frow">
+      <label for="transaction_type">Transaction Type <span style="color:#EF4444">*</span></label>
+      <select name="transaction_type" id="transaction_type" required style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 6px; font-family: inherit;">
+        <option value="income">Income (Subscription received, etc.)</option>
+        <option value="expense">Expense (Server, maintenance, API charges, etc.)</option>
+      </select>
+    </div>
+
+    <div class="frow">
+      <label for="amount">Amount (Rs) <span style="color:#EF4444">*</span></label>
+      <input type="number" name="amount" id="amount" placeholder="e.g. 5000" min="1" required style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 6px; font-family: inherit;">
+    </div>
+
+    <div class="frow">
+      <label for="school">School (Optional)</label>
+      <select name="school" id="school" style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 6px; font-family: inherit;">
+        <option value="">-- None (General Platform) --</option>
+        {% for school in schools %}
+          <option value="{{ school.id }}">{{ school.name }}</option>
+        {% endfor %}
+      </select>
+      <p class="hint-inline" style="margin-top: 4px;">Select a school if this is a subscription fee paid by them.</p>
+    </div>
+
+    <div class="frow">
+      <label for="date">Date <span style="color:#EF4444">*</span></label>
+      <input type="date" name="date" id="date" value="{{ today|date:'Y-m-d' }}" required style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 6px; font-family: inherit;">
+    </div>
+
+    <div class="frow">
+      <label for="description">Description / Notes</label>
+      <textarea name="description" id="description" rows="3" placeholder="e.g. AWS hosting charges for July 2026" style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 6px; font-family: inherit; resize: vertical;"></textarea>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; border-top: 1px solid var(--line); padding-top: 20px;">
+      <a class="btn-ghost" href="{% url 'saas_admin_dashboard' %}" style="text-decoration: none;">Cancel</a>
+      <button class="btn-primary" type="submit" style="margin-top: 0;">Log Transaction</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

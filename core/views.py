@@ -5244,6 +5244,40 @@ def saas_school_delete(request, pk):
     messages.success(request, f"School '{name}' and its database file deleted successfully.")
     return redirect('saas_admin_dashboard')
 
+@login_required(login_url='login')
+def saas_transaction_add(request):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+        
+    from core.models import School, SaasTransaction
+    from django.utils import timezone
+    
+    if request.method == 'POST':
+        amount = request.POST.get('amount')
+        t_type = request.POST.get('transaction_type')
+        school_id = request.POST.get('school') or None
+        desc = request.POST.get('description') or ''
+        t_date = request.POST.get('date') or timezone.localdate()
+        
+        if amount and t_type:
+            SaasTransaction.objects.create(
+                amount=int(amount),
+                transaction_type=t_type,
+                school_id=school_id,
+                description=desc,
+                date=t_date
+            )
+            messages.success(request, "SaaS Transaction logged successfully!")
+            return redirect('saas_admin_dashboard')
+            
+    schools = School.objects.all().order_by('name')
+    return render(request, 'saas_transaction_form.html', {
+        'schools': schools,
+        'today': timezone.localdate(),
+        'active': 'saas_admin'
+    })
+
+
 def subscription_expired(request):
     school = getattr(request, 'tenant', None)
     return render(request, 'subscription_expired.html', {
