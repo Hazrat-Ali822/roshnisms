@@ -120,8 +120,7 @@ class TenantMiddleware:
                 '/saas-admin/'
             ]
             if not any(request.path.startswith(p) for p in allowed_paths):
-                logout(request)
-                return redirect('login')
+                return redirect('logout')
         
         if user and user.is_authenticated and not is_superuser:
             profile = getattr(user, 'profile', None)
@@ -134,8 +133,7 @@ class TenantMiddleware:
                         '/media/'
                     ]
                     if not any(request.path.startswith(p) for p in allowed_paths):
-                        logout(request)
-                        return redirect('login')
+                        return redirect('logout')
                 elif not school:
                     # Keep them on their school
                     school = profile.school
