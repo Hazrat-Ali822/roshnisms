@@ -8,13 +8,12 @@ class EmailOrUsernameBackend(ModelBackend):
     the username or the email address (case-insensitive).
     """
     def authenticate(self, request, username=None, password=None, **kwargs):
-        if username is None:
+        if username is None or not username.strip():
             return None
-        try:
-            # Match against username OR email
-            user = User.objects.get(Q(username__iexact=username) | Q(email__iexact=username))
+        
+        # Match against username OR email using filter to handle potential duplicates (e.g. empty emails)
+        users = User.objects.filter(Q(username__iexact=username) | Q(email__iexact=username))
+        for user in users:
             if user.check_password(password):
                 return user
-        except User.DoesNotExist:
-            return None
         return None

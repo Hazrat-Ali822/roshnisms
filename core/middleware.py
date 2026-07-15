@@ -162,22 +162,24 @@ class TenantMiddleware:
                 request.tenant_expired = True
                 
         # 4. Database-per-tenant SQLite switcher
-        import os
-        import shutil
-        import copy
-        from django.db import connections
-        from django.conf import settings
+        import sys
+        if 'test' not in sys.argv:
+            import os
+            import shutil
+            import copy
+            from django.db import connections
+            from django.conf import settings
 
-        db_path = os.path.join(settings.BASE_DIR, "db.sqlite3")
-        if school and school.subdomain and school.subdomain != 'default' and not request.path.startswith('/saas-admin/'):
-            db_path = os.path.join(settings.BASE_DIR, f"{school.subdomain}.sqlite3")
-            if not os.path.exists(db_path):
-                shutil.copyfile(os.path.join(settings.BASE_DIR, "db.sqlite3"), db_path)
+            db_path = os.path.join(settings.BASE_DIR, "db.sqlite3")
+            if school and school.subdomain and school.subdomain != 'default' and not request.path.startswith('/saas-admin/'):
+                db_path = os.path.join(settings.BASE_DIR, f"{school.subdomain}.sqlite3")
+                if not os.path.exists(db_path):
+                    shutil.copyfile(os.path.join(settings.BASE_DIR, "db.sqlite3"), db_path)
 
-        conn = connections['default']
-        conn.close()
-        conn.settings_dict = copy.deepcopy(settings.DATABASES['default'])
-        conn.settings_dict['NAME'] = db_path
+            conn = connections['default']
+            conn.close()
+            conn.settings_dict = copy.deepcopy(settings.DATABASES['default'])
+            conn.settings_dict['NAME'] = db_path
                     
         if request.tenant_expired and not is_superuser:
             allowed_paths = [

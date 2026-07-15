@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.test import Client, TestCase
 
+from core.backends import EmailOrUsernameBackend
 from core.models import LoginAttempt, Profile, Student
 from core.tests.factory import build_world
 
@@ -87,11 +88,13 @@ class IdleTimeoutTests(TestCase):
         self.w = build_world()
 
     def test_idle_session_is_signed_out(self):
+        from django.conf import settings
         c = Client(); c.force_login(self.w.admin_u)
         c.get('/')                                   # stamps last_activity
         s = c.session
         s['last_activity'] = int(time.time()) - 3600  # an hour ago (> 30 min)
         s.save()
+        c.cookies[settings.SESSION_COOKIE_NAME] = s.session_key
         r = c.get('/')
         self.assertEqual(r.status_code, 302)
         self.assertIn('timeout=1', r['Location'])
@@ -100,3 +103,41 @@ class IdleTimeoutTests(TestCase):
         c = Client(); c.force_login(self.w.admin_u)
         c.get('/')
         self.assertEqual(c.get('/').status_code, 200)
+
+
+class EmailOrUsernameBackendTests(TestCase):
+    def setUp(self):
+        self.w = build_world()
+        self.backend = EmailOrUsernameBackend()
+        
+        # Create users with duplicate emails
+        self.u1 = User.objects.create_user(username='dupuser1', password='pass1', email='dup@roshni.edu.pk')
+        self.u2 = User.objects.create_user(username='dupuser2', password='pass2', email='dup@roshni.edu.pk')
+        
+        # Create users with blank emails
+        self.u_blank1 = User.objects.create_user(username='blankuser1', password='pass1', email='')
+        self.u_blank2 = User.objects.create_user(username='blankuser2', password='pass2', email='')
+
+    def test_auth_by_username(self):
+        user = self.backend.authenticate(None, username='dupuser1', password='pass1')
+        self.assertEqual(user, self.u1)
+
+    def test_auth_by_email_first_user(self):
+        user = self.backend.authenticate(None, username='dup@roshni.edu.pk', password='pass1')
+        self.assertEqual(user, self.u1)
+
+    def test_auth_by_email_second_user(self):
+        user = self.backend.authenticate(None, username='dup@roshni.edu.pk', password='pass2')
+        self.assertEqual(user, self.u2)
+
+    def test_auth_by_email_wrong_password(self):
+        user = self.backend.authenticate(None, username='dup@roshni.edu.pk', password='wrong')
+        self.assertIsNone(user)
+
+    def test_auth_with_blank_username(self):
+        # Blank username lookup should return None, rather than matching users with blank emails
+        user = self.backend.authenticate(None, username='', password='pass1')
+        self.assertIsNone(user)
+        user_space = self.backend.authenticate(None, username='   ', password='pass1')
+        self.assertIsNone(user_space)
+
