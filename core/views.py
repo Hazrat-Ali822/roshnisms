@@ -189,20 +189,23 @@ class LockoutLoginView(auth_views.LoginView):
 
     def get_success_url(self):
         """
-        After a successful login:
-        - Superusers always go to the SaaS Admin dashboard.
-        - School users go to their school's dashboard path (/{subdomain}/).
-        - Falls back to Django's default LOGIN_REDIRECT_URL for any other case.
+        After a successful login, redirect based on WHERE the login happened:
+        - School login page (/unicom/login/) → always go to that school's dashboard (/{sub}/)
+          The middleware will handle evicting true superusers from school pages.
+        - Root login page (/login/) with no school context:
+            * Superuser → /saas-admin/
+            * Regular user → Django's default LOGIN_REDIRECT_URL
         """
-        user = self.request.user
-        if user.is_superuser:
-            return '/saas-admin/'
-
-        # Use the resolved tenant school on the request (set by TenantMiddleware)
+        # If login happened via a school URL, request.tenant is set by TenantMiddleware.
+        # Always send the user to that school's dashboard — school context wins.
         school = getattr(self.request, 'tenant', None)
         if school:
             sub = school.subdomain or 'default'
             return f'/{sub}/'
+
+        # No school context = root login. Send superusers to SaaS admin.
+        if self.request.user.is_superuser:
+            return '/saas-admin/'
 
         return super().get_success_url()
 
