@@ -90,6 +90,7 @@ class TenantMiddleware:
                 is_explicit_tenant = True
             
         # 2. Path-based resolution if no subdomain matches
+        is_path_based = False
         if not school:
             path_parts = [p for p in request.path_info.split('/') if p]
             if path_parts:
@@ -99,6 +100,7 @@ class TenantMiddleware:
                     if possible_school:
                         school = possible_school
                         is_explicit_tenant = True
+                        is_path_based = True
                         # Strip the prefix so Django URLs match normally
                         new_path = '/' + '/'.join(path_parts[1:])
                         if not new_path.endswith('/') and len(path_parts) > 1:
@@ -120,7 +122,9 @@ class TenantMiddleware:
                 '/saas-admin/'
             ]
             if not any(request.path.startswith(p) for p in allowed_paths):
-                return redirect('logout')
+                sub = school.subdomain or 'default'
+                next_url = f"/{sub}/login/" if is_path_based else "/login/"
+                return redirect(reverse('logout') + f"?next={next_url}")
         
         if user and user.is_authenticated and not is_superuser:
             profile = getattr(user, 'profile', None)
@@ -133,7 +137,9 @@ class TenantMiddleware:
                         '/media/'
                     ]
                     if not any(request.path.startswith(p) for p in allowed_paths):
-                        return redirect('logout')
+                        sub = profile.school.subdomain or 'default'
+                        next_url = f"/{sub}/login/"
+                        return redirect(reverse('logout') + f"?next={next_url}")
                 elif not school:
                     # Keep them on their school
                     school = profile.school
