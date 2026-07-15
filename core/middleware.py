@@ -82,8 +82,12 @@ class TenantMiddleware:
             
         from core.models import School
         school = None
+        is_explicit_tenant = False
+        
         if subdomain and subdomain not in ('www', 'localhost', '127'):
             school = School.objects.filter(subdomain=subdomain).first()
+            if school:
+                is_explicit_tenant = True
             
         # 2. Path-based resolution if no subdomain matches
         if not school:
@@ -94,6 +98,7 @@ class TenantMiddleware:
                     possible_school = School.objects.filter(subdomain=first_seg).first()
                     if possible_school:
                         school = possible_school
+                        is_explicit_tenant = True
                         # Strip the prefix so Django URLs match normally
                         new_path = '/' + '/'.join(path_parts[1:])
                         if not new_path.endswith('/') and len(path_parts) > 1:
@@ -122,6 +127,7 @@ class TenantMiddleware:
                 elif not school:
                     # Keep them on their school
                     school = profile.school
+                    is_explicit_tenant = True
                     
         # Fallback to the first school in the database if no tenant found
         if not school:
@@ -130,9 +136,10 @@ class TenantMiddleware:
         request.tenant = school
         
         # Calculate subscription status (using the global database record!)
+        # Only lock down if it is an explicit school tenant request! The SaaS root/admin itself is never expired.
         from django.utils import timezone
         request.tenant_expired = False
-        if school:
+        if school and is_explicit_tenant:
             today = timezone.localdate()
             if (school.subscription_end and school.subscription_end < today) or not school.subscription_active:
                 request.tenant_expired = True
@@ -158,6 +165,7 @@ class TenantMiddleware:
         if request.tenant_expired and not is_superuser:
             allowed_paths = [
                 reverse('subscription_expired'),
+                reverse('login'),
                 reverse('logout'),
                 '/saas-admin/',
                 '/admin/',
