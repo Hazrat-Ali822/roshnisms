@@ -46,6 +46,11 @@
           <a class="nav-item {% if active == 'discipline' %}active{% endif %}" href="{% url 'discipline' %}">Discipline</a>
           <a class="nav-item {% if active == 'staff' or active == 'staff_attendance' or active == 'leave' %}active{% endif %}" href="{% url 'staff_list' %}">Staff</a>
           <a class="nav-item {% if active == 'payroll' %}active{% endif %}" href="{% url 'payroll' %}">Payroll</a>
+          <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'fee_collection' %}">Fee Collection</a>
+          <a class="nav-item {% if active == 'online_payments' %}active{% endif %}" href="{% url 'online_payments' %}">Online Payments</a>
+          <a class="nav-item {% if active == 'receipts' %}active{% endif %}" href="{% url 'receipts' %}">Receipts</a>
+          <a class="nav-item {% if active == 'defaulters' %}active{% endif %}" href="{% url 'defaulters' %}">Defaulters</a>
+          <a class="nav-item {% if active == 'expenses' %}active{% endif %}" href="{% url 'expenses' %}">Expenses</a>
           <a class="nav-item {% if active == 'exams' %}active{% endif %}" href="{% url 'exam_datesheet' %}">Exams</a>
           <a class="nav-item {% if active == 'admissions' %}active{% endif %}" href="{% url 'admissions' %}">Admissions</a>
           <a class="nav-item {% if active == 'communication' %}active{% endif %}" href="{% url 'communication' %}">Communication</a>
