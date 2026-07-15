@@ -108,8 +108,27 @@ class TenantMiddleware:
                         request.path_info = new_path
                         request.path = new_path
                         
+        # Verify that the session's tenant matches the request's active school tenant!
+        # If the session belongs to a different school/tenant, we log them out
+        # to prevent session leakage across database boundaries.
+        if user and user.is_authenticated:
+            session_tenant_id = request.session.get('tenant_id')
+            if is_superuser:
+                # If they are superuser, they should only have a 'saas' session.
+                # If they have a school tenant ID in the session, they are a tenant user leaked into root!
+                if session_tenant_id and session_tenant_id != 'saas':
+                    from django.contrib.auth import logout
+                    logout(request)
+                    user = None
+                    is_superuser = False
+            else:
+                # If they are a regular school user, their session tenant ID must match the active school's ID!
+                if not school or session_tenant_id != school.id:
+                    from django.contrib.auth import logout
+                    logout(request)
+                    user = None
+                    
         # 3. User session-based routing and verification
-        user = getattr(request, 'user', None)
         is_superuser = user.is_superuser if (user and user.is_authenticated) else False
         
         # If the user is a superuser and visits a school portal (subdomain or path segment),
