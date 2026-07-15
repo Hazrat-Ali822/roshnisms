@@ -298,6 +298,9 @@ def _donut_gradient(segments):
 
 @login_required
 def dashboard(request):
+    if request.user.is_superuser:
+        return redirect('saas_admin_dashboard')
+        
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else 'admin'
 
@@ -5214,6 +5217,29 @@ def saas_school_toggle(request, pk):
     school.save()
     status = "activated" if school.subscription_active else "deactivated"
     messages.success(request, f"School '{school.name}' has been {status}.")
+    return redirect('saas_admin_dashboard')
+
+@login_required(login_url='login')
+def saas_school_delete(request, pk):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+        
+    school = get_object_or_404(School, pk=pk)
+    name = school.name
+    subdomain = school.subdomain or 'default'
+    
+    # Delete the tenant database file associated with this subdomain
+    if subdomain != 'default':
+        import os
+        tenant_db_path = os.path.join(settings.BASE_DIR, f"{subdomain}.sqlite3")
+        if os.path.exists(tenant_db_path):
+            try:
+                os.remove(tenant_db_path)
+            except OSError:
+                pass
+                
+    school.delete()
+    messages.success(request, f"School '{name}' and its database file deleted successfully.")
     return redirect('saas_admin_dashboard')
 
 def subscription_expired(request):

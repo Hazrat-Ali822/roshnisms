@@ -99,5 +99,6 @@ urlpatterns = [
     path('saas-admin/school/add/', views.saas_school_add, name='saas_school_add'),
     path('saas-admin/school/<int:pk>/edit/', views.saas_school_edit, name='saas_school_edit'),
     path('saas-admin/school/<int:pk>/toggle/', views.saas_school_toggle, name='saas_school_toggle'),
+    path('saas-admin/school/<int:pk>/delete/', views.saas_school_delete, name='saas_school_delete'),
     path('subscription-expired/', views.subscription_expired, name='subscription_expired'),
 ]
