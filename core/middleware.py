@@ -66,19 +66,56 @@ class TenantMiddleware:
         host = request.get_host().split(':')[0]
         parts = host.split('.')
         
+        # 1. Resolve subdomain
         subdomain = None
-        # Handle cases like school1.localhost:8000 or school1.roshnisms.com
         if len(parts) > 2:
             subdomain = parts[0]
         elif len(parts) == 2 and parts[1] == 'localhost':
             subdomain = parts[0]
             
         from core.models import School
+        school = None
         if subdomain and subdomain not in ('www', 'localhost', '127'):
             school = School.objects.filter(subdomain=subdomain).first()
-        else:
-            school = None
             
+        # 2. Path-based resolution if no subdomain matches
+        if not school:
+            path_parts = [p for p in request.path_info.split('/') if p]
+            if path_parts:
+                first_seg = path_parts[0]
+                if first_seg not in ('saas-admin', 'admin', 'static', 'media', 'logout', 'subscription-expired'):
+                    possible_school = School.objects.filter(subdomain=first_seg).first()
+                    if possible_school:
+                        school = possible_school
+                        # Strip the prefix so Django URLs match normally
+                        new_path = '/' + '/'.join(path_parts[1:])
+                        if not new_path.endswith('/') and len(path_parts) > 1:
+                            new_path += '/'
+                        request.path_info = new_path
+                        request.path = new_path
+                        
+        # 3. User session-based routing and verification
+        user = getattr(request, 'user', None)
+        is_superuser = user.is_superuser if (user and user.is_authenticated) else False
+        
+        if user and user.is_authenticated and not is_superuser:
+            profile = getattr(user, 'profile', None)
+            if profile and profile.school:
+                # If they visit a path with a different school subdomain/prefix, log them out
+                if school and profile.school != school:
+                    allowed_paths = [
+                        reverse('logout'),
+                        '/static/',
+                        '/media/'
+                    ]
+                    if not any(request.path.startswith(p) for p in allowed_paths):
+                        logout(request)
+                        messages.error(request, "Access denied. Please log in through your school's subdomain portal.")
+                        return redirect('login')
+                elif not school:
+                    # Keep them on their school
+                    school = profile.school
+                    
         # Fallback to the first school in the database if no tenant found
         if not school:
             school = School.objects.first()
@@ -92,23 +129,6 @@ class TenantMiddleware:
             today = timezone.localdate()
             if (school.subscription_end and school.subscription_end < today) or not school.subscription_active:
                 request.tenant_expired = True
-        
-        user = getattr(request, 'user', None)
-        is_superuser = user.is_superuser if (user and user.is_authenticated) else False
-        
-        # Verify that the logged-in user belongs to the current tenant school
-        if user and user.is_authenticated and not is_superuser:
-            profile = getattr(user, 'profile', None)
-            if profile and profile.school and profile.school != school:
-                allowed_paths = [
-                    reverse('logout'),
-                    '/static/',
-                    '/media/'
-                ]
-                if not any(request.path.startswith(p) for p in allowed_paths):
-                    logout(request)
-                    messages.error(request, "Access denied. Please log in through your school's subdomain portal.")
-                    return redirect('login')
                     
         if request.tenant_expired and not is_superuser:
             allowed_paths = [

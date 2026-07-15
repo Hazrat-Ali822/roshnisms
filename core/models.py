@@ -109,23 +109,11 @@ class School(models.Model):
         return self.name
 
     def get_portal_url(self, request):
-        import datetime
-        host = request.get_host().split(':')[0]
-        parts = host.split('.')
-        if len(parts) > 2:
-            domain = '.'.join(parts[1:])
-        elif len(parts) == 2 and parts[1] == 'localhost':
-            domain = parts[1]
-        else:
-            domain = host
-            
-        port = request.get_host().split(':')[1] if ':' in request.get_host() else ''
-        port_suffix = f":{port}" if port else ""
-        
+        host = request.get_host()
         sub = self.subdomain or 'default'
         if sub == 'default':
-            return f"{request.scheme}://{domain}{port_suffix}/"
-        return f"{request.scheme}://{sub}.{domain}{port_suffix}/"
+            return f"{request.scheme}://{host}/"
+        return f"{request.scheme}://{host}/{sub}/"
 
 
 class ClassRoom(models.Model):
