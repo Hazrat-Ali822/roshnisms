@@ -5021,6 +5021,7 @@ def saas_school_add(request):
             )
             
             if admin_username and admin_password:
+                import os
                 import copy
                 import shutil
                 from django.db import connections
@@ -5106,6 +5107,7 @@ def saas_school_edit(request, pk):
         school.save()
         
         if admin_username:
+            import os
             import copy
             import shutil
             from django.db import connections
