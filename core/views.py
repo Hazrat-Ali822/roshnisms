@@ -181,29 +181,29 @@ class LockoutLoginView(auth_views.LoginView):
 
     def form_valid(self, form):
         _reset_login_fails(form.get_user().username)
-        response = super().form_valid(form)
-        
-        # Save tenant_id to session to isolate user sessions across dynamic DB switching
-        school = getattr(self.request, 'tenant', None)
-        sub = school.subdomain or 'default' if school else 'default'
-        if school and self.request.path.startswith(f"/{sub}/"):
-            self.request.session['tenant_id'] = school.id
-        else:
-            self.request.session['tenant_id'] = 'saas'
-            
-        return response
+        return super().form_valid(form)
 
     def form_invalid(self, form):
         _record_login_fail((self.request.POST.get('username') or '').strip())
         return super().form_invalid(form)
 
     def get_success_url(self):
-        # Redirect the school tenant login directly to their school dashboard, rather than / root
+        """
+        After a successful login:
+        - Superusers always go to the SaaS Admin dashboard.
+        - School users go to their school's dashboard path (/{subdomain}/).
+        - Falls back to Django's default LOGIN_REDIRECT_URL for any other case.
+        """
+        user = self.request.user
+        if user.is_superuser:
+            return '/saas-admin/'
+
+        # Use the resolved tenant school on the request (set by TenantMiddleware)
         school = getattr(self.request, 'tenant', None)
         if school:
             sub = school.subdomain or 'default'
-            if self.request.path.startswith(f"/{sub}/"):
-                return f"/{sub}/"
+            return f'/{sub}/'
+
         return super().get_success_url()
 
 
