@@ -4,38 +4,39 @@
 <div class="welcome" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap; margin-bottom: 20px;">
   <div>
     <h1>SaaS Admin Dashboard</h1>
-    <p>Manage school registration instances, database separation, and global subscription revenue.</p>
+    <p>Manage school portal directory instances, global platform subscriptions, and actual billing ledger.</p>
   </div>
-  <a class="btn-primary btn-auto no-print" href="{% url 'saas_school_add' %}" style="text-decoration:none">+ Register School</a>
+  <div style="display: flex; gap: 10px;">
+    <button class="btn-primary btn-auto no-print" onclick="document.getElementById('txnModal').style.display='flex'" style="background-color: var(--accent); border-color: var(--accent);">+ Log Transaction</button>
+    <a class="btn-primary btn-auto no-print" href="{% url 'saas_school_add' %}" style="text-decoration:none">+ Register School</a>
+  </div>
 </div>
 
-<!-- Stats Cards -->
+<!-- SaaS Platform Financial Cards -->
 <div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px;">
   
   <div class="card card-pad" style="border-left: 4px solid var(--accent); display: flex; flex-direction: column; justify-content: space-between; min-height: 110px;">
-    <div style="color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Registered Schools</div>
-    <div style="font-size: 28px; font-weight: 700; color: var(--ink); margin-top: 8px;">{{ total_schools }}</div>
-    <div style="font-size: 11.5px; color: var(--accent); margin-top: 4px;">{{ active_schools_count }} Active Subscriptions</div>
-  </div>
-
-  <div class="card card-pad" style="border-left: 4px solid #3B82F6; display: flex; flex-direction: column; justify-content: space-between; min-height: 110px;">
-    <div style="color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Total Active Students</div>
-    <div style="font-size: 28px; font-weight: 700; color: var(--ink); margin-top: 8px;">{{ total_students_all }}</div>
-    <div style="font-size: 11.5px; color: var(--muted); margin-top: 4px;">Across all database instances</div>
+    <div style="color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">SaaS Subscriptions</div>
+    <div style="font-size: 28px; font-weight: 700; color: var(--ink); margin-top: 8px;">{{ total_schools }} <span style="font-size: 15px; font-weight: 400; color: var(--muted);">Registered</span></div>
+    <div style="font-size: 11.5px; color: var(--accent); margin-top: 4px;">{{ active_schools_count }} Active Portals</div>
   </div>
 
   <div class="card card-pad" style="border-left: 4px solid #10B981; display: flex; flex-direction: column; justify-content: space-between; min-height: 110px;">
-    <div style="color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Monthly SaaS Revenue</div>
-    <div style="font-size: 28px; font-weight: 700; color: var(--ink); margin-top: 8px;">Rs {{ total_saas_revenue }}</div>
-    <div style="font-size: 11.5px; color: #10B981; margin-top: 4px;">Estimated regular billing</div>
+    <div style="color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Total SaaS Income</div>
+    <div style="font-size: 28px; font-weight: 700; color: #10B981; margin-top: 8px;">Rs {{ saas_income }}</div>
+    <div style="font-size: 11.5px; color: var(--muted); margin-top: 4px;">Actual money received from schools</div>
+  </div>
+
+  <div class="card card-pad" style="border-left: 4px solid #EF4444; display: flex; flex-direction: column; justify-content: space-between; min-height: 110px;">
+    <div style="color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">SaaS Platform Expenses</div>
+    <div style="font-size: 28px; font-weight: 700; color: #EF4444; margin-top: 8px;">Rs {{ saas_expense }}</div>
+    <div style="font-size: 11.5px; color: var(--muted); margin-top: 4px;">Server hosting, APIs, maintenance</div>
   </div>
 
   <div class="card card-pad" style="border-left: 4px solid #8B5CF6; display: flex; flex-direction: column; justify-content: space-between; min-height: 110px;">
-    <div style="color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Combined Portal Cashflow</div>
-    <div style="font-size: 20px; font-weight: 700; color: var(--ink); margin-top: 8px; line-height: 1.2;">
-      <span style="color: #10B981;">+Rs {{ total_income_all }}</span> <span style="font-size: 12px; color: var(--muted);">in</span><br>
-      <span style="color: #EF4444;">-Rs {{ total_expense_all }}</span> <span style="font-size: 12px; color: var(--muted);">ex</span>
-    </div>
+    <div style="color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Net SaaS Profit</div>
+    <div style="font-size: 28px; font-weight: 700; color: {% if saas_profit >= 0 %}#10B981{% else %}#EF4444{% endif %}; margin-top: 8px;">Rs {{ saas_profit }}</div>
+    <div style="font-size: 11.5px; color: var(--muted); margin-top: 4px;">Expected billing: Rs {{ total_saas_revenue }}/mo</div>
   </div>
 
 </div>
@@ -45,90 +46,177 @@
   
   <div class="card card-pad">
     <div class="sec-head" style="margin-bottom: 15px;">
-      <h3>School Student Distribution</h3>
+      <h3>School Monthly Rates (Rs/Month)</h3>
     </div>
     <div style="height: 250px; position: relative;">
-      <canvas id="studentChart"></canvas>
+      <canvas id="ratesChart"></canvas>
     </div>
   </div>
 
   <div class="card card-pad">
     <div class="sec-head" style="margin-bottom: 15px;">
-      <h3>School Finances (Income vs Expense)</h3>
+      <h3>Platform Cashflow (Income vs Expense)</h3>
     </div>
     <div style="height: 250px; position: relative;">
-      <canvas id="financeChart"></canvas>
+      <canvas id="cashflowChart"></canvas>
     </div>
   </div>
 
 </div>
 
-<!-- Schools Table -->
-<div class="card">
-  <div class="sec-head" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px;">
-    <h3>Active School Directories</h3>
-    <span class="muted" style="font-size: 12px;">Individual Database Isolated Portals</span>
+<!-- SaaS Transaction Ledger & Schools Directory Split Layout -->
+<div style="display: grid; grid-template-columns: 1fr 1.3fr; gap: 20px; margin-bottom: 30px; align-items: start;">
+  
+  <!-- Platform Account Ledger -->
+  <div class="card">
+    <div class="sec-head" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line);">
+      <h3>Platform Financial Ledger</h3>
+      <span style="font-size: 11px;" class="muted">Actual payments logged</span>
+    </div>
+    <div class="table-wrap" style="max-height: 450px; overflow-y: auto;">
+      <table style="font-size: 13px;">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Source / Description</th>
+            <th class="ta-r">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for txn in recent_transactions %}
+            <tr>
+              <td>{{ txn.date|date:"d M y" }}</td>
+              <td>
+                {% if txn.transaction_type == 'income' %}
+                  <span class="pill pill-paid" style="font-size: 11px;">Income</span>
+                {% else %}
+                  <span class="pill pill-overdue" style="font-size: 11px;">Expense</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if txn.school %}
+                  <b>{{ txn.school.name }}</b>
+                {% endif %}
+                {% if txn.description %}
+                  <div class="muted" style="font-size: 11px;">{{ txn.description }}</div>
+                {% endif %}
+              </td>
+              <td class="ta-r" style="font-weight: 600; color: {% if txn.transaction_type == 'income' %}#10B981{% else %}#EF4444{% endif %};">
+                {% if txn.transaction_type == 'income' %}+{% else %}-{% endif %}Rs {{ txn.amount }}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="dempty" style="padding: 30px;">No platform transactions logged yet. Click "+ Log Transaction" to record payments.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>School Name</th>
-          <th>Subdomain</th>
-          <th>Start Date</th>
-          <th>End Date</th>
-          <th class="ta-r">Monthly Rate</th>
-          <th class="ta-c">Students / Staff</th>
-          <th class="ta-c">Status</th>
-          <th class="ta-r">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for school in schools %}
+
+  <!-- Schools Portals Directory -->
+  <div class="card">
+    <div class="sec-head" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line);">
+      <h3>Active School Portals</h3>
+      <span class="muted" style="font-size: 11px;">Isolated databases</span>
+    </div>
+    <div class="table-wrap">
+      <table style="font-size: 13px;">
+        <thead>
           <tr>
-            <td>
-              <b style="color:var(--ink)">{{ school.name }}</b>
-              <div class="muted" style="font-size:11.5px">{{ school.campus|default:"-" }}</div>
-            </td>
-            <td>
-              <span class="pill pill-role" style="font-family: monospace;">
-                {% if school.subdomain %}{{ school.subdomain }}{% else %}default{% endif %}
-              </span>
-              <div style="font-size: 11px; margin-top: 4px;">
-                <a href="{{ school.portal_url }}" target="_blank" style="color: var(--accent); text-decoration: underline;">{{ school.portal_url }}</a>
-              </div>
-            </td>
-            <td>{{ school.subscription_start|date:"d M Y"|default:"&mdash;" }}</td>
-            <td>{{ school.subscription_end|date:"d M Y"|default:"&mdash;" }}</td>
-            <td class="ta-r" style="font-weight: 600; color: var(--ink);">Rs {{ school.subscription_rate }}</td>
-            <td class="ta-c">
-              <span style="font-weight: 600; color: var(--accent);">{{ school.student_count }}</span> studs /
-              <span class="muted">{{ school.staff_count }}</span> staff
-            </td>
-            <td class="ta-c">
-              {% if not school.subscription_active %}
-                <span class="pill pill-overdue">Suspended</span>
-              {% elif school.is_expired %}
-                <span class="pill pill-pending">Expired</span>
-              {% else %}
-                <span class="pill pill-paid">Active</span>
-              {% endif %}
-            </td>
-            <td class="ta-r" style="white-space:nowrap">
-              <a class="act-btn ghost" href="{{ school.portal_url }}" target="_blank" style="text-decoration:none; border-color: var(--accent); color: var(--accent);">Visit Portal</a>
-              <a class="act-btn ghost" href="{% url 'saas_school_edit' school.id %}" style="text-decoration:none; margin-left: 5px;">Edit</a>
-              <a class="act-btn {% if school.subscription_active %}ghost{% endif %}" href="{% url 'saas_school_toggle' school.id %}" style="text-decoration:none; margin-left: 5px; {% if school.subscription_active %}border-color: var(--overdue); color: var(--overdue);{% endif %}">
-                {% if school.subscription_active %}Suspend{% else %}Activate{% endif %}
-              </a>
-            </td>
+            <th>School Name</th>
+            <th>Link</th>
+            <th class="ta-r">Monthly Rate</th>
+            <th class="ta-c">Status</th>
+            <th class="ta-r">Actions</th>
           </tr>
-        {% empty %}
-          <tr>
-            <td colspan="8" class="dempty">No schools registered in this tenant database yet.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {% for school in schools %}
+            <tr>
+              <td>
+                <b style="color:var(--ink)">{{ school.name }}</b>
+                <div class="muted" style="font-size:11px;">{{ school.student_count }} students / {{ school.staff_count }} staff</div>
+              </td>
+              <td>
+                <span class="pill pill-role" style="font-family: monospace; font-size: 11px;">
+                  {{ school.subdomain|default:"default" }}
+                </span>
+                <div style="font-size: 11px; margin-top: 3px;">
+                  <a href="{{ school.portal_url }}" target="_blank" style="color: var(--accent); text-decoration: underline;">Visit</a>
+                </div>
+              </td>
+              <td class="ta-r" style="font-weight: 600; color: var(--ink);">Rs {{ school.subscription_rate }}</td>
+              <td class="ta-c">
+                {% if not school.subscription_active %}
+                  <span class="pill pill-overdue" style="font-size: 11px;">Suspended</span>
+                {% elif school.is_expired %}
+                  <span class="pill pill-pending" style="font-size: 11px;">Expired</span>
+                {% else %}
+                  <span class="pill pill-paid" style="font-size: 11px;">Active</span>
+                {% endif %}
+              </td>
+              <td class="ta-r" style="white-space:nowrap">
+                <a class="act-btn ghost" href="{{ school.portal_url }}" target="_blank" style="text-decoration:none; border-color: var(--accent); color: var(--accent); padding: 4px 8px; font-size: 12px;">Visit</a>
+                <a class="act-btn ghost" href="{% url 'saas_school_edit' school.id %}" style="text-decoration:none; margin-left: 3px; padding: 4px 8px; font-size: 12px;">Edit</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Log Transaction Modal -->
+<div id="txnModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 10000;">
+  <div class="card card-pad" style="width: 100%; max-width: 450px; background: white; border-radius: 8px;">
+    <h3 style="margin-bottom: 16px;">Log SaaS Platform Transaction</h3>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="add_transaction" value="1">
+      
+      <div class="frow">
+        <label for="amount">Amount (Rs)</label>
+        <input type="number" id="amount" name="amount" required placeholder="e.g. 5000" min="1">
+      </div>
+      
+      <div class="frow">
+        <label for="transaction_type">Transaction Type</label>
+        <select id="transaction_type" name="transaction_type" required style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 4px;">
+          <option value="income">Subscription Income (Paid by school)</option>
+          <option value="expense">Platform Expense (Hosting, maintenance, domain)</option>
+        </select>
+      </div>
+
+      <div class="frow">
+        <label for="school">Associated School (Optional)</label>
+        <select id="school" name="school" style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 4px;">
+          <option value="">-- None / General Platform Cost --</option>
+          {% for school in schools %}
+            <option value="{{ school.id }}">{{ school.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="frow">
+        <label for="date">Transaction Date</label>
+        <input type="date" id="date" name="date" value="{{ today|date:'Y-m-d' }}" required>
+      </div>
+
+      <div class="frow">
+        <label for="description">Description / Notes</label>
+        <input type="text" id="description" name="description" placeholder="e.g. Received cash payment for July">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button type="button" class="btn-ghost" onclick="document.getElementById('txnModal').style.display='none'">Cancel</button>
+        <button type="submit" class="btn-primary" style="margin-top: 0;">Save Transaction</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -137,20 +225,21 @@
 <script>
   document.addEventListener("DOMContentLoaded", function() {
     const schoolNames = {{ school_names_json|safe }};
-    const studentCounts = {{ student_counts_json|safe }};
-    const schoolIncomes = {{ school_incomes_json|safe }};
-    const schoolExpenses = {{ school_expenses_json|safe }};
+    const subRates = {{ sub_rates_json|safe }};
+    const chartMonths = {{ chart_months_json|safe }};
+    const chartIncome = {{ chart_income_json|safe }};
+    const chartExpense = {{ chart_expense_json|safe }};
 
-    // Student Chart
-    const ctxStudents = document.getElementById('studentChart').getContext('2d');
-    new Chart(ctxStudents, {
+    // Subscriptions Rate Chart
+    const ctxRates = document.getElementById('ratesChart').getContext('2d');
+    new Chart(ctxRates, {
       type: 'bar',
       data: {
         labels: schoolNames,
         datasets: [{
-          label: 'Students',
-          data: studentCounts,
-          backgroundColor: '#3B82F6',
+          label: 'Monthly Rate (Rs)',
+          data: subRates,
+          backgroundColor: '#0E7C66',
           borderRadius: 6,
           borderWidth: 0
         }]
@@ -162,32 +251,39 @@
           legend: { display: false }
         },
         scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { precision: 0 }
-          }
+          y: { beginAtZero: true }
         }
       }
     });
 
-    // Finance Chart
-    const ctxFinance = document.getElementById('financeChart').getContext('2d');
-    new Chart(ctxFinance, {
-      type: 'bar',
+    // SaaS Cashflow Chart
+    const ctxCash = document.getElementById('cashflowChart').getContext('2d');
+    
+    // Fallback display if no monthly data yet
+    const displayMonths = chartMonths.length > 0 ? chartMonths : ["July 2026"];
+    const displayIncome = chartIncome.length > 0 ? chartIncome : [0];
+    const displayExpense = chartExpense.length > 0 ? chartExpense : [0];
+
+    new Chart(ctxCash, {
+      type: 'line',
       data: {
-        labels: schoolNames,
+        labels: displayMonths,
         datasets: [
           {
-            label: 'Income (Rs)',
-            data: schoolIncomes,
-            backgroundColor: '#10B981',
-            borderRadius: 6,
+            label: 'Income Received (Rs)',
+            data: displayIncome,
+            borderColor: '#10B981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            fill: true,
+            tension: 0.3
           },
           {
-            label: 'Expense (Rs)',
-            data: schoolExpenses,
-            backgroundColor: '#EF4444',
-            borderRadius: 6,
+            label: 'Expenses Paid (Rs)',
+            data: displayExpense,
+            borderColor: '#EF4444',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            fill: true,
+            tension: 0.3
           }
         ]
       },

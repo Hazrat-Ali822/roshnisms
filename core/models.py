@@ -248,6 +248,24 @@ class Profile(models.Model):
         return f"{self.user.username} ({self.role})"
 
 
+class SaasTransaction(models.Model):
+    TRANSACTION_TYPES = [
+        ('income', 'Subscription Income'),
+        ('expense', 'Platform Expense'),
+    ]
+    school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True, related_name='saas_transactions')
+    amount = models.PositiveIntegerField()
+    date = models.DateField(default=datetime.date.today)
+    transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPES, default='income')
+    description = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.transaction_type.upper()}: Rs {self.amount} ({self.date})"
+
+
 class LoginAttempt(models.Model):
     """Tracks failed sign-ins per username to lock out brute-force guessing.
     One row per username, updated in place — kept tiny on purpose."""

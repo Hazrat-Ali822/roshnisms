@@ -4880,7 +4880,29 @@ def saas_admin_dashboard(request):
     import os
     from django.conf import settings
     from django.utils import timezone
+    from django.db.models import Sum
+    from django.db.models.functions import TruncMonth
+    from core.models import School, SaasTransaction
     
+    # Handle creating a new SaaS Transaction
+    if request.method == 'POST' and 'add_transaction' in request.POST:
+        amount = request.POST.get('amount')
+        t_type = request.POST.get('transaction_type')
+        school_id = request.POST.get('school') or None
+        desc = request.POST.get('description') or ''
+        t_date = request.POST.get('date') or timezone.localdate()
+        
+        if amount and t_type:
+            SaasTransaction.objects.create(
+                amount=int(amount),
+                transaction_type=t_type,
+                school_id=school_id,
+                description=desc,
+                date=t_date
+            )
+            messages.success(request, "SaaS Transaction logged successfully!")
+            return redirect('saas_admin_dashboard')
+
     schools = School.objects.all().order_by('name')
     today = timezone.localdate()
     
@@ -4888,15 +4910,17 @@ def saas_admin_dashboard(request):
     active_schools_count = schools.filter(subscription_active=True).count()
     total_saas_revenue = sum(s.subscription_rate for s in schools.filter(subscription_active=True))
     
-    total_students_all = 0
-    total_staff_all = 0
-    total_income_all = 0
-    total_expense_all = 0
+    # Calculate SaaS Platform own finances
+    saas_income = SaasTransaction.objects.filter(transaction_type='income').aggregate(total=Sum('amount'))['total'] or 0
+    saas_expense = SaasTransaction.objects.filter(transaction_type='expense').aggregate(total=Sum('amount'))['total'] or 0
+    saas_profit = saas_income - saas_expense
     
+    # Fetch recent platform transactions
+    recent_transactions = SaasTransaction.objects.all().select_related('school')[:15]
+    
+    # Prepare school subscription rates chart data
     school_names = []
-    student_counts = []
-    school_incomes = []
-    school_expenses = []
+    sub_rates = []
     
     for school in schools:
         school.portal_url = school.get_portal_url(request)
@@ -4905,14 +4929,14 @@ def saas_admin_dashboard(request):
         else:
             school.is_expired = False
             
-        # Get stats dynamically from SQLite files
+        # Get count of students/staff dynamically from SQLite files
         sub = school.subdomain or 'default'
         if sub == 'default':
             db_path = os.path.join(settings.BASE_DIR, "db.sqlite3")
         else:
             db_path = os.path.join(settings.BASE_DIR, f"{sub}.sqlite3")
             
-        stats = {'students': 0, 'staff': 0, 'income': 0, 'expense': 0}
+        stats = {'students': 0, 'staff': 0}
         if os.path.exists(db_path):
             try:
                 conn = sqlite3.connect(db_path)
@@ -4921,29 +4945,31 @@ def saas_admin_dashboard(request):
                 stats['students'] = cursor.fetchone()[0] or 0
                 cursor.execute("SELECT COUNT(*) FROM core_staff")
                 stats['staff'] = cursor.fetchone()[0] or 0
-                cursor.execute("SELECT SUM(amount) FROM core_feepayment")
-                stats['income'] = cursor.fetchone()[0] or 0
-                cursor.execute("SELECT SUM(amount) FROM core_expense")
-                stats['expense'] = cursor.fetchone()[0] or 0
                 conn.close()
             except Exception:
                 pass
                 
         school.student_count = stats['students']
         school.staff_count = stats['staff']
-        school.income = stats['income']
-        school.expense = stats['expense']
-        
-        total_students_all += stats['students']
-        total_staff_all += stats['staff']
-        total_income_all += stats['income']
-        total_expense_all += stats['expense']
         
         school_names.append(school.name)
-        student_counts.append(stats['students'])
-        school_incomes.append(stats['income'])
-        school_expenses.append(stats['expense'])
+        sub_rates.append(school.subscription_rate)
+
+    # Group SaaS transactions by month for the line chart
+    monthly_qs = SaasTransaction.objects.annotate(month_date=TruncMonth('date')).values('month_date', 'transaction_type').annotate(total=Sum('amount')).order_by('month_date')
+    
+    # Format monthly data for Chart.js
+    months_dict = {}
+    for item in monthly_qs:
+        m_str = item['month_date'].strftime('%b %Y')
+        if m_str not in months_dict:
+            months_dict[m_str] = {'income': 0, 'expense': 0}
+        months_dict[m_str][item['transaction_type']] = item['total'] or 0
         
+    chart_months = list(months_dict.keys())
+    chart_income = [months_dict[m]['income'] for m in chart_months]
+    chart_expense = [months_dict[m]['expense'] for m in chart_months]
+
     return render(request, 'saas_admin.html', {
         'schools': schools,
         'today': today,
@@ -4951,14 +4977,15 @@ def saas_admin_dashboard(request):
         'total_schools': total_schools,
         'active_schools_count': active_schools_count,
         'total_saas_revenue': total_saas_revenue,
-        'total_students_all': total_students_all,
-        'total_staff_all': total_staff_all,
-        'total_income_all': total_income_all,
-        'total_expense_all': total_expense_all,
+        'saas_income': saas_income,
+        'saas_expense': saas_expense,
+        'saas_profit': saas_profit,
+        'recent_transactions': recent_transactions,
         'school_names_json': json.dumps(school_names),
-        'student_counts_json': json.dumps(student_counts),
-        'school_incomes_json': json.dumps(school_incomes),
-        'school_expenses_json': json.dumps(school_expenses),
+        'sub_rates_json': json.dumps(sub_rates),
+        'chart_months_json': json.dumps(chart_months),
+        'chart_income_json': json.dumps(chart_income),
+        'chart_expense_json': json.dumps(chart_expense),
     })
 
 @login_required(login_url='login')
