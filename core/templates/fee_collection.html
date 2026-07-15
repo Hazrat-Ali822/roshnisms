@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block heading %}Fee Collection{% endblock %}
+{% block content %}
+<div class="welcome no-print" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+  <div><h1>Fee Collection</h1><p>Outstanding by student. Open a student to collect fees, give a discount or scholarship.</p></div>
+  <a class="act-btn ghost" href="{% url 'challans_bulk' %}" style="text-decoration:none">Print challans (class)</a>
+</div>
+
+<details class="add-wrap no-print">
+  <summary class="add-btn">Generate challans</summary>
+  <div class="card card-pad" style="max-width:620px">
+    <h3 style="margin-bottom:12px">Generate monthly challans</h3>
+    <p class="muted" style="margin:0 0 12px;font-size:13px">Creates one challan per active student. Tuition, transport, hostel and any previous dues are added automatically. Students who already have a challan for that month are skipped.</p>
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="action" value="generate">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 14px">
+        <div class="frow"><label>Class</label>
+          <select name="class_id"><option value="all">All classes</option>{% for c in classes %}<option value="{{ c.id }}">{{ c }}</option>{% endfor %}</select>
+        </div>
+        <div class="frow"><label>Month</label>
+          <select name="month">{% for num, nm in months %}<option value="{{ num }}" {% if num == cur_month %}selected{% endif %}>{{ nm }}</option>{% endfor %}</select>
+        </div>
+        <div class="frow"><label>Year</label>
+          <select name="year">{% for y in years %}<option value="{{ y }}" {% if y == cur_year %}selected{% endif %}>{{ y }}</option>{% endfor %}</select>
+        </div>
+      </div>
+      <button class="btn-primary btn-auto" type="submit">Generate challans</button>
+    </form>
+  </div>
+</details>
+
+<div class="card">
+  <div class="sec-head"><h3>Students</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Name</th><th>Class</th><th>Months pending</th><th class="ta-r">Outstanding</th><th class="ta-r">Action</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><b style="color:var(--ink)">{{ r.student.name }}</b></td>
+        <td>{{ r.student.classroom }}</td>
+        <td>{% if r.months_pending %}<span class="pill pill-pending">{{ r.months_pending }} month{{ r.months_pending|pluralize }}</span>{% else %}<span class="pill pill-paid">Clear</span>{% endif %}</td>
+        <td class="ta-r num">{% if r.outstanding %}<b style="color:#922A1B">Rs {{ r.outstanding }}</b>{% else %}Rs 0{% endif %}</td>
+        <td class="ta-r"><a class="act-btn" href="{% url 'student_fees' r.student.id %}" style="text-decoration:none">Open</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="muted">No students found. Generate this month's challans first.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

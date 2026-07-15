@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block heading %}Report Card{% endblock %}
+{% block content %}
+<div class="bar no-print" style="margin-bottom:14px">
+  <button class="btn-primary btn-auto" onclick="window.print()">Print report card</button>
+  {% if role == 'admin' %}<a class="act-btn ghost" href="{% url 'student_detail' student.id %}" style="text-decoration:none">&larr; Back to student</a>
+  {% else %}<a class="act-btn ghost" href="{% url 'my_results' %}" style="text-decoration:none">&larr; Back to results</a>{% endif %}
+  {% if role == 'admin' or role == 'teacher' or role == 'principal' %}<a class="act-btn ghost" href="{% url 'report_cards_bulk' %}?class={{ student.classroom.id }}&exam={{ exam.id }}" style="text-decoration:none">Whole class &rarr;</a>{% endif %}
+</div>
+
+{% include 'report_card_body.html' %}
+{% endblock %}

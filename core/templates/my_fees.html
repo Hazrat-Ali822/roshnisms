@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block heading %}Fees{% endblock %}
+{% block content %}
+<div class="welcome no-print"><h1>Fees</h1><p>{% if child %}{{ child.name }} &middot; Class {{ child.classroom }} &middot; month-wise fee details.{% else %}No student linked to this account.{% endif %}</p></div>
+
+{% if child %}
+<div class="stat-grid" style="margin-bottom:16px">
+  <div class="card stat"><span class="s-label">Total payable</span><span class="s-val">Rs {{ total_payable }}</span></div>
+  <div class="card stat"><span class="s-label">Total paid</span><span class="s-val" style="color:#0B5F4F">Rs {{ total_paid }}</span></div>
+  <div class="card stat"><span class="s-label">Outstanding</span><span class="s-val" style="color:{% if outstanding %}#922A1B{% else %}#0B5F4F{% endif %}">Rs {{ outstanding }}</span></div>
+  <div class="card stat"><span class="s-label">Months pending</span><span class="s-val">{{ months_pending }}</span></div>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+  <div class="sec-head"><h3>Monthly fee challans</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Month</th><th class="ta-r">Payable</th><th class="ta-r">Concession</th><th class="ta-r">Paid</th><th class="ta-r">Balance</th><th class="ta-r">Status</th><th class="ta-r">Voucher</th></tr></thead>
+    <tbody>
+    {% for c in challans %}
+      <tr>
+        <td><b style="color:var(--ink)">{{ c.label }}</b>{% if c.hostel_fee %}<div class="muted" style="font-size:11px">includes hostel</div>{% endif %}</td>
+        <td class="ta-r num">Rs {{ c.net_payable }}</td>
+        <td class="ta-r num">{% if c.deductions %}<span style="color:#0B5F4F">&minus; Rs {{ c.deductions }}</span>{% else %}&mdash;{% endif %}</td>
+        <td class="ta-r num">Rs {{ c.paid }}</td>
+        <td class="ta-r num">{% if c.balance %}<b style="color:#922A1B">Rs {{ c.balance }}</b>{% else %}Rs 0{% endif %}</td>
+        <td class="ta-r">{% if c.status == 'Paid' %}<span class="pill pill-paid">Paid</span>{% elif c.status == 'Waived' %}<span class="pill pill-paid">Waived</span>{% elif c.is_overdue %}<span class="pill pill-overdue">Overdue</span>{% elif c.status == 'Partial' %}<span class="pill pill-info">Partial</span>{% else %}<span class="pill pill-pending">Unpaid</span>{% endif %}</td>
+        <td class="ta-r" style="white-space:nowrap"><a class="act-btn ghost" href="{% url 'my_fee_voucher' c.id %}" style="text-decoration:none">View</a>{% if online_enabled and c.balance %} <a class="act-btn" href="{% url 'pay_online' c.id %}" style="text-decoration:none">Pay online</a>{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="muted">No fee challans have been issued yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+<div class="card">
+  <div class="sec-head"><h3>Payment history</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>For</th><th class="ta-r">Amount</th><th class="ta-r">Mode</th><th class="ta-r">Receipt</th></tr></thead>
+    <tbody>
+    {% for p in payments %}
+      <tr><td>{{ p.date }}</td><td>{{ p.month }}</td><td class="ta-r num">Rs {{ p.amount }}</td><td class="ta-r">{{ p.mode }}</td><td class="ta-r num">{{ p.receipt_no }}</td></tr>
+    {% empty %}
+      <tr><td colspan="5" class="muted">No payments yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% else %}
+<div class="card card-pad"><p class="muted">No student linked to this account.</p></div>
+{% endif %}
+{% endblock %}

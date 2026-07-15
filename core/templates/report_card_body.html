@@ -1,0 +1,66 @@
+<div class="card card-pad rc-sheet report-card-sheet" style="max-width:720px;margin:0 auto">
+  <div style="text-align:center;border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:16px">
+    <div class="serif" style="font-size:26px;font-weight:700;color:var(--ink)">{{ school.name|default:"Roshni Public School" }}</div>
+    <div class="muted" style="font-size:13px">{{ school.campus }}{% if school.session %} &middot; Session {{ school.session }}{% endif %}</div>
+    <div style="margin-top:8px;display:inline-block;background:var(--ink);color:#fff;padding:4px 16px;border-radius:6px;font-weight:600;letter-spacing:.04em">REPORT CARD &middot; {{ exam.name }}</div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;margin-bottom:16px">
+    <div class="rc-row"><span class="rc-l">Name</span><span class="rc-v">{{ student.name }}</span></div>
+    <div class="rc-row"><span class="rc-l">Class</span><span class="rc-v">{{ student.classroom|default:"&mdash;" }}</span></div>
+    <div class="rc-row"><span class="rc-l">Roll no</span><span class="rc-v">{{ student.roll_no|default:"&mdash;" }}</span></div>
+    <div class="rc-row"><span class="rc-l">Admission no</span><span class="rc-v">{{ student.admission_no }}</span></div>
+    <div class="rc-row"><span class="rc-l">Father's name</span><span class="rc-v">{{ student.father_name|default:student.guardian_name|default:"&mdash;" }}</span></div>
+    <div class="rc-row"><span class="rc-l">Date of birth</span><span class="rc-v">{{ student.date_of_birth|date:"d M Y"|default:"&mdash;" }}</span></div>
+  </div>
+
+  <div class="table-wrap"><table>
+    <thead><tr><th>Subject</th><th class="ta-r">Obtained</th><th class="ta-r">Total</th><th class="ta-r">%</th><th class="ta-r">Grade</th><th class="ta-r">Result</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><b style="color:var(--ink)">{{ r.subject }}</b></td>
+        <td class="ta-r num">{{ r.obtained }}</td>
+        <td class="ta-r num">{{ r.total }}</td>
+        <td class="ta-r num">{{ r.pct }}%</td>
+        <td class="ta-r"><b>{{ r.grade }}</b></td>
+        <td class="ta-r">{% if r.ok %}<span class="pill pill-paid">Pass</span>{% else %}<span class="pill pill-overdue">Fail</span>{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="dempty">No marks entered for this exam yet.</td></tr>
+    {% endfor %}
+    {% if rows %}
+      <tr style="border-top:2px solid var(--line-strong)">
+        <td><b style="color:var(--ink)">Total</b></td>
+        <td class="ta-r num"><b>{{ obtained }}</b></td>
+        <td class="ta-r num"><b>{{ maximum }}</b></td>
+        <td class="ta-r num"><b>{{ pct }}%</b></td>
+        <td class="ta-r"><b>{{ overall_grade }}</b></td>
+        <td class="ta-r">{% if result == 'Pass' %}<span class="pill pill-paid">Pass</span>{% elif result == 'Fail' %}<span class="pill pill-overdue">Fail</span>{% else %}&mdash;{% endif %}</td>
+      </tr>
+    {% endif %}
+    </tbody>
+  </table></div>
+
+  {% if rows %}
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px">
+    <div class="rc-stat"><div class="rc-cap">Percentage</div><div class="rc-big serif">{{ pct }}%</div></div>
+    <div class="rc-stat"><div class="rc-cap">Grade</div><div class="rc-big serif">{{ overall_grade }}</div></div>
+    <div class="rc-stat"><div class="rc-cap">Position</div><div class="rc-big serif">{% if position %}{{ position }}<span style="font-size:14px;color:var(--muted)"> / {{ total_ranked }}</span>{% else %}&mdash;{% endif %}</div></div>
+    <div class="rc-stat" style="background:{% if result == 'Pass' %}#E3F1EC{% elif result == 'Fail' %}#FBE7E2{% else %}var(--paper){% endif %}">
+      <div class="rc-cap">Result</div>
+      <div class="rc-big serif" style="color:{% if result == 'Pass' %}#0E7C66{% elif result == 'Fail' %}#C0432F{% else %}var(--muted){% endif %}">{{ result }}</div>
+    </div>
+  </div>
+  {% if failed %}
+  <p class="muted" style="font-size:12.5px;margin-top:12px">Passing mark is {{ pass_mark }}%. Subject(s) below passing: <b style="color:#C0432F">{{ failed|join:", " }}</b>.</p>
+  {% else %}
+  <p class="muted" style="font-size:12.5px;margin-top:12px">Passing mark is {{ pass_mark }}% in each subject.</p>
+  {% endif %}
+
+  <div style="display:flex;justify-content:space-between;margin-top:40px;gap:40px">
+    <div style="flex:1;border-top:1px solid var(--line-strong);padding-top:6px;text-align:center;font-size:13px" class="muted">Class Teacher</div>
+    <div style="flex:1;border-top:1px solid var(--line-strong);padding-top:6px;text-align:center;font-size:13px" class="muted">Principal</div>
+  </div>
+  {% endif %}
+</div>

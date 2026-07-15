@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% block heading %}School Settings{% endblock %}
+{% block content %}
+<div class="welcome"><h1>School Settings</h1><p>These details appear on certificates, ID cards and reports, and control promotion and pass/fail.</p></div>
+
+<div class="card card-pad" style="max-width:640px">
+  <h3 style="margin-bottom:14px">School profile</h3>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <div class="frow"><label>School name</label><input name="name" value="{{ school.name }}" required></div>
+    <div class="frow"><label>Campus / address</label><input name="campus" value="{{ school.campus }}"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+      <div class="frow"><label>Academic session</label><input name="session" value="{{ school.session }}" placeholder="e.g. 2025-26"></div>
+      <div class="frow"><label>Final / graduating grade</label><input name="final_grade" value="{{ school.final_grade }}" placeholder="e.g. 10"></div>
+    </div>
+    <div class="frow" style="max-width:240px"><label>Pass mark (%)</label><input type="number" name="pass_mark" min="0" max="100" value="{{ school.pass_mark }}"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+      <div class="frow"><label>Monthly hostel fee (Rs)</label><input type="number" name="hostel_fee" min="0" value="{{ school.hostel_fee }}"></div>
+      <div class="frow"><label>Auto late fee (Rs)</label><input type="number" name="late_fee_amount" min="0" value="{{ school.late_fee_amount }}"></div>
+    </div>
+    <div class="frow" style="max-width:280px"><label>Default password for new logins</label><input name="default_password" value="{{ school.default_password }}"><p class="muted" style="font-size:12px;margin-top:5px">New student/parent/staff logins get this password; each person changes it after signing in.</p></div>
+    <h3 style="margin:18px 0 12px;font-size:15px">Branding</h3>
+    <div class="frow">
+      <label>School logo</label>
+      {% if brand_logo %}
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+          <img src="{% url 'school_logo' %}" alt="logo" style="width:48px;height:48px;border-radius:10px;object-fit:cover;border:1px solid var(--line)">
+          <label style="font-size:12.5px;font-weight:600;color:var(--overdue);text-transform:none;letter-spacing:0"><input type="checkbox" name="remove_logo"> Remove current logo</label>
+        </div>
+      {% endif %}
+      <input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml">
+      <p class="muted" style="font-size:12px;margin-top:5px">PNG/JPG/SVG. Appears in the sidebar and on the login page.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+      <div class="frow"><label>Primary colour (headers)</label><input type="color" name="primary_color" value="{{ school.primary_color }}" style="width:64px;height:40px;padding:2px"></div>
+      <div class="frow"><label>Accent colour (buttons)</label><input type="color" name="accent_color" value="{{ school.accent_color }}" style="width:64px;height:40px;padding:2px"></div>
+    </div>
+    <button class="btn-primary btn-auto" type="submit">Save settings</button>
+  </form>
+  <p class="muted" style="font-size:12.5px;margin-top:12px">The <b>final grade</b> decides which class graduates at year-end promotion. The <b>pass mark</b> is the minimum percentage counted as a pass in results. <b>Auto late fee</b> is added to a challan by the daily job once it is overdue (0 = off). Your <b>logo</b> and <b>colours</b> theme the whole system.</p>
+</div>
+
+<div class="card card-pad" style="max-width:640px;margin-top:20px">
+  <h3 style="margin-bottom:6px">Fee heads</h3>
+  <p class="muted" style="font-size:13px;margin:0 0 14px">Extra charges added to challans automatically, on top of monthly tuition. <b>Every month</b> repeats on each challan; <b>one-time</b> is added only on the student's first challan (e.g. Admission Fee, Security Deposit); <b>once a year</b> is added on their first challan of each year (e.g. Annual Charges, Exam Fee).</p>
+
+  <div class="table-wrap" style="margin-bottom:16px"><table>
+    <thead><tr><th>Head</th><th class="ta-r">Amount</th><th>When</th><th>Status</th><th class="ta-c">Actions</th></tr></thead>
+    <tbody>
+    {% for h in fee_heads %}
+      <tr>
+        <td><b style="color:var(--ink)">{{ h.name }}</b></td>
+        <td class="ta-r num">Rs {{ h.amount }}</td>
+        <td>{{ h.get_frequency_display }}</td>
+        <td>{% if h.active %}<span class="pill pill-paid">Active</span>{% else %}<span class="pill pill-pending">Off</span>{% endif %}</td>
+        <td class="ta-c" style="white-space:nowrap">
+          <form method="post" class="inline-form">{% csrf_token %}
+            <input type="hidden" name="fee_action" value="toggle_head">
+            <input type="hidden" name="head_id" value="{{ h.id }}">
+            <button class="act-btn ghost" type="submit">{% if h.active %}Turn off{% else %}Turn on{% endif %}</button>
+          </form>
+          <form method="post" class="inline-form" onsubmit="return confirm('Remove fee head {{ h.name }}? Existing challans keep their charges.');">{% csrf_token %}
+            <input type="hidden" name="fee_action" value="delete_head">
+            <input type="hidden" name="head_id" value="{{ h.id }}">
+            <button class="act-btn ghost" type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="muted">No fee heads yet. Add one below &mdash; only monthly tuition is charged until then.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="fee_action" value="add_head">
+    <div style="display:grid;grid-template-columns:2fr 1fr 1.4fr;gap:0 12px">
+      <div class="frow"><label>Head name</label><input name="head_name" placeholder="e.g. Admission Fee" required></div>
+      <div class="frow"><label>Amount (Rs)</label><input type="number" name="head_amount" min="0" placeholder="0"></div>
+      <div class="frow"><label>When to charge</label><select name="head_frequency">{% for val, lbl in head_frequencies %}<option value="{{ val }}">{{ lbl }}</option>{% endfor %}</select></div>
+    </div>
+    <button class="btn-primary btn-auto" type="submit">Add fee head</button>
+  </form>
+</div>
+
+<div class="card card-pad" style="max-width:640px;margin-top:20px">
+  <h3 style="margin-bottom:6px">Backup &amp; data safety</h3>
+  <p class="muted" style="font-size:13px;margin:0 0 14px">Download a full copy of your school's database in one click &mdash; keep it on a USB drive, email it to yourself, or save it to Google Drive. This is your safety net if the computer is lost or damaged.</p>
+  <a class="btn-primary btn-auto" href="{% url 'backup_download' %}" style="text-decoration:none">Download backup now</a>
+  <a class="btn-ghost btn-auto" href="{% url 'restore_db' %}" style="text-decoration:none;margin-left:8px">Restore from backup…</a>
+  <p class="hint-inline" style="margin-top:14px">For automatic daily backups, schedule the <b>backup_db</b> command (see AUTOMATION.md). Set <b>ROSHNI_BACKUP_DIR</b> to also copy each backup off-site. <b>Restore</b> replaces all current data with a backup file (a safety copy is kept first).</p>
+</div>
+
+<div class="card card-pad" style="max-width:640px;margin-top:20px">
+  <h3 style="margin-bottom:6px">SMS &amp; notifications</h3>
+  <p class="muted" style="font-size:13px;margin:0 0 14px">Turn on real messages for absent alerts, fee receipts and reminders. Leave on <b>Off — log only</b> to test safely without sending anything (messages still appear in the Communication log).</p>
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="sms_action" value="save_sms">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+      <div class="frow"><label>Provider</label><select name="sms_backend">{% for val, lbl in sms_backends %}<option value="{{ val }}" {% if school.sms_backend == val %}selected{% endif %}>{{ lbl }}</option>{% endfor %}</select></div>
+      <div class="frow"><label>Country code</label><input name="sms_country_code" value="{{ school.sms_country_code }}" placeholder="+92" style="max-width:120px"></div>
+    </div>
+
+    <div style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px">
+      <p class="muted" style="font-size:12px;margin:0 0 8px"><b>HTTP gateway</b> (also used for most WhatsApp providers) &mdash; use <code>{to}</code> and <code>{text}</code> placeholders in the URL.</p>
+      <div class="frow"><label>Gateway URL</label><input name="sms_http_url" value="{{ school.sms_http_url }}" placeholder="https://gateway.example/send?to={to}&msg={text}"></div>
+      <div class="frow" style="max-width:160px"><label>HTTP method</label><select name="sms_http_method"><option value="GET" {% if school.sms_http_method == 'GET' %}selected{% endif %}>GET</option><option value="POST" {% if school.sms_http_method == 'POST' %}selected{% endif %}>POST</option></select></div>
+    </div>
+
+    <div style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px">
+      <p class="muted" style="font-size:12px;margin:0 0 8px"><b>Twilio</b> &mdash; only if you use Twilio.</p>
+      <div class="frow"><label>Account SID</label><input name="sms_twilio_sid" value="{{ school.sms_twilio_sid }}"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+        <div class="frow"><label>Auth token</label><input name="sms_twilio_token" value="{{ school.sms_twilio_token }}"></div>
+        <div class="frow"><label>From number</label><input name="sms_twilio_from" value="{{ school.sms_twilio_from }}" placeholder="+1..."></div>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px">
+      <p class="muted" style="font-size:12px;margin:0 0 8px"><b>Automatic alerts</b> &mdash; when to message guardians.</p>
+      <label style="display:block;font-size:13.5px;margin-bottom:6px;text-transform:none;letter-spacing:0"><input type="checkbox" name="notify_absent" {% if school.notify_absent %}checked{% endif %}> When a student is marked absent</label>
+      <label style="display:block;font-size:13.5px;margin-bottom:6px;text-transform:none;letter-spacing:0"><input type="checkbox" name="notify_payment" {% if school.notify_payment %}checked{% endif %}> When a fee payment is received</label>
+      <label style="display:block;font-size:13.5px;text-transform:none;letter-spacing:0"><input type="checkbox" name="notify_feedue" {% if school.notify_feedue %}checked{% endif %}> Fee reminders / due alerts</label>
+    </div>
+
+    <button class="btn-primary btn-auto" type="submit" style="margin-top:14px">Save SMS settings</button>
+  </form>
+
+  <form method="post" style="border-top:1px solid var(--line);margin-top:16px;padding-top:14px">{% csrf_token %}
+    <input type="hidden" name="sms_action" value="test_sms">
+    <div class="frow" style="max-width:280px"><label>Send a test message to</label><input name="test_phone" placeholder="03xx-xxxxxxx"></div>
+    <button class="act-btn" type="submit">Send test message</button>
+    <p class="hint-inline" style="margin-top:10px">Current mode: <b>{{ school.get_sms_backend_display }}</b>. In test mode the message is only logged, not sent.</p>
+  </form>
+</div>
+
+<div class="card card-pad" style="max-width:640px;margin-top:20px">
+  <h3 style="margin-bottom:6px">WhatsApp notifications</h3>
+  <p class="muted" style="font-size:13px;margin:0 0 14px">Send the same alerts (absent, fee receipt, reminders) over WhatsApp as well as, or instead of, SMS. Needs a WhatsApp Business provider and internet. Leave off for LAN-only use &mdash; alerts then stay on SMS/console.</p>
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="wa_action" value="save_whatsapp">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+      <div class="frow"><label>Send alerts via</label><select name="notify_channel">{% for val, lbl in notify_channels %}<option value="{{ val }}" {% if school.notify_channel == val %}selected{% endif %}>{{ lbl }}</option>{% endfor %}</select></div>
+      <div class="frow"><label>WhatsApp provider</label><select name="whatsapp_provider">{% for val, lbl in wa_providers %}<option value="{{ val }}" {% if school.whatsapp_provider == val %}selected{% endif %}>{{ lbl }}</option>{% endfor %}</select></div>
+    </div>
+    <label style="display:block;font-size:13.5px;margin-bottom:12px;text-transform:none;letter-spacing:0"><input type="checkbox" name="whatsapp_enabled" {% if school.whatsapp_enabled %}checked{% endif %}> <b>Turn WhatsApp sending on</b> (off = log only / test mode)</label>
+
+    <div style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px">
+      <p class="muted" style="font-size:12px;margin:0 0 8px"><b>Twilio WhatsApp</b> &mdash; reuses the Twilio SID/token above; set your WhatsApp sender number.</p>
+      <div class="frow" style="max-width:260px"><label>WhatsApp sender (Twilio)</label><input name="whatsapp_from" value="{{ school.whatsapp_from }}" placeholder="+14155238886"></div>
+    </div>
+    <div style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px">
+      <p class="muted" style="font-size:12px;margin:0 0 8px"><b>Meta WhatsApp Cloud API</b> &mdash; only if you use Meta directly.</p>
+      <div class="frow"><label>Access token</label><input name="whatsapp_token" value="{{ school.whatsapp_token }}"></div>
+      <div class="frow" style="max-width:260px"><label>Phone number ID</label><input name="whatsapp_phone_id" value="{{ school.whatsapp_phone_id }}"></div>
+    </div>
+    <button class="btn-primary btn-auto" type="submit" style="margin-top:14px">Save WhatsApp settings</button>
+  </form>
+
+  <form method="post" style="border-top:1px solid var(--line);margin-top:16px;padding-top:14px">{% csrf_token %}
+    <input type="hidden" name="wa_action" value="test_whatsapp">
+    <div class="frow" style="max-width:280px"><label>Send a test WhatsApp to</label><input name="test_phone" placeholder="03xx-xxxxxxx"></div>
+    <button class="act-btn" type="submit">Send test WhatsApp</button>
+  </form>
+</div>
+
+<div class="card card-pad" style="max-width:640px;margin-top:20px">
+  <h3 style="margin-bottom:6px">Online fee payments</h3>
+  <p class="muted" style="font-size:13px;margin:0 0 14px">Let parents pay fees online. <b>Bank transfer</b> works on any setup: parents send money to your account and submit the reference, which Accounts verifies. <b>JazzCash / Easypaisa</b> need a merchant account and a public (internet) HTTPS deployment &mdash; leave them off for LAN use.</p>
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="pay_action" value="save_payments">
+    <label style="display:block;font-size:13.5px;margin-bottom:12px;text-transform:none;letter-spacing:0"><input type="checkbox" name="online_payments_enabled" {% if school.online_payments_enabled %}checked{% endif %}> <b>Turn online payments on</b> (shows a “Pay online” button to parents)</label>
+
+    <div style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px">
+      <label style="display:block;font-size:13.5px;margin-bottom:8px;text-transform:none;letter-spacing:0"><input type="checkbox" name="pay_bank_enabled" {% if school.pay_bank_enabled %}checked{% endif %}> <b>Bank transfer</b> (recommended)</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+        <div class="frow"><label>Bank name</label><input name="pay_bank_name" value="{{ school.pay_bank_name }}" placeholder="e.g. Meezan Bank"></div>
+        <div class="frow"><label>Account title</label><input name="pay_bank_title" value="{{ school.pay_bank_title }}"></div>
+        <div class="frow"><label>Account number</label><input name="pay_bank_account" value="{{ school.pay_bank_account }}"></div>
+        <div class="frow"><label>IBAN</label><input name="pay_bank_iban" value="{{ school.pay_bank_iban }}" placeholder="PK.."></div>
+      </div>
+      <div class="frow"><label>Instructions for parents (optional)</label><input name="pay_bank_instructions" value="{{ school.pay_bank_instructions }}" placeholder="e.g. write the student name in the transfer remarks"></div>
+    </div>
+
+    <div style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px">
+      <label style="display:block;font-size:13.5px;margin-bottom:8px;text-transform:none;letter-spacing:0"><input type="checkbox" name="pay_jazzcash_enabled" {% if school.pay_jazzcash_enabled %}checked{% endif %}> <b>JazzCash</b> (needs merchant account + online deployment)</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+        <div class="frow"><label>Merchant ID</label><input name="pay_jazzcash_merchant" value="{{ school.pay_jazzcash_merchant }}"></div>
+        <div class="frow"><label>Password</label><input name="pay_jazzcash_password" value="{{ school.pay_jazzcash_password }}"></div>
+      </div>
+      <div class="frow"><label>Integrity salt</label><input name="pay_jazzcash_salt" value="{{ school.pay_jazzcash_salt }}"></div>
+    </div>
+
+    <div style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px">
+      <label style="display:block;font-size:13.5px;margin-bottom:8px;text-transform:none;letter-spacing:0"><input type="checkbox" name="pay_easypaisa_enabled" {% if school.pay_easypaisa_enabled %}checked{% endif %}> <b>Easypaisa</b> (needs merchant account + online deployment)</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+        <div class="frow"><label>Store ID</label><input name="pay_easypaisa_store" value="{{ school.pay_easypaisa_store }}"></div>
+        <div class="frow"><label>Hash key</label><input name="pay_easypaisa_hash" value="{{ school.pay_easypaisa_hash }}"></div>
+      </div>
+    </div>
+
+    <button class="btn-primary btn-auto" type="submit" style="margin-top:14px">Save payment settings</button>
+  </form>
+</div>
+
+<div class="card card-pad" style="max-width:640px;margin-top:20px;border:1px solid #F0D6CE">
+  <h3 style="margin-bottom:6px">Testing tools</h3>
+  <p class="muted" style="font-size:13px;margin:0 0 14px">For the trial period only. Both actions <b>replace everything</b> and sign you out &mdash; use them to explore, not on real data you want to keep.</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <form method="post" onsubmit="return confirm('Load DEMO data? This DELETES all current data and fills the system with sample students, staff and fees. You will sign in again with a demo account.');">{% csrf_token %}
+      <input type="hidden" name="data_action" value="load_demo">
+      <button class="act-btn" type="submit">Load demo data</button>
+    </form>
+    <form method="post" onsubmit="return confirm('Start FRESH? This permanently DELETES all data and gives you an empty system (admin / admin123). This cannot be undone.');">{% csrf_token %}
+      <input type="hidden" name="data_action" value="reset_blank">
+      <button class="btn-reject" type="submit">Start fresh (delete all)</button>
+    </form>
+  </div>
+  <p class="hint-inline" style="margin-top:14px">Tip: download a <b>Backup</b> first if there is anything you want to keep.</p>
+</div>
+{% endblock %}

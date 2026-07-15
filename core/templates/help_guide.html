@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block heading %}Help &amp; Guide{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Help &amp; Guide</h1><p>What each part of the system does, and how to use it. New here? Start with the steps below.</p></div>
+
+{% if quickstart %}
+<div class="card card-pad" style="margin-bottom:18px">
+  <h3 style="margin:0 0 12px">Getting started &mdash; your first steps</h3>
+  <ol class="help-steps">
+    {% for step in quickstart %}<li>{{ step|safe }}</li>{% endfor %}
+  </ol>
+  <div class="shot" style="margin-top:14px">Screenshot: the Dashboard after signing in</div>
+</div>
+{% endif %}
+
+{% if paths %}
+<div class="card card-pad" style="margin-bottom:18px">
+  <h3 style="margin:0 0 10px">Where to find things</h3>
+  <p class="muted" style="font-size:13px;margin:0 0 12px">Follow the path (each &rarr; is one click).</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>I want to…</th><th>Go to</th></tr></thead>
+    <tbody>
+    {% for task, path in paths %}
+      <tr><td><b style="color:var(--ink)">{{ task }}</b></td><td class="muted">{{ path }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endif %}
+
+{% if modules %}
+<div class="sec-head" style="margin-bottom:10px"><h3>Every module, explained</h3></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
+  {% for group, items in modules %}
+  <div class="card card-pad">
+    <h3 style="margin:0 0 10px;color:var(--accent)">{{ group|safe }}</h3>
+    {% for name, desc in items %}
+    <div style="margin-bottom:12px">
+      <div style="font-weight:700;color:var(--ink);font-size:14px">{{ name|safe }}</div>
+      <div class="muted" style="font-size:13px;line-height:1.5">{{ desc|safe }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if roadmap %}
+<div class="card card-pad" style="margin-top:18px">
+  <h3 style="margin:0 0 6px">Roadmap &mdash; coming soon</h3>
+  <p class="muted" style="font-size:13px;margin:0 0 12px">Planned next. Everything listed under the modules above is already live.</p>
+  {% for name, desc in roadmap %}
+  <div style="display:flex;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line)">
+    <span class="pill pill-info" style="flex:0 0 auto">Planned</span>
+    <div><b style="color:var(--ink);font-size:13.8px">{{ name }}</b><div class="muted" style="font-size:13px;line-height:1.5">{{ desc }}</div></div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="card card-pad" style="margin-top:18px">
+  <h3 style="margin:0 0 8px">Tips</h3>
+  <ul style="margin:0 0 0 18px;color:var(--muted);font-size:13.5px;line-height:1.7">
+    <li>Every person changes their own password from <b>My account</b> (top-right avatar).</li>
+    <li>Forgot a login? An admin can reset it from <b>Users &amp; Roles</b>.</li>
+    <li>Anything that prints (report cards, challans, registers, receipts) uses your browser’s Print dialog &mdash; choose “Save as PDF” to keep a copy.</li>
+    <li>Keep backups on. Download one anytime from <b>School Settings</b>.</li>
+  </ul>
+</div>
+{% endblock %}

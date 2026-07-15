@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block heading %}My Account{% endblock %}
+{% block content %}
+<div class="welcome">
+  <h1>{% if is_self %}My Account{% else %}Account: {{ target.username }}{% endif %}</h1>
+  <p>{% if is_self %}Upload or change your profile picture. It appears at the top of the screen.{% else %}Managing {{ target.get_full_name|default:target.username }}'s profile picture.{% endif %}</p>
+</div>
+
+<div class="card card-pad" style="max-width:460px">
+  <div style="display:flex;align-items:center;gap:18px;margin-bottom:18px">
+    <div class="acc-ava">
+      {% if prof.photo %}<img src="{% url 'profile_photo' target.id %}?v={{ prof.photo.name|length }}" alt="">{% else %}{{ target.first_name|slice:":1"|default:target.username|slice:":1"|upper }}{% endif %}
+    </div>
+    <div>
+      <b style="color:var(--ink);font-size:16px">{{ target.get_full_name|default:target.username }}</b>
+      <div class="muted" style="font-size:13px">{{ target.profile.get_role_display }} &middot; {{ target.username }}</div>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    {% if not is_self %}<input type="hidden" name="user_id" value="{{ target.id }}">{% endif %}
+    <div class="frow">
+      <label>Profile picture</label>
+      <input type="file" name="photo" accept="image/png,image/jpeg,image/webp,image/gif">
+      <p class="muted" style="font-size:12px;margin-top:5px">PNG/JPG/WebP, up to 4 MB.</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn-primary btn-auto" type="submit">Save picture</button>
+      {% if prof.photo %}<button class="btn-ghost" type="submit" name="remove_photo" value="1">Remove</button>{% endif %}
+    </div>
+  </form>
+
+  {% if is_self %}
+  <hr style="border:none;border-top:1px solid var(--line);margin:18px 0">
+  <a class="act-btn ghost" href="{% url 'password_change' %}">Change password</a>
+  {% endif %}
+</div>
+{% endblock %}

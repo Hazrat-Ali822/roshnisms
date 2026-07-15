@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block heading %}Year-End{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Year-End Promotion</h1><p>Passing students are set to move up, failing students to stay. Review and override per student, then promote. Session: <b>{{ session }}</b> &middot; Pass mark: <b>{{ pass_mark }}%</b>.</p></div>
+
+<div class="stat-grid" style="margin-bottom:16px">
+  <div class="card stat"><span class="s-label">Active students</span><span class="s-val">{{ total_active }}</span></div>
+  <div class="card stat"><span class="s-label">Final grade (graduates)</span><span class="s-val">Class {{ final_grade }}</span></div>
+  <div class="card stat"><span class="s-label">Already graduated</span><span class="s-val">{{ graduated_count }}</span></div>
+</div>
+
+<form method="post">{% csrf_token %}
+<input type="hidden" name="action" value="promote">
+
+{% for g in groups %}
+<div class="card" style="margin-bottom:16px">
+  <div class="sec-head"><h3>{{ g.room }} <span class="muted" style="font-weight:600;font-size:12.5px">&middot; {{ g.count }} student{{ g.count|pluralize }} &rarr; {% if g.is_final %}Graduating{% else %}{{ g.target }}{% if g.new %} (new class){% endif %}{% endif %}</span></h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Roll</th><th>Student</th><th class="ta-r">Last exam</th><th>Result</th><th>Decision</th></tr></thead>
+    <tbody>
+    {% for r in g.rows %}
+      <tr>
+        <td class="num">{{ r.s.roll_no|default:"—" }}</td>
+        <td><b style="color:var(--ink)">{{ r.s.name }}</b></td>
+        <td class="ta-r num">{% if r.has %}{{ r.pct }}%{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td>{% if not r.has %}<span class="muted">No result</span>{% elif r.fail %}<span class="pill pill-overdue">Fail</span>{% else %}<span class="pill pill-paid">Pass</span>{% endif %}</td>
+        <td>
+          <select name="decision_{{ r.s.id }}" class="mini-select" style="width:140px">
+            <option value="promote" {% if r.suggest == 'promote' %}selected{% endif %}>{% if g.is_final %}Graduate{% else %}Promote{% endif %}</option>
+            <option value="detain" {% if r.suggest == 'detain' %}selected{% endif %}>Detain (stay)</option>
+          </select>
+        </td>
+      </tr>
+    {% empty %}<tr><td colspan="5" class="muted">No active students in this class.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% empty %}
+<div class="card card-pad"><p class="muted">No classes with active students.</p></div>
+{% endfor %}
+
+<div class="card card-pad" style="border:1px solid var(--overdue-s)">
+  <h3 style="margin-bottom:6px">Confirm year-end promotion</h3>
+  <p class="muted" style="font-size:12.5px;margin-bottom:12px;line-height:1.55">Promoted students move up one grade (final grade graduates), detained students stay in the same class, and missing target classes are created. Student history (attendance, marks, fees) is kept and any <b>unpaid dues are carried forward</b> into the new session. This cannot be undone &mdash; take a backup first (Settings &rarr; Download backup).</p>
+  <label style="display:block;font-size:13.5px;margin-bottom:12px;text-transform:none;letter-spacing:0"><input type="checkbox" name="approve" value="1"> <b>I approve this promotion</b> (Principal authorisation)</label>
+  <div class="inline-form" style="align-items:flex-end">
+    <span><label class="muted" style="font-size:11px;display:block">New session</label><input name="session" class="mini-select" style="width:140px" value="{{ suggest }}" placeholder="e.g. 2026-27"></span>
+    <button class="btn-primary btn-auto" type="submit" onclick="return confirm('Apply these promotion decisions and start the new session? This cannot be undone.');">Apply &amp; start new session</button>
+  </div>
+</div>
+</form>
+{% endblock %}

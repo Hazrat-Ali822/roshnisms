@@ -1,0 +1,593 @@
+{% extends 'base.html' %}
+{% block heading %}Dashboard{% endblock %}
+{% block content %}
+<div class="welcome">
+  <h1>Welcome back, {{ user.first_name|default:user.username }}</h1>
+  {% if role == 'parent' or role == 'student' %}
+  <p>Here's your day at a glance — classes, tasks, fees and school notices in one place.</p>
+  {% else %}
+  <p>You are signed in as <b>{{ user.profile.get_role_display }}</b>. This is what your role sees.</p>
+  {% endif %}
+</div>
+
+{% if role == 'admin' %}
+  <div class="stat-grid">
+    <div class="card stat">
+      <div class="s-ic" style="background:#E6EEF8;color:#2C5FA8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5M17.5 20a5.6 5.6 0 0 0-2-4.3"/></svg></div>
+      <span class="s-label">Students</span><span class="s-val">{{ student_count }}</span>
+    </div>
+    <div class="card stat">
+      <div class="s-ic" style="background:#F6EEDD;color:#B07D17"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></div>
+      <span class="s-label">Teachers</span><span class="s-val">{{ staff_count }}</span>
+    </div>
+    <div class="card stat">
+      <div class="s-ic" style="background:#E3F1EC;color:#0E7C66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-5h6v5"/></svg></div>
+      <span class="s-label">Classes</span><span class="s-val">{{ class_count }}</span>
+    </div>
+    <div class="card stat">
+      <div class="s-ic" style="background:#EFEAF8;color:#7A4FB0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></div>
+      <span class="s-label">Admissions in progress</span><span class="s-val">{{ admissions_inprogress }}</span>
+    </div>
+  </div>
+
+  <div class="bar no-print" style="margin-bottom:16px">
+    <a class="act-btn" href="{% url 'students_list' %}" style="text-decoration:none">Add Student</a>
+    <a class="act-btn ghost" href="{% url 'staff_list' %}" style="text-decoration:none">Add Staff</a>
+    <a class="act-btn ghost" href="{% url 'admissions' %}" style="text-decoration:none">New Admission</a>
+    <a class="act-btn ghost" href="{% url 'communication' %}" style="text-decoration:none">Send Notice</a>
+    <a class="act-btn ghost" href="{% url 'certificates' %}" style="text-decoration:none">Issue Certificate</a>
+    <a class="act-btn ghost" href="{% url 'visitors' %}" style="text-decoration:none">Log Visitor</a>
+  </div>
+
+  <div class="dash-2col">
+    <div class="card">
+      <div class="sec-head"><h3>Classes &amp; teachers</h3><a class="link" href="{% url 'students_list' %}">All students</a></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Class</th><th class="ta-r">Students</th><th>Class teacher</th></tr></thead>
+        <tbody>
+        {% for c in classes_overview %}
+          <tr><td><b style="color:var(--ink)">{{ c.room }}</b></td><td class="ta-r num">{{ c.count }}</td><td>{{ c.teacher }}</td></tr>
+        {% empty %}
+          <tr><td colspan="3" class="muted">No classes yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="card">
+      <div class="sec-head"><h3>Admissions pipeline</h3><a class="link" href="{% url 'admissions' %}">Manage</a></div>
+      <div class="card-pad">
+        {% for st in pipeline %}
+          <div class="prog-row" style="padding:7px 0"><span><span class="pill stage-{{ st.stage|lower }}">{{ st.stage }}</span></span><b>{{ st.count }}</b></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-pad">
+    <div class="sec-head" style="padding:0 0 6px"><h3>Fee status</h3><a class="link" href="{% url 'students_list' %}">All students</a></div>
+    <div class="chart-row">
+      <div class="chart-canvas-container" style="position:relative; width:120px; height:120px; flex:0 0 120px;">
+        <canvas id="feeStatusChart"></canvas>
+        <div class="donut-center-label" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; pointer-events:none;">
+          <b style="font-size:18px; font-family:'Spectral', serif; color:var(--ink); display:block; line-height:1.1;">{{ fee_donut_total }}</b>
+          <span style="font-size:9.5px; color:var(--muted); font-weight:700; text-transform:uppercase; display:block; margin-top:2px;">Students</span>
+        </div>
+      </div>
+      <div class="donut-legend">
+        {% for s in fee_legend %}
+        <div class="leg-row"><span class="leg-dot" style="background:{{ s.color }}"></span><span class="leg-label">{{ s.label }}</span><b>{{ s.value }}</b><span class="leg-pct">{{ s.pct }}%</span></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-2col">
+    <div class="card">
+      <div class="sec-head"><h3>Admissions to process</h3><a class="link" href="{% url 'admissions' %}">Open</a></div>
+      <div style="padding:8px">
+        {% for a in to_process %}
+          <div class="drow">
+            <div class="drow-b"><b>{{ a.name }}</b><span>{{ a.class_applied }} · {{ a.parent_name }}</span></div>
+            <span class="pill stage-{{ a.stage|lower }}">{{ a.stage }}</span>
+          </div>
+        {% empty %}
+          <div class="dempty">No admissions in progress.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-head"><h3>Recently added students</h3><a class="link" href="{% url 'students_list' %}">All</a></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Name</th><th>Class</th><th>Roll</th></tr></thead>
+        <tbody>
+        {% for s in recent_students %}
+          <tr><td><b style="color:var(--ink)">{{ s.name }}</b></td><td>{{ s.classroom }}</td><td class="num">{{ s.roll_no }}</td></tr>
+        {% empty %}
+          <tr><td colspan="3" class="muted">No students yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+{% elif role == 'teacher' %}
+  <div class="stat-grid">
+    <div class="card stat">
+      <div class="s-ic" style="background:#E6EEF8;color:#2C5FA8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-5h6v5"/></svg></div>
+      <span class="s-label">My classes</span><span class="s-val">{{ class_count }}</span>
+      <span class="s-sub" style="color:#2C5FA8">classes assigned</span>
+    </div>
+    <div class="card stat">
+      <div class="s-ic" style="background:#E3F1EC;color:#0E7C66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5M17.5 20a5.6 5.6 0 0 0-2-4.3"/></svg></div>
+      <span class="s-label">Students</span><span class="s-val">{{ students_total }}</span>
+      <span class="s-sub" style="color:#0E7C66">across your classes</span>
+    </div>
+    <div class="card stat">
+      <div class="s-ic" style="background:#F6EEDD;color:#B07D17"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5h11a2 2 0 0 1 2 2V20H7a2 2 0 0 1-2-2V4.5z"/><path d="M9 8.5h6M9 11.5h6"/></svg></div>
+      <span class="s-label">Subjects</span><span class="s-val">{{ subject_count }}</span>
+      <span class="s-sub" style="color:#B07D17">{{ subject_names|join:", "|default:"—" }}</span>
+    </div>
+    <div class="card stat">
+      <div class="s-ic" style="background:#EFEAF8;color:#7A4FB0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+      <span class="s-label">To grade</span><span class="s-val">{{ pending_count }}</span>
+      <span class="s-sub" style="color:#7A4FB0">submissions waiting</span>
+    </div>
+  </div>
+
+  <div class="bar no-print" style="margin-bottom:16px">
+    <a class="act-btn" href="{% url 'attendance_mark' %}" style="text-decoration:none">Mark Attendance</a>
+    <a class="act-btn ghost" href="{% url 'marks_entry' %}" style="text-decoration:none">Enter Marks</a>
+    <a class="act-btn ghost" href="{% url 'teacher_assignments' %}" style="text-decoration:none">Assignments</a>
+    <a class="act-btn ghost" href="{% url 'teacher_quizzes' %}" style="text-decoration:none">Quizzes</a>
+  </div>
+
+  <div class="dash-2col">
+    <div class="card">
+      <div class="sec-head"><h3>My classes &amp; subjects</h3></div>
+      <div style="padding:10px">
+        {% for mc in my_classes %}
+          <div class="tclass">
+            <div class="tclass-top">
+              <b>{{ mc.room }}</b>
+              {% if mc.is_home %}<span class="chip-home">Class teacher</span>{% endif %}
+              <span class="tclass-count">{{ mc.count }} student{{ mc.count|pluralize }}</span>
+            </div>
+            <div class="tclass-subs">
+              {% for s in mc.subjects %}<span class="subj-chip">{{ s }}</span>{% empty %}<span class="muted" style="font-size:12px">No subject assigned</span>{% endfor %}
+            </div>
+            <div class="tclass-act">
+              <a href="{% url 'marks_entry' %}?class={{ mc.room.id }}">Enter marks</a>
+              <a href="{% url 'attendance_mark' %}?class={{ mc.room.id }}">Attendance</a>
+            </div>
+          </div>
+        {% empty %}
+          <div class="dempty">No classes assigned yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-head"><h3>Needs grading</h3><a class="link" href="{% url 'teacher_assignments' %}">All</a></div>
+      <div style="padding:8px">
+        {% for sub in pending %}
+          <a class="drow drow-link" href="{% url 'teacher_assignments' %}?id={{ sub.assignment.id }}">
+            <div class="drow-ic assignment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h9l4 4V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M14 3.5V8h4"/><path d="M8.5 13h6M8.5 16h3"/></svg></div>
+            <div class="drow-b"><b>{{ sub.student.name }}</b><span>{{ sub.assignment.title }} &middot; {{ sub.assignment.classroom }}</span></div>
+            <span class="drow-go">Grade →</span>
+          </a>
+        {% empty %}
+          <div class="dempty">All caught up — nothing to grade.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% if todays %}
+  <div class="card">
+    <div class="sec-head"><h3>Today's periods</h3></div>
+    <div style="padding:8px">
+      {% for s in todays %}
+        <div class="drow">
+          <span class="drow-time">{{ s.start_time }}</span>
+          <div class="drow-b"><b>{{ s.subject }}</b><span>{{ s.classroom }}{% if s.teacher %} &middot; {{ s.teacher }}{% endif %}</span></div>
+          <span class="drow-go">P{{ s.period }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+{% elif role == 'parent' or role == 'student' %}
+  {% if child %}
+  <div class="card card-pad child-card">
+    <div class="child-ava">{{ child.name|slice:":1"|upper }}</div>
+    <div>
+      <h3>{{ child.name }}</h3>
+      <p class="muted">Class {{ child.classroom }} &middot; Roll {{ child.roll_no }} &middot; Admission {{ child.admission_no }}</p>
+    </div>
+  </div>
+
+  <div class="stat-grid" style="margin-top:16px">
+    <div class="card stat">
+      <div class="s-ic" style="background:#E3F1EC;color:#0E7C66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.2"/><path d="M3.5 9h17M8 2.5v3M16 2.5v3"/><path d="M8.5 14l2 2 3.5-3.7" stroke-linejoin="round"/></svg></div>
+      <span class="s-label">Attendance this month</span>
+      <span class="s-val">{{ att_pct }}%</span>
+      <span class="s-sub" style="color:#0E7C66">{{ att_present }} of {{ att_total }} days present</span>
+    </div>
+    <div class="card stat">
+      <div class="s-ic" style="background:#E6EEF8;color:#2C5FA8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 3.5h9l4 4V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M14 3.5V8h4"/><path d="M8.5 13h6M8.5 16h4"/></svg></div>
+      <span class="s-label">Latest result</span>
+      {% if has_result %}<span class="s-val">{{ result_pct }}%</span><span class="s-sub" style="color:#0E7C66">Grade {{ result_grade }}</span>{% else %}<span class="s-val" style="font-size:18px">Not out yet</span><span class="s-sub muted">No exam published</span>{% endif %}
+    </div>
+    <div class="card stat">
+      <div class="s-ic" style="background:#F6EEDD;color:#B07D17"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="6" width="18" height="13" rx="2.4"/><path d="M16 12.5h2"/><path d="M3 9h13a2 2 0 0 1 0 4H3"/></svg></div>
+      <span class="s-label">Fees outstanding</span>
+      {% if fee_outstanding %}<span class="s-val">Rs {{ fee_outstanding }}</span><span class="s-sub" style="color:#B07D17">{{ fee_months_pending }} month{{ fee_months_pending|pluralize }} pending</span>{% else %}<span class="s-val" style="font-size:21px">Clear</span><span class="s-sub" style="color:#0E7C66">Nothing due</span>{% endif %}
+    </div>
+    <div class="card stat">
+      <div class="s-ic" style="background:#EFEAF8;color:#7A4FB0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+      <span class="s-label">Pending tasks</span>
+      <span class="s-val">{{ todo_count }}</span>
+      <span class="s-sub" style="color:#7A4FB0">assignments &amp; quizzes</span>
+    </div>
+  </div>
+
+  {% if role == 'student' %}
+  <div class="dash-2col">
+    <div class="card">
+      <div class="sec-head"><h3>Today's classes</h3><a class="link" href="{% url 'my_timetable' %}">Full week</a></div>
+      <div style="padding:8px">
+        {% for s in todays_classes %}
+          <div class="drow">
+            <span class="drow-time">{{ s.start_time }}</span>
+            <div class="drow-b"><b>{{ s.subject }}</b>{% if s.teacher %}<span>{{ s.teacher }}</span>{% endif %}</div>
+          </div>
+        {% empty %}
+          <div class="dempty">No classes scheduled today.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-head"><h3>Things to do</h3></div>
+      <div style="padding:8px">
+        {% for t in todo %}
+          <a class="drow drow-link" href="{{ t.url }}">
+            <span class="drow-ic {{ t.kind }}">{% if t.kind == 'assignment' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="6" y="4.5" width="12" height="16" rx="2"/><path d="M9 4.5V3.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 11h6M9 14.5h4"/></svg>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="4.5" y="3.5" width="15" height="17" rx="2"/><path d="M9 9.2a1.8 1.8 0 1 1 3 1.3c-.7.5-1 .8-1 1.7"/><path d="M11 15.3v.1"/></svg>{% endif %}</span>
+            <div class="drow-b"><b>{{ t.title }}</b><span>{{ t.sub }}</span></div>
+            <span class="drow-go">{{ t.action }} &rarr;</span>
+          </a>
+        {% empty %}
+          <div class="dempty">You're all caught up — nothing pending.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="dash-2col">
+    <div class="card">
+      <div class="sec-head"><h3>Fees</h3><a class="link" href="{% url 'my_fees' %}">View / pay</a></div>
+      <div class="card-pad">
+        <div class="prog-row"><span>Total payable</span><b>Rs {{ fee_payable }}</b></div>
+        <div class="prog-row"><span>Paid so far</span><b style="color:#0B5F4F">Rs {{ fee_paid_total }}</b></div>
+        <div class="prog-row" style="border-top:1px solid var(--line);margin-top:6px;padding-top:9px"><span><b style="color:#15294D">Outstanding</b></span><b style="color:#922A1B;font-size:15px">Rs {{ fee_outstanding }}</b></div>
+        {% if fee_months_pending %}<div class="prog-row"><span>Months pending</span><b>{{ fee_months_pending }}</b></div>{% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-head"><h3>{{ child.name }}'s pending work</h3><span class="muted" style="font-size:12px">{{ todo_count }} item{{ todo_count|pluralize }}</span></div>
+      <div style="padding:8px">
+        {% for t in todo %}
+          <div class="drow">
+            <span class="drow-ic {{ t.kind }}">{% if t.kind == 'assignment' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="6" y="4.5" width="12" height="16" rx="2"/><path d="M9 4.5V3.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 11h6M9 14.5h4"/></svg>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="4.5" y="3.5" width="15" height="17" rx="2"/><path d="M9 9.2a1.8 1.8 0 1 1 3 1.3c-.7.5-1 .8-1 1.7"/><path d="M11 15.3v.1"/></svg>{% endif %}</span>
+            <div class="drow-b"><b>{{ t.title }}</b><span>{{ t.sub }}</span></div>
+            <span class="drow-go" style="color:#7A4FB0;text-transform:capitalize">{{ t.kind }}</span>
+          </div>
+        {% empty %}
+          <div class="dempty">Nothing pending — all caught up.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <p class="hint-inline" style="margin-top:14px">This is a read-only guardian summary. Please remind {{ child.name }} to complete any pending work on time.</p>
+  {% endif %}
+
+  <div class="card" style="margin-top:16px">
+    <div class="sec-head"><h3>School notices</h3></div>
+    {% for a in notices %}
+      <div class="notice">
+        <div class="notice-top"><b>{{ a.title }}</b><time>{{ a.created|date:"d M Y" }}</time></div>
+        {% if a.body %}<p>{{ a.body }}</p>{% endif %}
+      </div>
+    {% empty %}
+      <div class="notice muted">No notices right now.</div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card card-pad"><p class="muted">No student is linked to this account. Please contact the school office.</p></div>
+  {% endif %}
+
+{% elif role == 'finance' %}
+  <div class="stat-grid">
+    <div class="card stat"><span class="s-label">Paid</span><span class="s-val">{{ paid }}</span></div>
+    <div class="card stat"><span class="s-label">Pending</span><span class="s-val">{{ pending }}</span></div>
+    <div class="card stat"><span class="s-label">Overdue</span><span class="s-val">{{ overdue }}</span></div>
+  </div>
+  <div class="card">
+    <div class="sec-head"><h3>Fee status by student</h3></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Name</th><th>Class</th><th>Monthly fee</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for s in students %}
+        <tr><td>{{ s.name }}</td><td>{{ s.classroom }}</td>
+        <td>Rs {{ s.classroom.monthly_fee }}</td>
+        <td><span class="pill pill-{{ s.fee_status|lower }}">{{ s.fee_status }}</span></td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+
+{% elif role == 'owner' %}
+  <div class="stat-grid">
+    <div class="card stat">
+      <div class="s-ic" style="background:#E6EEF8;color:#2C5FA8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5M17.5 20a5.6 5.6 0 0 0-2-4.3"/></svg></div>
+      <span class="s-label">Total students</span><span class="s-val">{{ o_students }}</span>
+    </div>
+    <div class="card stat">
+      <div class="s-ic" style="background:#E3F1EC;color:#0E7C66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-5h6v5"/></svg></div>
+      <span class="s-label">Classes</span><span class="s-val">{{ o_classes }}</span>
+    </div>
+    <div class="card stat">
+      <div class="s-ic" style="background:#F6EEDD;color:#B07D17"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></div>
+      <span class="s-label">Teachers</span><span class="s-val">{{ o_teachers }}</span>
+    </div>
+    <div class="card stat">
+      <div class="s-ic" style="background:#FBE7E2;color:#C0432F"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="6" width="18" height="13" rx="2.4"/><path d="M16 12.5h2"/><path d="M3 9h13a2 2 0 0 1 0 4H3"/></svg></div>
+      <span class="s-label">Outstanding fees</span><span class="s-val">Rs {{ o_outstanding }}</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-head"><h3>Financial summary &mdash; {{ o_month_label }}</h3><a class="link" href="{% url 'owner_finance' %}">Details</a></div>
+    <div class="card-pad">
+      <div class="prog-row"><span>Fees collected this month</span><b style="color:#0B5F4F">Rs {{ o_collected }}</b></div>
+      <div class="prog-row"><span>Expenses this month</span><b style="color:#922A1B">Rs {{ o_expenses }}</b></div>
+      <div class="prog-row" style="border-top:1px solid var(--line);margin-top:6px;padding-top:9px"><span><b style="color:#15294D">Net this month</b></span><b style="color:{% if o_net >= 0 %}#0B5F4F{% else %}#922A1B{% endif %};font-size:15px">Rs {{ o_net }}</b></div>
+      <div class="prog-row"><span>Total outstanding (all months)</span><b style="color:#922A1B">Rs {{ o_outstanding }}</b></div>
+    </div>
+  </div>
+
+  <div class="card card-pad">
+    <div class="sec-head" style="padding:0 0 6px"><h3>Collections vs outstanding</h3><a class="link" href="{% url 'owner_finance' %}">Finance</a></div>
+    <div class="chart-row">
+      <div class="chart-canvas-container" style="position:relative; width:120px; height:120px; flex:0 0 120px;">
+        <canvas id="ownerFinChart"></canvas>
+        <div class="donut-center-label" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; pointer-events:none;">
+          <b style="font-size:18px; font-family:'Spectral', serif; color:var(--ink); display:block; line-height:1.1;">{{ o_fin_rate }}%</b>
+          <span style="font-size:9.5px; color:var(--muted); font-weight:700; text-transform:uppercase; display:block; margin-top:2px;">Collected</span>
+        </div>
+      </div>
+      <div class="donut-legend">
+        {% for s in o_fin_legend %}
+        <div class="leg-row"><span class="leg-dot" style="background:{{ s.color }}"></span><span class="leg-label">{{ s.label }}</span><b>Rs {{ s.value }}</b><span class="leg-pct">{{ s.pct }}%</span></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-2col">
+    <div class="card">
+      <div class="sec-head"><h3>Enrollment by class</h3></div>
+      <div class="card-pad">
+        {% for e in o_enrollment %}
+          <div style="margin-bottom:13px">
+            <div class="prog-row" style="padding:0 0 5px"><span><b style="color:#15294D">{{ e.room }}</b></span><b>{{ e.count }} student{{ e.count|pluralize }}</b></div>
+            <div class="pbar"><span style="width:{{ e.pct }}%"></span></div>
+          </div>
+        {% empty %}
+          <div class="dempty">No classes yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-head"><h3>Top defaulters</h3><a class="link" href="{% url 'owner_finance' %}">All</a></div>
+      <div style="padding:8px">
+        {% for d in o_defaulters %}
+          <div class="drow">
+            <div class="drow-b"><b>{{ d.student.name }}</b><span>{{ d.student.classroom }}</span></div>
+            <span class="drow-go" style="color:#922A1B">Rs {{ d.outstanding }}</span>
+          </div>
+        {% empty %}
+          <div class="dempty">No outstanding fees — everyone's paid.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+{% elif role == 'principal' %}
+  <div class="stat-grid">
+    <div class="card stat">
+      <div class="s-ic" style="background:#E6EEF8;color:#2C5FA8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5M17.5 20a5.6 5.6 0 0 0-2-4.3"/></svg></div>
+      <span class="s-label">Students</span><span class="s-val">{{ p_students }}</span>
+    </div>
+    <div class="card stat">
+      <div class="s-ic" style="background:#F6EEDD;color:#B07D17"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></div>
+      <span class="s-label">Teachers</span><span class="s-val">{{ p_teachers }}</span>
+    </div>
+    <div class="card stat">
+      <div class="s-ic" style="background:#EFEAF8;color:#7A4FB0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.2"/><path d="M3.5 9h17M8 2.5v3M16 2.5v3"/><path d="M8.5 14l2 2 3.5-3.7" stroke-linejoin="round"/></svg></div>
+      <span class="s-label">Present today</span>
+      {% if p_total %}<span class="s-val">{{ p_att_pct }}%</span><span class="s-sub" style="color:#0E7C66">{{ p_present }} of {{ p_total }}</span>{% else %}<span class="s-val" style="font-size:18px">Not marked</span><span class="s-sub muted">no attendance yet</span>{% endif %}
+    </div>
+    <div class="card stat">
+      <div class="s-ic" style="background:#E3F1EC;color:#0E7C66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11.5l2 2 4-4"/><path d="M12 3l2.1 1.4 2.5-.2.9 2.3 2.1 1.4-.6 2.5.6 2.5-2.1 1.4-.9 2.3-2.5-.2L12 21l-2.1-1.4-2.5.2-.9-2.3L4.4 16l.6-2.5-.6-2.5 2.1-1.4.9-2.3 2.5.2z"/></svg></div>
+      <span class="s-label">Awaiting approval</span><span class="s-val">{{ p_awaiting }}</span><span class="s-sub muted">to review</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-head"><h3>Latest exam result{% if latest_exam_name %} &mdash; {{ latest_exam_name }}{% endif %}</h3><a class="link" href="{% url 'principal_academics' %}">Academics</a></div>
+    <div class="card-pad">
+      {% if result_total %}
+        <div class="prog-row"><span>Students graded</span><b>{{ result_total }}</b></div>
+        <div class="prog-row"><span style="color:#0B5F4F">Passed (&ge;50%)</span><b style="color:#0B5F4F">{{ pass_count }} of {{ result_total }}</b></div>
+        <div class="prog-row"><span>School average</span><b>{{ avg_pct }}%</b></div>
+        <div class="pbar" style="margin-top:10px"><span style="width:{{ pass_pct }}%"></span></div>
+        <div class="muted" style="font-size:12px;margin-top:7px">{{ pass_pct }}% pass rate</div>
+      {% else %}
+        <div class="dempty">No exam results recorded yet.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card card-pad">
+    <div class="sec-head" style="padding:0 0 6px"><h3>Attendance today</h3><a class="link" href="{% url 'principal_academics' %}">Academics</a></div>
+    <div class="chart-row">
+      <div class="chart-canvas-container" style="position:relative; width:120px; height:120px; flex:0 0 120px;">
+        <canvas id="principalAttChart"></canvas>
+        <div class="donut-center-label" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; pointer-events:none;">
+          <b style="font-size:18px; font-family:'Spectral', serif; color:var(--ink); display:block; line-height:1.1;">{% if p_total %}{{ p_att_pct }}%{% else %}&mdash;{% endif %}</b>
+          <span style="font-size:9.5px; color:var(--muted); font-weight:700; text-transform:uppercase; display:block; margin-top:2px;">Present</span>
+        </div>
+      </div>
+      <div class="donut-legend">
+        {% for s in p_att_legend %}
+        <div class="leg-row"><span class="leg-dot" style="background:{{ s.color }}"></span><span class="leg-label">{{ s.label }}</span><b>{{ s.value }}</b><span class="leg-pct">{{ s.pct }}%</span></div>
+        {% endfor %}
+        {% if not p_total %}<div class="muted" style="font-size:12px;padding-top:8px">No attendance marked today yet.</div>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-2col">
+    <div class="card">
+      <div class="sec-head"><h3>Class performance</h3><a class="link" href="{% url 'principal_academics' %}">Details</a></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Class</th><th class="ta-r">Students</th><th class="ta-r">Average</th></tr></thead>
+        <tbody>
+        {% for c in class_perf %}
+          <tr><td><b style="color:var(--ink)">{{ c.room }}</b></td><td class="ta-r num">{{ c.n }}</td><td class="ta-r num">{{ c.avg }}%</td></tr>
+        {% empty %}
+          <tr><td colspan="3" class="muted">No results yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="card">
+      <div class="sec-head"><h3>Needs your decision</h3><a class="link" href="{% url 'principal_approvals' %}">Open Approvals</a></div>
+      <div class="card-pad">
+        <div class="prog-row"><span><span class="pill stage-offer">Admissions to enrol</span></span><b>{{ p_admissions_pending }}</b></div>
+        <div class="prog-row"><span><span class="pill pill-info">Fee concessions</span></span><b>{{ p_concessions_pending }}</b></div>
+        <div class="prog-row"><span><span class="pill stage-test">Staff leave</span></span><b>{{ p_leaves_pending }}</b></div>
+        <div class="prog-row" style="border-top:1px solid var(--line);margin-top:6px;padding-top:9px"><span style="color:#922A1B">Absent today</span><b style="color:#922A1B">{{ p_absent }}</b></div>
+        <div class="prog-row"><span style="color:#7A5712">On leave today</span><b style="color:#7A5712">{{ p_late }}</b></div>
+        <a class="btn-primary btn-auto no-print" href="{% url 'principal_approvals' %}" style="margin-top:12px;text-decoration:none;display:inline-block">Review {{ p_awaiting }} item{{ p_awaiting|pluralize }}</a>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{% if role != 'parent' and role != 'student' %}
+<div class="card">
+  <div class="sec-head"><h3>Announcements</h3></div>
+  {% for a in announcements %}
+    <div class="ann"><b>{{ a.title }}</b><p>{{ a.body }}</p></div>
+  {% empty %}
+    <div class="ann muted">No announcements.</div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  // Common chart configuration options
+  var commonOptions = {
+    cutout: '75%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#15294D',
+        titleFont: { family: 'Outfit', size: 12 },
+        bodyFont: { family: 'Outfit', size: 12 },
+        padding: 10,
+        cornerRadius: 8,
+        displayColors: false
+      }
+    },
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: {
+      duration: 1200,
+      easing: 'easeOutQuart'
+    }
+  };
+
+  // 1. Admin Fee Status Chart
+  var feeCanvas = document.getElementById('feeStatusChart');
+  if (feeCanvas) {
+    var feeData = {
+      labels: [{% for s in fee_legend %}"{{ s.label }}",{% endfor %}],
+      datasets: [{
+        data: [{% for s in fee_legend %}{{ s.value }},{% endfor %}],
+        backgroundColor: [{% for s in fee_legend %}"{{ s.color }}",{% endfor %}],
+        borderWidth: 2,
+        borderColor: '#ffffff',
+        hoverOffset: 4
+      }]
+    };
+    new Chart(feeCanvas, {
+      type: 'doughnut',
+      data: feeData,
+      options: commonOptions
+    });
+  }
+
+  // 2. Owner Finance Chart
+  var finCanvas = document.getElementById('ownerFinChart');
+  if (finCanvas) {
+    var finData = {
+      labels: [{% for s in o_fin_legend %}"{{ s.label }}",{% endfor %}],
+      datasets: [{
+        data: [{% for s in o_fin_legend %}{{ s.value }},{% endfor %}],
+        backgroundColor: [{% for s in o_fin_legend %}"{{ s.color }}",{% endfor %}],
+        borderWidth: 2,
+        borderColor: '#ffffff',
+        hoverOffset: 4
+      }]
+    };
+    new Chart(finCanvas, {
+      type: 'doughnut',
+      data: finData,
+      options: commonOptions
+    });
+  }
+
+  // 3. Principal Attendance Chart
+  var attCanvas = document.getElementById('principalAttChart');
+  if (attCanvas) {
+    var attData = {
+      labels: [{% for s in p_att_legend %}"{{ s.label }}",{% endfor %}],
+      datasets: [{
+        data: [{% for s in p_att_legend %}{{ s.value }},{% endfor %}],
+        backgroundColor: [{% for s in p_att_legend %}"{{ s.color }}",{% endfor %}],
+        borderWidth: 2,
+        borderColor: '#ffffff',
+        hoverOffset: 4
+      }]
+    };
+    new Chart(attCanvas, {
+      type: 'doughnut',
+      data: attData,
+      options: commonOptions
+    });
+  }
+});
+</script>
+{% endblock %}

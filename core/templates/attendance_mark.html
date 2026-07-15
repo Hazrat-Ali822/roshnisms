@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block heading %}Mark Attendance{% endblock %}
+{% block content %}
+<div class="welcome" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+  <div><h1>Mark Attendance</h1>
+  <p>Class {{ classroom|default:"(none)" }} &mdash; mark each student, then save.</p></div>
+  <a class="act-btn ghost no-print" href="{% url 'attendance_register' %}{% if classroom %}?class={{ classroom.id }}{% endif %}" style="text-decoration:none">Monthly register</a>
+</div>
+
+<form method="get" class="bar">
+  {% if classes %}
+  <label class="bar-label">Class</label>
+  <select name="class">
+    {% for c in classes %}<option value="{{ c.id }}" {% if classroom and c.id == classroom.id %}selected{% endif %}>{{ c }}</option>{% endfor %}
+  </select>
+  {% endif %}
+  <label class="bar-label">Date</label>
+  <input type="date" name="date" value="{{ date }}">
+  <button class="btn-ghost" type="submit">Show</button>
+</form>
+
+{% if already_marked %}
+<div class="msg" style="background:#F6EEDD;color:#7A5712;margin-bottom:12px">Attendance for this class and date is already recorded. Saving will <b>update</b> it (someone else may have entered it).</div>
+{% endif %}
+{% if rows %}
+<form method="post">
+  {% csrf_token %}
+  <input type="hidden" name="date" value="{{ date }}">
+  <input type="hidden" name="class" value="{{ classroom.id }}">
+  
+  <div class="bar no-print" style="margin-bottom:12px; justify-content:flex-start; gap:10px;">
+    <span class="bar-label">Bulk Actions:</span>
+    <button type="button" class="btn-ghost" onclick="markAll('P')" style="font-size:12.5px; padding:6px 12px; height:auto; min-height:0;">Mark All Present</button>
+    <button type="button" class="btn-ghost" onclick="markAll('A')" style="font-size:12.5px; padding:6px 12px; border-color:var(--overdue); color:var(--overdue); height:auto; min-height:0;">Mark All Absent</button>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap"><table>
+      <thead><tr><th>Student</th><th>Roll</th><th class="ta-c">Present</th><th class="ta-c">Absent</th><th class="ta-c">Leave</th></tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr class="attendance-row" style="transition: var(--transition); cursor: pointer;">
+          <td>{{ row.0.name }}</td>
+          <td>{{ row.0.roll_no }}</td>
+          <td class="ta-c"><input type="radio" name="status_{{ row.0.id }}" value="P" {% if row.1 == 'P' %}checked{% endif %} style="cursor: pointer;"></td>
+          <td class="ta-c"><input type="radio" name="status_{{ row.0.id }}" value="A" {% if row.1 == 'A' %}checked{% endif %} style="cursor: pointer;"></td>
+          <td class="ta-c"><input type="radio" name="status_{{ row.0.id }}" value="L" {% if row.1 == 'L' %}checked{% endif %} style="cursor: pointer;"></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+  <button class="btn-primary btn-auto" type="submit">Save attendance</button>
+</form>
+
+<div class="hint-inline" style="display:flex; flex-direction:column; gap:4px;">
+  <div>💡 <b>Keyboard Shortcuts:</b> Click a student's row and press <b>P</b> (Present), <b>A</b> (Absent), or <b>L</b> (Leave). Focus will auto-shift to the next row.</div>
+  <div>⌨️ Use <b>ArrowUp</b> and <b>ArrowDown</b> to navigate through the list.</div>
+</div>
+
+<script>
+function markAll(val) {
+  document.querySelectorAll('input[type=radio][value=' + val + ']').forEach(function(radio) {
+    radio.checked = true;
+    var row = radio.closest('tr');
+    if (row) {
+      row.style.backgroundColor = val === 'P' ? 'rgba(14, 124, 102, 0.07)' : 'rgba(192, 67, 47, 0.07)';
+      setTimeout(function() {
+        row.style.backgroundColor = '';
+      }, 500);
+    }
+  });
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  var rows = document.querySelectorAll('.attendance-row');
+  rows.forEach(function(row, idx) {
+    row.setAttribute('tabindex', '0');
+    row.style.outline = 'none';
+    
+    // Custom highlights on focus
+    row.addEventListener('focus', function() {
+      row.style.backgroundColor = 'rgba(14, 124, 102, 0.04)';
+      row.style.borderLeft = '3px solid var(--accent)';
+    });
+    
+    row.addEventListener('blur', function() {
+      row.style.backgroundColor = '';
+      row.style.borderLeft = '';
+    });
+    
+    // Key shortcuts
+    row.addEventListener('keydown', function(e) {
+      var key = e.key.toLowerCase();
+      if (key === 'p' || key === 'a' || key === 'l') {
+        var val = key.toUpperCase();
+        var radio = row.querySelector('input[type=radio][value=' + val + ']');
+        if (radio) {
+          radio.checked = true;
+          // Blink color animation
+          row.style.backgroundColor = val === 'P' ? 'rgba(14, 124, 102, 0.12)' : (val === 'A' ? 'rgba(192, 67, 47, 0.12)' : 'rgba(176, 125, 23, 0.12)');
+          setTimeout(function() {
+            row.style.backgroundColor = 'rgba(14, 124, 102, 0.04)';
+          }, 200);
+          
+          // Auto move focus to next row
+          if (idx + 1 < rows.length) {
+            rows[idx + 1].focus();
+          }
+        }
+        e.preventDefault();
+      } else if (e.key === 'ArrowDown') {
+        if (idx + 1 < rows.length) {
+          rows[idx + 1].focus();
+        }
+        e.preventDefault();
+      } else if (e.key === 'ArrowUp') {
+        if (idx - 1 >= 0) {
+          rows[idx - 1].focus();
+        }
+        e.preventDefault();
+      }
+    });
+
+    // Handle clicks inside rows to automatically focus them
+    row.addEventListener('click', function(e) {
+      if (e.target.tagName !== 'INPUT') {
+        row.focus();
+        // If they click on text, select present by default or just focus
+      }
+    });
+  });
+
+  // Autofocus the first student's row
+  if (rows.length > 0) {
+    rows[0].focus();
+  }
+});
+</script>
+{% else %}
+<div class="card card-pad muted">No class is assigned to this teacher.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block heading %}Reports{% endblock %}
+{% block content %}
+<div class="welcome">
+  <h1>Reports &amp; Exports</h1>
+  <p>Download school data as CSV (open in Excel / Google Sheets) or one-page PDF summaries.</p>
+</div>
+
+<div class="sec-head" style="margin-bottom:10px"><h3>Data exports (CSV)</h3></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px;margin-bottom:26px">
+
+  <div class="card card-pad">
+    <h3 style="margin:0 0 5px">Students</h3>
+    <p class="muted" style="margin:0 0 12px;font-size:13px">Full roster &mdash; name, class, roll, admission no, guardian, phone, fee status, hostel.</p>
+    <a class="act-btn ghost" href="?report=students&amp;format=csv">Download CSV</a>
+  </div>
+
+  <div class="card card-pad">
+    <h3 style="margin:0 0 5px">Fee status</h3>
+    <p class="muted" style="margin:0 0 12px;font-size:13px">Per-student net payable, paid, balance and current status.</p>
+    <a class="act-btn ghost" href="?report=fees&amp;format=csv">Download CSV</a>
+  </div>
+
+  <div class="card card-pad">
+    <h3 style="margin:0 0 5px">Attendance summary</h3>
+    <p class="muted" style="margin:0 0 12px;font-size:13px">Present / absent / late counts and attendance % per student.</p>
+    <a class="act-btn ghost" href="?report=attendance&amp;format=csv">Download CSV</a>
+  </div>
+
+  <div class="card card-pad">
+    <h3 style="margin:0 0 5px">Exam results</h3>
+    <p class="muted" style="margin:0 0 12px;font-size:13px">Latest exam &mdash; obtained, total, percentage, grade and pass/fail.</p>
+    <a class="act-btn ghost" href="?report=results&amp;format=csv">Download CSV</a>
+  </div>
+
+  <div class="card card-pad">
+    <h3 style="margin:0 0 5px">Staff directory</h3>
+    <p class="muted" style="margin:0 0 12px;font-size:13px">Name, designation, contact, salary breakdown and active status.</p>
+    <a class="act-btn ghost" href="?report=staff&amp;format=csv">Download CSV</a>
+  </div>
+
+  <div class="card card-pad">
+    <h3 style="margin:0 0 5px">Discipline records</h3>
+    <p class="muted" style="margin:0 0 12px;font-size:13px">All conduct records &mdash; date, student, category, severity, status.</p>
+    <a class="act-btn ghost" href="?report=discipline&amp;format=csv">Download CSV</a>
+  </div>
+
+</div>
+
+<div class="sec-head" style="margin-bottom:10px"><h3>Summary reports (print / PDF)</h3></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px">
+
+  <div class="card card-pad">
+    <h3 style="margin:0 0 5px">School summary</h3>
+    <p class="muted" style="margin:0 0 12px;font-size:13px">One-page overview &mdash; enrolment, fees, today's attendance, latest exam.</p>
+    <a class="act-btn ghost" href="?report=summary&amp;format=print">Open &amp; print</a>
+  </div>
+
+  <div class="card card-pad">
+    <h3 style="margin:0 0 5px">Fee collection summary</h3>
+    <p class="muted" style="margin:0 0 12px;font-size:13px">Billed, collected, outstanding, collection rate and status breakdown.</p>
+    <a class="act-btn ghost" href="?report=fees_summary&amp;format=print">Open &amp; print</a>
+  </div>
+
+  <div class="card card-pad">
+    <h3 style="margin:0 0 5px">Attendance register</h3>
+    <p class="muted" style="margin:0 0 12px;font-size:13px">Monthly P/A/L grid for a class, with low-attendance students flagged.</p>
+    <a class="act-btn ghost" href="{% url 'attendance_register' %}">Open &amp; print</a>
+  </div>
+
+</div>
+
+<p class="muted" style="margin-top:22px;font-size:12.5px">CSV files open directly in Excel or Google Sheets. Summary reports open as a clean printable page &mdash; use your browser's Print dialog to save a PDF.</p>
+{% endblock %}

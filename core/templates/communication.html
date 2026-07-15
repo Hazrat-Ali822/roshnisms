@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block heading %}Communication{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Communication / SMS</h1><p>Send SMS to parents and staff, and review the delivery log.</p></div>
+
+{% if sms_backend == 'console' %}
+<div class="card card-pad" style="border-color:#D2D9E2;background:#F6EEDD;margin-bottom:16px">
+  <b style="color:#7A5712">SMS mode: Console (development).</b>
+  <span class="muted" style="font-size:13px">Messages are logged here and printed to the server terminal &mdash; nothing is actually sent. To deliver real SMS, set <code>SMS_BACKEND</code> to <code>'twilio'</code> or <code>'http'</code> with your provider credentials in <code>roshni/settings.py</code>.</span>
+</div>
+{% else %}
+<div class="card card-pad" style="border-color:#C7E6DB;background:#E3F1EC;margin-bottom:16px">
+  <b style="color:#0B5F4F">SMS mode: {{ sms_backend }} (live).</b>
+  <span class="muted" style="font-size:13px">Messages are delivered through your configured provider. Failures appear in the log below with the reason.</span>
+</div>
+{% endif %}
+
+<div class="card card-pad" style="max-width:680px">
+  <h3 style="margin-bottom:14px">Compose message</h3>
+  <form method="post">
+    {% csrf_token %}
+    <div class="frow"><label>Send to</label>
+      <select name="recipients">
+        <option value="All Parents">All Parents (guardians)</option>
+        <option value="Teachers / Staff">Teachers / Staff</option>
+      </select>
+    </div>
+    <div class="frow"><label>Or one number</label><input name="to_phone" placeholder="Optional, e.g. 0300-1234567 (overrides the group)"></div>
+    <div class="frow"><label>Template (optional)</label>
+      <select id="tpl" onchange="fillTpl(this.value)">
+        <option value="">- None -</option>
+        <option value="fee">Fee reminder</option>
+        <option value="absent">Absent alert</option>
+        <option value="result">Result published</option>
+      </select>
+    </div>
+    <div class="frow"><label>Message</label><textarea id="body" name="body" rows="3" placeholder="Type your message..."></textarea></div>
+    <button class="btn-primary btn-auto" type="submit">Send message</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="sec-head"><h3>Message log</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>To</th><th>Number</th><th>Type</th><th>Message</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for m in messages_log %}
+      <tr>
+        <td><b style="color:var(--ink)">{{ m.recipients }}</b></td>
+        <td class="muted" style="font-size:12.5px">{{ m.to_phone|default:"&mdash;" }}</td>
+        <td>{{ m.msg_type }}</td>
+        <td class="muted">{{ m.body|truncatechars:48 }}{% if m.error %}<div style="color:#922A1B;font-size:12px;margin-top:2px">{{ m.error }}</div>{% endif %}</td>
+        <td>
+          {% if m.status == 'Failed' %}<span class="pill pill-overdue">Failed</span>
+          {% elif m.status == 'Console' %}<span class="pill pill-info">Logged</span>
+          {% elif m.status == 'Queued' %}<span class="pill pill-pending">Queued</span>
+          {% else %}<span class="pill pill-paid">{{ m.status }}</span>{% endif %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="dempty">No messages yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+<script>
+function fillTpl(v){
+  var t={fee:"Dear Parent, the monthly fee for your child is now due. Kindly pay by the 10th. - Roshni Public School",
+         absent:"Dear Parent, your child was marked absent today. - Roshni Public School",
+         result:"Dear Parent, the Mid-Term result has been published in the parent portal. - Roshni Public School"};
+  if(t[v]){document.getElementById('body').value=t[v];}
+}
+</script>
+{% endblock %}

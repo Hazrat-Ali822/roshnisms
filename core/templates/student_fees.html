@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block heading %}Student Fees{% endblock %}
+{% block content %}
+<a class="btn-ghost btn-auto" href="{% url 'fee_collection' %}" style="margin-bottom:16px;display:inline-flex">&larr; All students</a>
+<div class="welcome"><h1>{{ student.name }}</h1><p>Class {{ student.classroom }} &middot; Roll {{ student.roll_no }}{% if student.is_hostel %} &middot; Hostel resident{% endif %}</p></div>
+
+<div class="stat-grid" style="margin-bottom:16px">
+  <div class="card stat"><span class="s-label">Outstanding</span><span class="s-val" style="color:{% if outstanding %}#922A1B{% else %}#0B5F4F{% endif %}">Rs {{ outstanding }}</span></div>
+  <div class="card stat"><span class="s-label">Total paid</span><span class="s-val" style="color:#0B5F4F">Rs {{ total_paid }}</span></div>
+  <div class="card stat"><span class="s-label">Challans</span><span class="s-val">{{ challans|length }}</span></div>
+</div>
+
+<div class="bar no-print" style="margin-bottom:16px">
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="action" value="generate">
+    <button class="btn-ghost btn-auto" type="submit">+ Generate this month's challan</button>
+  </form>
+</div>
+
+{% if pending_reqs %}
+<div class="card" style="margin-bottom:16px">
+  <div class="sec-head"><h3>Concessions awaiting Principal approval</h3></div>
+  <div class="card-pad">
+    {% for r in pending_reqs %}
+      <div class="prog-row"><span><span class="pill {% if r.kind == 'scholarship' %}pill-info{% else %}pill-paid{% endif %}">{{ r.get_kind_display }}</span> Rs {{ r.amount }} on {{ r.challan.label }}{% if r.label %} &mdash; {{ r.label }}{% endif %}</span><span class="pill pill-pending">Pending</span></div>
+    {% endfor %}
+    <p class="muted" style="font-size:11.5px;margin:8px 0 0">Not applied to the challan yet — the Principal approves or rejects these from the Approvals screen.</p>
+  </div>
+</div>
+{% endif %}
+
+{% for c in challans %}
+  <div class="card card-pad" style="margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <h3>{{ c.label }} <span class="muted" style="font-weight:600;font-size:12.5px">&middot; due {{ c.due_date }}</span></h3>
+      {% if c.status == 'Paid' %}<span class="pill pill-paid">Paid</span>{% elif c.status == 'Waived' %}<span class="pill pill-paid">Waived</span>{% elif c.is_overdue %}<span class="pill pill-overdue">Overdue</span>{% elif c.status == 'Partial' %}<span class="pill pill-info">Partial</span>{% else %}<span class="pill pill-pending">Unpaid</span>{% endif %}
+    </div>
+
+    <div class="prog-row"><span>Tuition</span><b>Rs {{ c.tuition }}</b></div>
+    {% for ln in c.lines.all %}<div class="prog-row"><span>{{ ln.label }}</span><b>Rs {{ ln.amount }}</b></div>{% endfor %}
+    {% if c.transport_fee %}<div class="prog-row"><span>Transport fee</span><b>Rs {{ c.transport_fee }}</b></div>{% endif %}
+    {% if c.hostel_fee %}<div class="prog-row"><span>Hostel fee</span><b>Rs {{ c.hostel_fee }}</b></div>{% endif %}
+    {% if c.other_charges %}<div class="prog-row"><span>{{ c.other_label|default:"Other charges" }}</span><b>Rs {{ c.other_charges }}</b></div>{% endif %}
+    {% if c.arrears %}<div class="prog-row"><span style="color:#922A1B">Previous dues (arrears)</span><b style="color:#922A1B">Rs {{ c.arrears }}</b></div>{% endif %}
+    {% if c.late_fee %}<div class="prog-row"><span style="color:#922A1B">Late fee</span><b style="color:#922A1B">Rs {{ c.late_fee }}</b></div>{% endif %}
+    {% if c.discount %}<div class="prog-row"><span style="color:#0B5F4F">Discount{% if c.discount_reason %} ({{ c.discount_reason }}){% endif %}{% if c.discount_by %} &middot; by {{ c.discount_by }}{% endif %}</span><b style="color:#0B5F4F">&minus; Rs {{ c.discount }}</b></div>{% endif %}
+    {% if c.scholarship %}<div class="prog-row"><span style="color:#0B5F4F">Scholarship{% if c.scholarship_name %} ({{ c.scholarship_name }}){% endif %}</span><b style="color:#0B5F4F">&minus; Rs {{ c.scholarship }}</b></div>{% endif %}
+    <div class="prog-row" style="border-top:1px solid var(--line);margin-top:6px;padding-top:8px"><span><b style="color:var(--ink)">Net payable</b></span><b style="color:var(--ink)">Rs {{ c.net_payable }}</b></div>
+    <div class="prog-row"><span>Paid</span><b style="color:#0B5F4F">Rs {{ c.paid }}</b></div>
+    <div class="prog-row"><span>Balance</span><b style="color:#922A1B">Rs {{ c.balance }}</b></div>
+
+    {% if c.balance > 0 %}
+    <form method="post" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">{% csrf_token %}
+      <input type="hidden" name="action" value="collect">
+      <input type="hidden" name="challan_id" value="{{ c.id }}">
+      <input type="hidden" name="known_paid" value="{{ c.paid }}">
+      <div class="frow" style="margin:0"><label>Amount (Rs)</label><input name="amount" type="number" value="{{ c.balance }}" style="width:130px"></div>
+      <div class="frow" style="margin:0"><label>Mode</label><select name="mode" style="width:140px">{% for v, l in modes %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></div>
+      <button class="btn-primary btn-auto" type="submit">Collect payment</button>
+    </form>
+    <p class="muted" style="font-size:11.5px;margin:6px 0 0">For a partial (half now, half later) payment, enter a smaller amount.</p>
+    {% endif %}
+
+    <div style="margin-top:14px;border-top:1px dashed var(--line-strong);padding-top:12px">
+      <div class="muted" style="font-size:12px;margin-bottom:8px">Concessions need Principal approval &middot; late fee applies directly</div>
+      <form method="post" class="inline-form" style="margin-bottom:6px">{% csrf_token %}
+        <input type="hidden" name="action" value="request_discount"><input type="hidden" name="challan_id" value="{{ c.id }}">
+        <input name="discount" type="number" class="mini-select" style="width:90px" placeholder="Rs">
+        <input name="discount_reason" class="mini-select" style="width:180px" placeholder="Reason (e.g. sibling, hardship)">
+        <button class="act-btn ghost" type="submit">Request discount</button>
+      </form>
+      <form method="post" class="inline-form" style="margin-bottom:6px">{% csrf_token %}
+        <input type="hidden" name="action" value="request_scholarship"><input type="hidden" name="challan_id" value="{{ c.id }}">
+        <input name="scholarship" type="number" class="mini-select" style="width:90px" placeholder="Rs">
+        <input name="scholarship_name" class="mini-select" style="width:180px" placeholder="Scholarship name">
+        <button class="act-btn ghost" type="submit">Request scholarship</button>
+      </form>
+      <form method="post" class="inline-form">{% csrf_token %}
+        <input type="hidden" name="action" value="late_fee"><input type="hidden" name="challan_id" value="{{ c.id }}">
+        <input name="late_fee" type="number" class="mini-select" style="width:90px" placeholder="Rs" value="{{ c.late_fee }}">
+        <button class="act-btn ghost" type="submit">Apply late fee</button>
+      </form>
+    </div>
+  </div>
+{% empty %}
+  <div class="card card-pad"><p class="muted">No challans yet. Use the button above to generate this month's challan.</p></div>
+{% endfor %}
+{% endblock %}

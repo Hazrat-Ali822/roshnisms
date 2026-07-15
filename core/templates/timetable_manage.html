@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block heading %}Timetable{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Timetable Builder</h1><p>Set the weekly timetable for each class. Saving the same day + period again updates that slot.</p></div>
+
+{% if classes %}
+<form method="get" class="bar">
+  <label class="bar-label">Class</label>
+  <select name="class" onchange="this.form.submit()">
+    {% for c in classes %}<option value="{{ c.id }}" {% if classroom and c.id == classroom.id %}selected{% endif %}>{{ c }}</option>{% endfor %}
+  </select>
+  <noscript><button class="btn-ghost" type="submit">Show</button></noscript>
+</form>
+
+<details class="add-wrap">
+  <summary class="add-btn">Add / update a slot</summary>
+  <div class="card card-pad" style="max-width:720px">
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="action" value="add">
+      <input type="hidden" name="class_id" value="{{ classroom.id }}">
+      <div class="row-2x">
+        <div class="frow"><label>Day</label><select name="day">{% for d in days %}<option>{{ d }}</option>{% endfor %}</select></div>
+        <div class="frow"><label>Period</label><select name="period">{% for p in periods %}<option>{{ p }}</option>{% endfor %}</select></div>
+        <div class="frow"><label>Start time</label><input name="start_time" placeholder="08:00"></div>
+        <div class="frow"><label>Subject</label>
+          <input name="subject" list="subjlist" placeholder="e.g. Mathematics or Break">
+          <datalist id="subjlist">{% for s in subjects %}<option value="{{ s.name }}">{% endfor %}<option value="Break"></datalist>
+        </div>
+        <div class="frow"><label>Teacher (optional)</label><input name="teacher" placeholder="e.g. Sir Bilal"></div>
+      </div>
+      <button class="btn-primary btn-auto" type="submit">Save slot</button>
+    </form>
+  </div>
+</details>
+
+<div class="card">
+  <div class="sec-head"><h3>{{ classroom }} weekly grid</h3></div>
+  {% if rows %}
+  <div class="tt-wrap">
+    <table class="tt">
+      <thead><tr><th></th>{% for d in days %}<th>{{ d }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr>
+          <td class="time">P{{ row.period }}<br><span class="muted">{{ row.time }}</span></td>
+          {% for cell in row.cells %}
+            <td>
+              {% if cell.slot %}
+                <div class="slot {% if cell.slot.subject == 'Break' %}break{% else %}subj{% endif %}">
+                  <b>{{ cell.slot.subject }}</b>
+                  {% if cell.slot.teacher %}<span>{{ cell.slot.teacher }}</span>{% endif %}
+                  <form method="post" style="margin-top:6px">{% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="class_id" value="{{ classroom.id }}">
+                    <input type="hidden" name="slot_id" value="{{ cell.slot.id }}">
+                    <button class="act-btn ghost" type="submit" style="padding:2px 8px;font-size:11px">Remove</button>
+                  </form>
+                </div>
+              {% else %}<div class="slot" style="opacity:.35;min-height:40px"></div>{% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card-pad muted">No slots yet. Use "Add / update a slot" above to build the timetable.</div>
+  {% endif %}
+</div>
+{% else %}
+<div class="card card-pad muted">Add a class first (Classes &amp; Subjects), then build its timetable here.</div>
+{% endif %}
+{% endblock %}

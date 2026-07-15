@@ -1,0 +1,54 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in &middot; {{ brand_name }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Spectral:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <style>:root{--ink:{{ brand_primary }};--accent:{{ brand_accent }};--accent-d:{{ brand_accent }}}</style>
+</head>
+<body class="login-page">
+  <div class="login-card">
+    <div class="lc-crest">{% if brand_logo %}<img src="{% url 'school_logo' %}" alt="{{ brand_name }}">{% else %}{{ brand_name|slice:":1"|upper }}{% endif %}</div>
+    <h3>{{ brand_name }}</h3>
+    <p>Sign in to your account</p>
+    {% if locked_minutes %}
+      <div class="err">Too many failed attempts. Please try again in about {{ locked_minutes }} minute{{ locked_minutes|pluralize }}.</div>
+    {% elif form.errors %}
+      <div class="err">Wrong username or password. Please try again.</div>
+    {% endif %}
+    {% if request.GET.timeout %}
+      <div class="err">You were signed out due to inactivity. Please sign in again.</div>
+    {% endif %}
+    {% if request.GET.restored %}
+      <div class="hint" style="background:var(--paid-s);color:#0B5F4F;border-color:#C7E6DB">Database restored successfully. Please sign in with an account from the restored backup.</div>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="fld">
+        <label>Username</label>
+        {{ form.username }}
+      </div>
+      <div class="fld">
+        <label>Password</label>
+        {{ form.password }}
+      </div>
+      <button class="btn-primary" type="submit">Sign in</button>
+    </form>
+    <div class="hint">
+      Forgot your password? Please contact the school office.
+    </div>
+  </div>
+<script>
+document.querySelectorAll('input[type=password]').forEach(function(inp){
+  var wrap=document.createElement('span');wrap.className='pw-wrap';
+  inp.parentNode.insertBefore(wrap,inp);wrap.appendChild(inp);
+  var b=document.createElement('button');b.type='button';b.className='pw-eye';b.textContent='Show';
+  wrap.appendChild(b);
+  b.addEventListener('click',function(){var s=inp.type==='password';inp.type=s?'text':'password';b.textContent=s?'Hide':'Show';});
+});
+</script>
+</body>
+</html>

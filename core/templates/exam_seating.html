@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block heading %}Exams{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Exam Seating</h1><p>Auto-allocate students to rooms for an exam.{% if rooms_count == 0 %} Add rooms first from the Rooms tab.{% endif %}</p></div>
+
+<div class="bar no-print" style="margin-bottom:18px">
+  <a class="act-btn ghost" href="{% url 'exam_datesheet' %}{% if exam %}?exam={{ exam.id }}{% endif %}" style="text-decoration:none">Datesheet</a>
+  <a class="act-btn ghost" href="{% url 'exam_rooms' %}" style="text-decoration:none">Rooms</a>
+  <a class="act-btn" href="{% url 'exam_seating' %}{% if exam %}?exam={{ exam.id }}{% endif %}" style="text-decoration:none">Seating</a>
+</div>
+
+<div class="card card-pad no-print" style="margin-bottom:16px">
+  <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;justify-content:space-between">
+    <form method="get" class="inline-form">
+      <label class="muted" style="font-size:12px">Exam:</label>
+      <select name="exam" onchange="this.form.submit()" class="mini-select" style="width:200px">
+        {% for e in exams %}<option value="{{ e.id }}" {% if exam and e.id == exam.id %}selected{% endif %}>{{ e.name }}</option>{% empty %}<option>No exams yet</option>{% endfor %}
+      </select>
+    </form>
+    {% if exam %}
+    <div style="display:flex;gap:8px">
+      <form method="post" style="display:inline">{% csrf_token %}<input type="hidden" name="action" value="generate"><input type="hidden" name="exam" value="{{ exam.id }}"><button class="btn-primary btn-auto" type="submit">{% if placed %}Re-generate seating{% else %}Generate seating{% endif %}</button></form>
+      {% if placed %}<button class="act-btn ghost" onclick="window.print()" type="button">Print</button>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if exam %}
+  {% if room_groups %}
+    {% for g in room_groups %}
+    <div class="card" style="margin-bottom:16px">
+      <div class="sec-head"><h3>{{ g.room.name }} <span class="muted" style="font-weight:600;font-size:12.5px">&middot; {{ g.seats|length }} / {{ g.room.capacity }}</span></h3></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th class="ta-r">Seat</th><th>Student</th><th>Class</th><th>Roll</th></tr></thead>
+        <tbody>
+        {% for s in g.seats %}
+          <tr><td class="ta-r num"><b>{{ s.seat_no }}</b></td><td><b style="color:var(--ink)">{{ s.student.name }}</b></td><td>{{ s.student.classroom }}</td><td class="num">{{ s.student.roll_no }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="card card-pad"><p class="muted">No seating generated for {{ exam.name }} yet. {% if rooms_count %}Click &ldquo;Generate seating&rdquo;.{% else %}Add exam rooms first.{% endif %}</p></div>
+  {% endif %}
+{% else %}
+  <div class="card card-pad"><p class="muted">No exams yet. Create one from the Datesheet tab.</p></div>
+{% endif %}
+{% endblock %}

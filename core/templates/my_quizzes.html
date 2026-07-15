@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block heading %}Quizzes{% endblock %}
+{% block content %}
+{% if quiz %}
+  <a class="btn-ghost btn-auto no-print" href="{% url 'my_quizzes' %}" style="margin-bottom:16px;display:inline-flex">&larr; All quizzes</a>
+  <div class="welcome"><h1>{{ quiz.title }}</h1><p>{% if quiz.subject %}{{ quiz.subject.name }} &middot; {% endif %}{{ questions|length }} questions &middot; {{ quiz.time_limit }} min</p></div>
+
+  {% if taking %}
+    <form method="post">{% csrf_token %}
+      {% for q in questions %}
+        <div class="card qcard">
+          <div class="qtext">{{ forloop.counter }}. {{ q.text }}</div>
+          <label class="qopt"><input type="radio" name="q_{{ q.id }}" value="A"><b>A.</b> {{ q.option_a }}</label>
+          <label class="qopt"><input type="radio" name="q_{{ q.id }}" value="B"><b>B.</b> {{ q.option_b }}</label>
+          {% if q.option_c %}<label class="qopt"><input type="radio" name="q_{{ q.id }}" value="C"><b>C.</b> {{ q.option_c }}</label>{% endif %}
+          {% if q.option_d %}<label class="qopt"><input type="radio" name="q_{{ q.id }}" value="D"><b>D.</b> {{ q.option_d }}</label>{% endif %}
+        </div>
+      {% endfor %}
+      <button class="btn-primary btn-auto" type="submit">Submit quiz</button>
+    </form>
+  {% else %}
+    {% if attempt %}
+      <div class="card card-pad" style="margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div class="s-ic" style="width:50px;height:50px;border-radius:14px;background:#E3F1EC;color:#0E7C66;display:grid;place-items:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 12.5l4.2 4.2L19 7" stroke-linejoin="round"/></svg></div>
+        <div style="flex:1;min-width:150px"><div class="muted" style="font-size:12.5px">Your score</div><div class="serif" style="font-size:26px;color:var(--ink)">{{ attempt.score }} / {{ attempt.total }} &middot; {{ attempt.percentage }}%</div></div>
+        {% if is_student %}<a class="btn-ghost btn-auto" href="{% url 'my_quizzes' %}?id={{ quiz.id }}&retake=1">Retake</a>{% endif %}
+      </div>
+      <div class="card">
+        <div class="sec-head"><h3>Answer key</h3></div>
+        {% for q in questions %}
+          <div class="qcard" style="border-bottom:1px solid var(--line)">
+            <div class="qtext">{{ forloop.counter }}. {{ q.text }}</div>
+            <div class="qopt {% if q.correct == 'A' %}correct{% endif %}"><b>A.</b> {{ q.option_a }}{% if q.correct == 'A' %} &nbsp;&#10003;{% endif %}</div>
+            <div class="qopt {% if q.correct == 'B' %}correct{% endif %}"><b>B.</b> {{ q.option_b }}{% if q.correct == 'B' %} &nbsp;&#10003;{% endif %}</div>
+            {% if q.option_c %}<div class="qopt {% if q.correct == 'C' %}correct{% endif %}"><b>C.</b> {{ q.option_c }}{% if q.correct == 'C' %} &nbsp;&#10003;{% endif %}</div>{% endif %}
+            {% if q.option_d %}<div class="qopt {% if q.correct == 'D' %}correct{% endif %}"><b>D.</b> {{ q.option_d }}{% if q.correct == 'D' %} &nbsp;&#10003;{% endif %}</div>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card card-pad"><p class="muted">This child has not attempted this quiz yet.</p></div>
+    {% endif %}
+  {% endif %}
+{% else %}
+  <div class="welcome"><h1>Quizzes</h1><p>{% if child %}Class {{ child.classroom }} &middot; take a quiz and get your score instantly.{% else %}No student linked to this account.{% endif %}</p></div>
+  {% if quizzes %}
+  <div class="card">
+    {% for q in quizzes %}
+      <a class="mat-row" href="{% url 'my_quizzes' %}?id={{ q.obj.id }}" style="text-decoration:none">
+        <span class="mat-ic" style="background:#EFEAF8;color:#7A4FB0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="4.5" y="3.5" width="15" height="17" rx="2"/><path d="M9 9.2a1.8 1.8 0 1 1 3 1.3c-.7.5-1 .8-1 1.7"/><path d="M11 15.3v.1"/></svg></span>
+        <div class="mat-b"><b>{{ q.obj.title }}</b><span>{% if q.obj.subject %}{{ q.obj.subject.name }} &middot; {% endif %}{{ q.count }} questions &middot; {{ q.obj.time_limit }} min</span></div>
+        {% if q.attempt %}<span class="pill pill-paid">{{ q.attempt.score }}/{{ q.attempt.total }}</span>{% else %}<span class="pill pill-pending">Not attempted</span>{% endif %}
+      </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card card-pad"><p class="muted">No quizzes yet.</p></div>
+  {% endif %}
+{% endif %}
+{% endblock %}

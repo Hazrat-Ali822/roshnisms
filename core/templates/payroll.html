@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block heading %}Payroll{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Payroll</h1><p>Salaries and monthly payslips for {{ month_label }}.</p></div>
+
+<div class="bar no-print" style="margin-bottom:18px">
+  <a class="act-btn ghost" href="{% url 'staff_list' %}" style="text-decoration:none">Directory</a>
+  <a class="act-btn ghost" href="{% url 'staff_attendance' %}" style="text-decoration:none">Attendance</a>
+  <a class="act-btn" href="{% url 'payroll' %}" style="text-decoration:none">Payroll</a>
+  <a class="act-btn ghost" href="{% url 'staff_leave' %}" style="text-decoration:none">Leave</a>
+</div>
+
+<div class="stat-grid" style="margin-bottom:16px">
+  <div class="card stat"><span class="s-label">Monthly payroll</span><span class="s-val">Rs {{ total_monthly }}</span></div>
+  <div class="card stat"><span class="s-label">Payslips ({{ month_label }})</span><span class="s-val">{{ generated_count }} / {{ staff_total }}</span></div>
+  <div class="card stat"><span class="s-label">Net generated</span><span class="s-val" style="color:#0B5F4F">Rs {{ generated_net }}</span></div>
+</div>
+
+<div class="bar no-print" style="margin-bottom:16px">
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="generate_all"><button class="btn-primary btn-auto" type="submit">Generate all payslips for {{ month_label }}</button></form>
+</div>
+
+<div class="card">
+  <div class="sec-head"><h3>Staff salaries</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Name</th><th class="ta-r">Basic</th><th class="ta-r">Allow.</th><th class="ta-r">Net</th><th>Payslip</th><th>Update salary</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><b style="color:var(--ink)">{{ r.staff.name }}</b><div class="muted" style="font-size:12px">{{ r.staff.designation }}</div></td>
+        <td class="ta-r num">{{ r.staff.basic_salary }}</td>
+        <td class="ta-r num">{{ r.staff.allowances }}</td>
+        <td class="ta-r num">Rs {{ r.staff.monthly_salary }}</td>
+        <td>
+          {% if r.slip %}<a class="link" href="{% url 'payslip_pdf' r.slip.id %}">Download PDF</a>
+          {% else %}<form method="post" style="display:inline">{% csrf_token %}<input type="hidden" name="action" value="generate_one"><input type="hidden" name="staff_id" value="{{ r.staff.id }}"><button class="act-btn ghost" type="submit">Generate</button></form>{% endif %}
+        </td>
+        <td>
+          <form method="post" class="inline-form">{% csrf_token %}
+            <input type="hidden" name="action" value="set_salary"><input type="hidden" name="staff_id" value="{{ r.staff.id }}">
+            <input name="basic_salary" type="number" class="mini-select" style="width:90px" placeholder="Basic" value="{{ r.staff.basic_salary }}">
+            <input name="allowances" type="number" class="mini-select" style="width:90px" placeholder="Allow." value="{{ r.staff.allowances }}">
+            <button class="act-btn ghost" type="submit">Save</button>
+          </form>
+        </td>
+      </tr>
+    {% empty %}<tr><td colspan="6" class="muted">No staff.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

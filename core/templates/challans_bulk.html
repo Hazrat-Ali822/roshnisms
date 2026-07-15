@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block heading %}Print Challans{% endblock %}
+{% block content %}
+<div class="welcome no-print"><h1>Print challans &mdash; whole class</h1><p>Pick a class and month, then print every student's fee voucher at once.</p></div>
+
+<form method="get" class="bar no-print" style="margin-bottom:16px">
+  <label class="bar-label">Class</label>
+  <select name="class" onchange="this.form.submit()">
+    {% for c in classes %}<option value="{{ c.id }}" {% if classroom and c.id == classroom.id %}selected{% endif %}>{{ c }}</option>{% endfor %}
+  </select>
+  <label class="bar-label">Month</label>
+  <select name="month" onchange="this.form.submit()">
+    {% for num, nm in months %}<option value="{{ num }}" {% if num == month %}selected{% endif %}>{{ nm }}</option>{% endfor %}
+  </select>
+  <label class="bar-label">Year</label>
+  <select name="year" onchange="this.form.submit()">
+    {% for y in years %}<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>{% endfor %}
+  </select>
+  <noscript><button class="btn-ghost" type="submit">Show</button></noscript>
+</form>
+
+{% if vouchers %}
+<div class="bar no-print" style="margin-bottom:16px">
+  <button class="btn-primary btn-auto" onclick="window.print()">Print all ({{ vouchers|length }})</button>
+  <span class="muted" style="font-size:13px">{{ classroom }} &middot; {{ month_name }} {{ year }}</span>
+</div>
+{% for v in vouchers %}
+<div class="rc-page">{% include 'fee_voucher_body.html' with c=v.c st=v.st %}</div>
+{% endfor %}
+{% else %}
+<div class="card card-pad">
+  <p class="muted">No challans found for {{ classroom }} in {{ month_name }} {{ year }}.
+  {% if student_total %}Generate them first from <a class="link" href="{% url 'fee_collection' %}">Fee Collection</a> (the monthly &ldquo;Generate challans&rdquo; action), then come back here to print.{% else %}This class has no active students.{% endif %}</p>
+</div>
+{% endif %}
+{% endblock %}

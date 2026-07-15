@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block heading %}Classes &amp; Subjects{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Classes &amp; Subjects</h1><p>Create classes and sections, set the monthly fee, and manage each class's subjects.</p></div>
+
+<details class="add-wrap no-print">
+  <summary class="add-btn">Add class</summary>
+  <div class="card card-pad" style="max-width:620px">
+    <h3 style="margin-bottom:12px">Add a class / section</h3>
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="action" value="add_class">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+        <div class="frow"><label>Class name</label><input name="name" placeholder="e.g. 6 or Nursery" required></div>
+        <div class="frow"><label>Section</label><input name="section" placeholder="e.g. A" value="A"></div>
+      </div>
+      <div class="frow" style="max-width:280px"><label>Monthly fee (Rs)</label><input type="number" name="monthly_fee" min="0" value="5500"></div>
+      <button class="btn-primary btn-auto" type="submit">Add class</button>
+    </form>
+  </div>
+</details>
+
+<div class="card">
+  <div class="sec-head"><h3>All classes ({{ rows|length }})</h3></div>
+  {% if rows %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Class</th><th class="ta-r">Students</th><th class="ta-r">Monthly fee</th><th>Subjects</th><th>Manage</th></tr></thead>
+    <tbody>
+    {% for row in rows %}
+      <tr>
+        <td><b style="color:var(--ink)">{{ row.c.name }}-{{ row.c.section }}</b></td>
+        <td class="ta-r num">{{ row.count }}</td>
+        <td class="ta-r num">Rs {{ row.c.monthly_fee }}</td>
+        <td style="max-width:340px">
+          {% for sub in row.subjects %}<span class="pill pill-info" style="margin:0 4px 4px 0;display:inline-flex;align-items:center;gap:6px">{{ sub.name }}
+            <form method="post" style="display:inline" onsubmit="return confirm('Remove subject {{ sub.name }}?');">{% csrf_token %}
+              <input type="hidden" name="action" value="delete_subject"><input type="hidden" name="subject_id" value="{{ sub.id }}">
+              <button type="submit" title="Remove" style="border:none;background:none;color:#922A1B;cursor:pointer;font-weight:700;padding:0;line-height:1">&times;</button>
+            </form></span>{% empty %}<span class="muted">No subjects yet</span>{% endfor %}
+          <form method="post" style="margin-top:6px;display:flex;gap:6px;max-width:280px">{% csrf_token %}
+            <input type="hidden" name="action" value="add_subject"><input type="hidden" name="class_id" value="{{ row.c.id }}">
+            <input name="subject" placeholder="Add subject" style="flex:1">
+            <button class="act-btn ghost" type="submit" style="padding:5px 11px">Add</button>
+          </form>
+        </td>
+        <td style="white-space:nowrap;vertical-align:top">
+          <details class="row-edit">
+            <summary class="act-btn ghost" style="list-style:none">Edit</summary>
+            <form method="post" style="margin-top:8px">{% csrf_token %}
+              <input type="hidden" name="action" value="edit_class"><input type="hidden" name="class_id" value="{{ row.c.id }}">
+              <div class="frow" style="margin-bottom:6px"><label style="font-size:11px">Section</label><input name="section" value="{{ row.c.section }}" style="width:90px"></div>
+              <div class="frow" style="margin-bottom:6px"><label style="font-size:11px">Monthly fee</label><input type="number" name="monthly_fee" value="{{ row.c.monthly_fee }}" style="width:120px"></div>
+              <button class="btn-primary btn-auto" type="submit" style="padding:5px 12px">Save</button>
+            </form>
+          </details>
+          {% if row.count == 0 %}
+          <form method="post" style="display:inline" onsubmit="return confirm('Delete class {{ row.c.name }}-{{ row.c.section }}? This cannot be undone.');">{% csrf_token %}
+            <input type="hidden" name="action" value="delete_class"><input type="hidden" name="class_id" value="{{ row.c.id }}">
+            <button class="btn-reject" type="submit" style="padding:5px 11px">Delete</button>
+          </form>
+          {% else %}<span class="muted" style="font-size:11px;display:block;margin-top:4px">Has students</span>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <div class="card-pad"><p class="muted">No classes yet. Add your first class above.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

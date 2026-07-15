@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<div class="welcome">
+  <h1>{{ title }}</h1>
+  <p>Fill in school details and subscription status settings.</p>
+</div>
+
+<div class="card card-pad" style="max-width: 600px;">
+  <form method="post">
+    {% csrf_token %}
+    
+    <div class="frow">
+      <label for="name">School Name</label>
+      <input type="text" id="name" name="name" value="{{ school.name|default:'' }}" required placeholder="e.g. City Grammar School">
+    </div>
+
+    <div class="frow">
+      <label for="subdomain">Subdomain / Domain Prefix</label>
+      <input type="text" id="subdomain" name="subdomain" value="{{ school.subdomain|default:'' }}" required placeholder="e.g. citygrammar (do not include space or punctuation)">
+      <span class="muted" style="font-size: 11.5px; margin-top: 4px; display: block;">This school will be accessible via: <code>http://[subdomain].localhost:8000</code> or <code>http://[subdomain].yourdomain.com</code></span>
+    </div>
+
+    <div class="row-2x">
+      <div class="frow">
+        <label for="subscription_start">Subscription Start Date</label>
+        <input type="date" id="subscription_start" name="subscription_start" value="{{ start_str|default:'' }}">
+      </div>
+      <div class="frow">
+        <label for="subscription_end">Subscription End Date (Expiry)</label>
+        <input type="date" id="subscription_end" name="subscription_end" value="{{ end_str|default:'' }}">
+      </div>
+    </div>
+
+    {% if school %}
+    <div class="frow" style="margin-top: 10px; border-top: 1px solid var(--line); padding-top: 14px;">
+      <label style="text-transform: none; font-size: 13.5px; display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="subscription_active" name="subscription_active" {% if school.subscription_active %}checked{% endif %} style="width: auto; height: auto; cursor: pointer;">
+        Subscription Active / Enabled
+      </label>
+    </div>
+    {% endif %}
+
+    <div class="bar no-print" style="margin-top: 20px; gap: 10px;">
+      <button class="btn-primary btn-auto" type="submit" style="margin-top: 0;">Save School</button>
+      <a class="btn-ghost" href="{% url 'saas_admin_dashboard' %}" style="text-decoration: none; padding: 10px 18px;">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

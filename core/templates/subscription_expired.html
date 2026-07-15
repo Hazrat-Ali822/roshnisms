@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Subscription Suspended - Roshni SMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Spectral:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #15294D;
+      --accent: #0E7C66;
+      --overdue: #C0432F;
+      --overdue-s: #FBE7E2;
+      --surface: #ffffff;
+      --text: #1F2937;
+      --muted: #6B7686;
+      --line: #E3E8EF;
+    }
+    body {
+      margin: 0;
+      font-family: 'Outfit', sans-serif;
+      background: #F4F6F9;
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+    }
+    .expired-card {
+      width: 440px;
+      max-width: 90vw;
+      background: var(--surface);
+      border-top: 4px solid var(--overdue);
+      border-radius: 16px;
+      box-shadow: 0 16px 45px rgba(21, 41, 77, 0.1);
+      padding: 36px 30px;
+      text-align: center;
+    }
+    .expired-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--overdue-s);
+      color: var(--overdue);
+      display: grid;
+      place-items: center;
+      margin: 0 auto 20px;
+    }
+    h1 {
+      font-family: 'Spectral', serif;
+      font-size: 24px;
+      color: var(--ink);
+      margin: 0 0 10px;
+    }
+    p {
+      color: var(--muted);
+      font-size: 14.5px;
+      line-height: 1.6;
+      margin: 0 0 24px;
+    }
+    .school-info {
+      background: #F7F9FB;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 24px;
+    }
+    .school-info b {
+      color: var(--ink);
+      display: block;
+      font-size: 15px;
+    }
+    .school-info span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .logout-btn {
+      display: inline-block;
+      width: 100%;
+      box-sizing: border-box;
+      background: var(--ink);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: none;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .logout-btn:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+<body>
+
+<div class="expired-card">
+  <div class="expired-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px;">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="9" x2="12" y2="13"></line>
+      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+    </svg>
+  </div>
+  
+  <h1>Subscription Suspended</h1>
+  
+  {% if school %}
+  <div class="school-info">
+    <b>{{ school.name }}</b>
+    <span>Subdomain: {{ school.subdomain }}</span>
+  </div>
+  {% endif %}
+  
+  <p>The subscription for this school instance has expired or has been suspended by the SaaS administration. Please contact your school office or system administrator for assistance.</p>
+  
+  <form method="post" action="{% url 'logout' %}">
+    {% csrf_token %}
+    <button type="submit" class="logout-btn">Sign out</button>
+  </form>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block heading %}Enter Marks{% endblock %}
+{% block content %}
+<div class="welcome">
+  <h1>Enter Marks</h1>
+  <p>{% if exam %}{{ exam.name }} &mdash; {% endif %}Class {{ classroom|default:"(none)" }}. Pick a subject, enter marks out of 100, then save.</p>
+</div>
+
+<form method="get" class="bar">
+  {% if classes %}
+  <label class="bar-label">Class</label>
+  <select name="class" onchange="this.form.submit()">
+    {% for c in classes %}<option value="{{ c.id }}" {% if classroom and c.id == classroom.id %}selected{% endif %}>{{ c }}</option>{% endfor %}
+  </select>
+  {% endif %}
+  {% if exams %}
+  <label class="bar-label">Exam</label>
+  <select name="exam" onchange="this.form.submit()">
+    {% for e in exams %}<option value="{{ e.id }}" {% if exam and e.id == exam.id %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
+  </select>
+  {% endif %}
+  <label class="bar-label">Subject</label>
+  <select name="subject">
+    {% for sub in subjects %}
+      <option value="{{ sub.id }}" {% if subject and sub.id == subject.id %}selected{% endif %}>{{ sub.name }}</option>
+    {% endfor %}
+  </select>
+  <button class="btn-ghost" type="submit">Show</button>
+</form>
+
+{% if rows and subject %}
+<form method="post" id="marks-form">
+  {% csrf_token %}
+  <input type="hidden" name="subject" value="{{ subject.id }}">
+  <input type="hidden" name="class" value="{{ classroom.id }}">
+  <input type="hidden" name="exam" value="{{ exam.id }}">
+  <input type="hidden" name="known_sig" value="{{ marks_sig }}">
+  <div class="card">
+    <div class="table-wrap"><table>
+      <thead><tr><th>Student</th><th>Roll</th><th class="ta-c">Marks (out of 100)</th></tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>{{ row.0.name }}</td>
+          <td>{{ row.0.roll_no }}</td>
+          <td class="ta-c"><input class="mark-input" type="number" min="0" max="100" name="marks_{{ row.0.id }}" value="{{ row.1 }}" placeholder="-" style="transition: var(--transition);"></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+  <button class="btn-primary btn-auto" type="submit">Save marks</button>
+</form>
+
+<div class="hint-inline" style="display:flex; flex-direction:column; gap:4px;">
+  <div>⌨️ <b>Keyboard Navigation:</b> Press <b>Enter</b> or <b>ArrowDown</b> to go to the next student, and <b>ArrowUp</b> to go back.</div>
+  <div>⚠️ <b>Validation:</b> Marks must be between <b>0</b> and <b>100</b>. Invalid marks will lock the save button.</div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  var inputs = document.querySelectorAll('.mark-input');
+  var submitBtn = document.querySelector('#marks-form button[type=submit]');
+  
+  inputs.forEach(function(input, idx) {
+    // 1. Keyboard Navigation
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowDown' || e.key === 'Enter') {
+        if (idx + 1 < inputs.length) {
+          inputs[idx + 1].focus();
+          inputs[idx + 1].select();
+        }
+        e.preventDefault();
+      } else if (e.key === 'ArrowUp') {
+        if (idx - 1 >= 0) {
+          inputs[idx - 1].focus();
+          inputs[idx - 1].select();
+        }
+        e.preventDefault();
+      }
+    });
+
+    // 2. Real-time validation styling
+    input.addEventListener('input', function() {
+      var val = parseFloat(input.value);
+      var isInvalid = false;
+      if (input.value !== "" && !isNaN(val) && (val > 100 || val < 0)) {
+        isInvalid = true;
+      }
+      
+      if (isInvalid) {
+        input.style.borderColor = 'var(--overdue)';
+        input.style.borderWidth = '2px';
+        input.style.boxShadow = '0 0 5px rgba(192, 67, 47, 0.25)';
+      } else {
+        input.style.borderColor = '';
+        input.style.borderWidth = '';
+        input.style.boxShadow = '';
+      }
+      
+      // Determine if submission should be disabled
+      var hasErrors = Array.from(inputs).some(function(inp) {
+        var v = parseFloat(inp.value);
+        return inp.value !== "" && !isNaN(v) && (v > 100 || v < 0);
+      });
+      
+      if (hasErrors) {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.5';
+        submitBtn.style.cursor = 'not-allowed';
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '';
+        submitBtn.style.cursor = '';
+      }
+    });
+  });
+
+  // Autofocus first mark field on load and select text
+  if (inputs.length > 0) {
+    inputs[0].focus();
+    inputs[0].select();
+  }
+});
+</script>
+{% else %}
+<div class="card card-pad muted">You have no subjects assigned in this class. Ask the admin to assign your subjects.</div>
+{% endif %}
+{% endblock %}

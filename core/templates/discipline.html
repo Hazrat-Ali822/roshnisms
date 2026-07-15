@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block heading %}Discipline{% endblock %}
+{% block content %}
+<div class="welcome">
+  <h1>Discipline &amp; Complaints</h1>
+  <p>{% if is_office %}Conduct records across the school.{% else %}Conduct records for your classes.{% endif %} {{ total }} record{{ total|pluralize }}{% if open_count %}, <b style="color:#7A5712">{{ open_count }} open</b>{% endif %}.</p>
+</div>
+
+<div class="stat-grid" style="margin-bottom:18px">
+  <div class="stat"><span class="s-ic">&#9776;</span><span class="s-label">Total records</span><span class="s-val">{{ total }}</span><span class="s-sub">all time</span></div>
+  <div class="stat"><span class="s-ic">&#9888;</span><span class="s-label">Open</span><span class="s-val">{{ open_count }}</span><span class="s-sub">need follow-up</span></div>
+  <div class="stat"><span class="s-ic">&#10003;</span><span class="s-label">Resolved</span><span class="s-val">{{ resolved_count }}</span><span class="s-sub">closed</span></div>
+</div>
+
+<details class="add-wrap no-print">
+  <summary class="add-btn">Log a record</summary>
+  <div class="card card-pad" style="max-width:680px">
+  <h3 style="margin-bottom:12px">Log a record</h3>
+  {% if students %}
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="action" value="add">
+    <div class="frow"><label>Student</label>
+      <select name="student" class="mini-select" style="width:260px" required>
+        <option value="">Select student&hellip;</option>
+        {% for s in students %}<option value="{{ s.id }}">{{ s.name }} ({{ s.classroom }})</option>{% endfor %}
+      </select>
+    </div>
+    <div class="frow"><label>Date</label><input type="date" name="date" value="{{ today }}"></div>
+    <div class="frow"><label>Category</label>
+      <select name="category" class="mini-select" style="width:220px">
+        {% for val, lbl in categories %}<option value="{{ val }}">{{ lbl }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="frow"><label>Severity</label>
+      <select name="severity" class="mini-select" style="width:160px">
+        {% for val, lbl in severities %}<option value="{{ val }}">{{ lbl }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="frow"><label>Description</label><textarea name="description" rows="3" style="width:100%;font:inherit;padding:8px 10px;border:1px solid var(--line-strong);border-radius:9px" placeholder="What happened?" required></textarea></div>
+    <div class="frow"><label>Action taken</label><input name="action_taken" placeholder="e.g. Verbal warning, Parent informed (optional)"></div>
+    <button class="btn-primary btn-auto" type="submit">Log record</button>
+  </form>
+  {% else %}
+  <p class="muted">No students available to log records for.</p>
+  {% endif %}
+</div>
+</details>
+
+<div class="card">
+  <div class="sec-head"><h3>Records</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Student</th><th>Category</th><th>Severity</th><th>Details</th><th>Reported by</th><th>Status</th>{% if is_office %}<th></th>{% endif %}</tr></thead>
+    <tbody>
+    {% for r in records %}
+      <tr>
+        <td class="muted" style="white-space:nowrap">{{ r.date|date:"d M Y" }}</td>
+        <td><b style="color:var(--ink)">{{ r.student.name }}</b><div class="muted" style="font-size:12px">{{ r.student.classroom }}</div></td>
+        <td>{{ r.get_category_display }}</td>
+        <td>
+          {% if r.severity == 'Critical' %}<span class="pill pill-overdue">Critical</span>
+          {% elif r.severity == 'Major' %}<span class="pill pill-pending">Major</span>
+          {% else %}<span class="pill pill-info">Minor</span>{% endif %}
+        </td>
+        <td style="max-width:320px">{{ r.description }}{% if r.action_taken %}<div class="muted" style="font-size:12px;margin-top:3px"><b>Action:</b> {{ r.action_taken }}</div>{% endif %}</td>
+        <td class="muted" style="font-size:12.5px">{{ r.reported_by|default:"&mdash;" }}</td>
+        <td>{% if r.status == 'Resolved' %}<span class="pill pill-paid">Resolved</span>{% else %}<span class="pill pill-pending">Open</span>{% endif %}</td>
+        {% if is_office %}
+        <td style="white-space:nowrap">
+          <form method="post" style="display:inline">{% csrf_token %}
+            <input type="hidden" name="rec_id" value="{{ r.id }}">
+            {% if r.status == 'Open' %}
+              <button class="act-btn ghost" name="action" value="resolve" style="padding:5px 11px">Resolve</button>
+            {% else %}
+              <button class="act-btn ghost" name="action" value="reopen" style="padding:5px 11px">Reopen</button>
+            {% endif %}
+          </form>
+          <form method="post" style="display:inline" onsubmit="return confirm('Delete this record permanently?');">{% csrf_token %}
+            <input type="hidden" name="rec_id" value="{{ r.id }}">
+            <button class="btn-reject" name="action" value="delete" style="padding:5px 11px">Delete</button>
+          </form>
+        </td>
+        {% endif %}
+      </tr>
+    {% empty %}
+      <tr><td colspan="{% if is_office %}8{% else %}7{% endif %}" class="dempty">No discipline records. A clean slate.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

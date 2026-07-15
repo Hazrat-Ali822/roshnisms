@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block heading %}Staff Leave{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Staff Leave</h1><p>File a leave request &mdash; the Principal approves or rejects it.</p></div>
+
+<div class="bar no-print" style="margin-bottom:18px">
+  <a class="act-btn ghost" href="{% url 'staff_list' %}" style="text-decoration:none">Directory</a>
+  <a class="act-btn ghost" href="{% url 'staff_attendance' %}" style="text-decoration:none">Attendance</a>
+  <a class="act-btn ghost" href="{% url 'payroll' %}" style="text-decoration:none">Payroll</a>
+  <a class="act-btn" href="{% url 'staff_leave' %}" style="text-decoration:none">Leave</a>
+</div>
+
+<div class="card card-pad" style="max-width:680px">
+  <h3 style="margin-bottom:14px">File leave request</h3>
+  <form method="post">{% csrf_token %}
+    <div class="frow"><label>Staff member</label><select name="staff_id">{% for s in staff %}<option value="{{ s.id }}">{{ s.name }} ({{ s.designation }})</option>{% endfor %}</select></div>
+    <div class="frow"><label>From</label><input name="from_date" type="date"></div>
+    <div class="frow"><label>To</label><input name="to_date" type="date"></div>
+    <div class="frow"><label>Reason</label><input name="reason" placeholder="e.g. medical, personal"></div>
+    <button class="btn-primary btn-auto" type="submit">Submit for approval</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="sec-head"><h3>Leave requests ({{ leaves|length }})</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Staff</th><th>From</th><th>To</th><th class="ta-r">Days</th><th>Reason</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for l in leaves %}
+      <tr>
+        <td><b style="color:var(--ink)">{{ l.staff.name }}</b></td>
+        <td>{{ l.from_date|date:"d M" }}</td>
+        <td>{{ l.to_date|date:"d M" }}</td>
+        <td class="ta-r num">{{ l.days }}</td>
+        <td>{{ l.reason|default:"—" }}</td>
+        <td>{% if l.status == 'Approved' %}<span class="pill pill-paid">Approved</span>{% elif l.status == 'Rejected' %}<span class="pill pill-overdue">Rejected</span>{% else %}<span class="pill pill-pending">Pending</span>{% endif %}</td>
+      </tr>
+    {% empty %}<tr><td colspan="6" class="muted">No leave requests.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

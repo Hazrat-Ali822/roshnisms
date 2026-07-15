@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block heading %}Transport{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Transport</h1><p>Routes, vehicles, drivers and transport fees.</p></div>
+<div class="stat-grid">
+  <div class="card stat"><span class="s-label">Routes</span><span class="s-val">{{ routes|length }}</span></div>
+  <div class="card stat"><span class="s-label">Students using transport</span><span class="s-val">{{ total_students }}</span></div>
+</div>
+<details class="add-wrap no-print">
+  <summary class="add-btn">Add route</summary>
+  <div class="card card-pad" style="max-width:680px">
+  <h3 style="margin-bottom:14px">Add route</h3>
+  <form method="post">
+    {% csrf_token %}
+    <div class="frow"><label>Route name</label><input name="name" placeholder="e.g. Route 4 - DHA"></div>
+    <div class="frow"><label>Vehicle</label><input name="vehicle" placeholder="LEB-0000"></div>
+    <div class="frow"><label>Driver</label><input name="driver" placeholder="Driver name"></div>
+    <div class="frow"><label>Monthly fee (Rs)</label><input type="number" name="fee" min="0" value="0"></div>
+    <button class="btn-primary btn-auto" type="submit">Add route</button>
+  </form>
+</div>
+</details>
+<div class="card">
+  <div class="sec-head"><h3>Routes</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Route</th><th>Vehicle</th><th>Driver</th><th>Students</th><th>Monthly fee</th></tr></thead>
+    <tbody>
+    {% for r in routes %}
+      <tr><td>{{ r.name }}</td><td>{{ r.vehicle }}</td><td>{{ r.driver }}</td><td>{{ r.students }}</td><td>Rs {{ r.fee }}</td></tr>
+    {% empty %}
+      <tr><td colspan="5" class="muted">No routes yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

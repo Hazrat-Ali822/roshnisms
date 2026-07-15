@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block heading %}Staff Attendance{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Staff Attendance</h1><p>Mark attendance for {{ today|date:"l, d M Y" }}. {% if marked %}{{ present }} present of {{ marked }} marked.{% else %}Not marked yet today.{% endif %}</p></div>
+
+<div class="bar no-print" style="margin-bottom:18px">
+  <a class="act-btn ghost" href="{% url 'staff_list' %}" style="text-decoration:none">Directory</a>
+  <a class="act-btn" href="{% url 'staff_attendance' %}" style="text-decoration:none">Attendance</a>
+  <a class="act-btn ghost" href="{% url 'payroll' %}" style="text-decoration:none">Payroll</a>
+  <a class="act-btn ghost" href="{% url 'staff_leave' %}" style="text-decoration:none">Leave</a>
+</div>
+
+<form method="post">{% csrf_token %}
+<div class="card">
+  <div class="sec-head"><h3>Today &mdash; {{ today|date:"d M Y" }}</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Name</th><th>Designation</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><b style="color:var(--ink)">{{ r.staff.name }}</b></td>
+        <td>{{ r.staff.designation }}</td>
+        <td>
+          <select name="status_{{ r.staff.id }}" class="mini-select" style="width:130px">
+            <option value="P" {% if r.status == 'P' %}selected{% endif %}>Present</option>
+            <option value="A" {% if r.status == 'A' %}selected{% endif %}>Absent</option>
+            <option value="L" {% if r.status == 'L' %}selected{% endif %}>Leave</option>
+            <option value="H" {% if r.status == 'H' %}selected{% endif %}>Half Day</option>
+          </select>
+        </td>
+      </tr>
+    {% empty %}<tr><td colspan="3" class="muted">No staff to mark.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% if rows %}<button class="btn-primary btn-auto" type="submit" style="margin-top:14px">Save attendance</button>{% endif %}
+</form>
+{% endblock %}

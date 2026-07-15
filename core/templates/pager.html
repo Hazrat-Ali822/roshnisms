@@ -1,0 +1,9 @@
+{% if page.paginator.num_pages > 1 %}
+<div class="pager no-print">
+  <span class="pager-info">Page {{ page.number }} of {{ page.paginator.num_pages }} &middot; {{ page.paginator.count }} total</span>
+  <span class="pager-btns">
+    {% if page.has_previous %}<a class="act-btn ghost" href="?{{ qs }}page={{ page.previous_page_number }}">&larr; Prev</a>{% else %}<span class="act-btn ghost disabled">&larr; Prev</span>{% endif %}
+    {% if page.has_next %}<a class="act-btn ghost" href="?{{ qs }}page={{ page.next_page_number }}">Next &rarr;</a>{% else %}<span class="act-btn ghost disabled">Next &rarr;</span>{% endif %}
+  </span>
+</div>
+{% endif %}

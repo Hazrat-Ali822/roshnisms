@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block heading %}Pay fees online{% endblock %}
+{% block content %}
+<div class="welcome no-print"><h1>Pay online</h1><p>{{ c.student.name }} &middot; {{ c.label }}</p></div>
+
+<div class="card card-pad" style="max-width:560px">
+  <div class="rcpt-line total" style="margin-top:0;padding-top:0;border-top:none">
+    <span>Amount due</span><b>Rs {{ balance }}</b>
+  </div>
+  <p class="muted" style="margin:4px 0 18px;font-size:12.5px">You can pay the full balance or a part of it. The office is notified automatically.</p>
+
+  <form method="post" enctype="multipart/form-data" id="payform">
+    {% csrf_token %}
+    <div class="frow">
+      <label>Amount to pay (Rs)</label>
+      <input type="number" name="amount" min="1" max="{{ balance }}" value="{{ balance }}" required>
+    </div>
+
+    <div class="frow">
+      <label>Payment method</label>
+      {% for code, label in gateways %}
+        <label class="qopt" style="display:block">
+          <input type="radio" name="gateway" value="{{ code }}" {% if forloop.first %}checked{% endif %} onchange="payMethod()">
+          {{ label }}{% if code == 'bank' %} — transfer to the school account{% else %} — pay from your mobile wallet{% endif %}
+        </label>
+      {% endfor %}
+    </div>
+
+    {% if has_bank %}
+    <div id="bankblock" class="card" style="background:#F7F9FB;padding:15px;margin-bottom:14px">
+      <b style="color:var(--ink)">School bank account</b>
+      <div class="info-grid" style="margin-top:10px">
+        {% if bank.bank %}<div class="ig"><span>Bank</span><b>{{ bank.bank }}</b></div>{% endif %}
+        {% if bank.title %}<div class="ig"><span>Account title</span><b>{{ bank.title }}</b></div>{% endif %}
+        {% if bank.account %}<div class="ig"><span>Account #</span><b>{{ bank.account }}</b></div>{% endif %}
+        {% if bank.iban %}<div class="ig"><span>IBAN</span><b>{{ bank.iban }}</b></div>{% endif %}
+      </div>
+      {% if bank.instructions %}<p class="muted" style="margin:10px 0 0;font-size:12.5px">{{ bank.instructions }}</p>{% endif %}
+      <div class="frow" style="margin-top:14px">
+        <label>Transfer reference / transaction ID</label>
+        <input type="text" name="bank_ref" placeholder="e.g. bank TID or online transfer ref">
+      </div>
+      <div class="frow">
+        <label>Note (optional)</label>
+        <input type="text" name="note" placeholder="anything the office should know">
+      </div>
+      <div class="frow">
+        <label>Proof of payment (optional image)</label>
+        <input type="file" name="proof" accept="image/*">
+      </div>
+      <p class="muted" style="font-size:12px;margin:0">After you submit, the office verifies your transfer and marks the fee paid. You will see it under Payment history.</p>
+    </div>
+    {% endif %}
+
+    <button class="btn-primary btn-auto" type="submit">Continue</button>
+    <a class="act-btn ghost" href="{% url 'my_fees' %}" style="margin-left:8px;text-decoration:none">Cancel</a>
+  </form>
+</div>
+
+<script>
+function payMethod(){
+  var block=document.getElementById('bankblock');
+  if(!block)return;
+  var sel=document.querySelector('input[name=gateway]:checked');
+  block.style.display=(sel&&sel.value==='bank')?'block':'none';
+}
+payMethod();
+</script>
+{% endblock %}

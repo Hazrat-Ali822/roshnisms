@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block heading %}ID Cards{% endblock %}
+{% block content %}
+<div class="welcome no-print">
+  <h1>Student ID Cards</h1>
+  <p>Printable identity cards. Filter by class, then Print &mdash; use your browser's &ldquo;Save as PDF&rdquo; to export.</p>
+</div>
+
+<div class="bar no-print" style="margin-bottom:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+  <form method="get" style="display:flex;gap:8px;align-items:center;margin:0">
+    <label class="muted" style="font-size:13px">Class</label>
+    <select name="class" class="mini-select" style="width:200px" onchange="this.form.submit()">
+      <option value="">All classes</option>
+      {% for c in classes %}<option value="{{ c.id }}" {% if sel == c.id|stringformat:'s' %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+    <noscript><button class="act-btn ghost" type="submit">Filter</button></noscript>
+  </form>
+  {% if students %}<button class="act-btn ghost" onclick="window.print()" type="button">Print {{ students|length }} card{{ students|length|pluralize }}</button>{% endif %}
+  <span class="muted" style="font-size:12.5px">{% if active_class %}{{ active_class }} &mdash; {% endif %}{{ students|length }} student{{ students|length|pluralize }}</span>
+</div>
+
+{% if students %}
+<div class="idcard-grid">
+  {% for s in students %}
+  <div class="idcard">
+    <div class="ic-head">
+      <span class="ic-crest">RP</span>
+      <div>
+        <div class="ic-school">{{ school.name|default:"Roshni Public School" }}</div>
+        <div class="ic-campus">{{ school.campus|default:"Main Campus" }}{% if school.session %} &middot; {{ school.session }}{% endif %}</div>
+      </div>
+    </div>
+    <div class="ic-body">
+      <div class="ic-photo">{% if s.photo %}<img src="{% url 'student_photo' s.id %}" alt="{{ s.name }}">{% else %}{{ s.name|slice:":1"|upper }}{% endif %}</div>
+      <div class="ic-info">
+        <div class="ic-name">{{ s.name }}</div>
+        <div class="ic-row"><span>Class</span><b>{{ s.classroom|default:"&mdash;" }}</b></div>
+        <div class="ic-row"><span>Roll</span><b>{{ s.admission_no|default:"&mdash;" }}</b></div>
+        <div class="ic-row"><span>Guardian</span><b>{{ s.guardian_name|default:"&mdash;" }}</b></div>
+        <div class="ic-row"><span>Phone</span><b>{{ s.guardian_phone|default:"&mdash;" }}</b></div>
+        {% if s.blood_group %}<div class="ic-row"><span>Blood</span><b>{{ s.blood_group }}</b></div>{% endif %}
+      </div>
+    </div>
+    <div class="ic-foot"><span>Student ID Card</span><span>{% if s.is_hostel %}Hostel{% else %}Day Scholar{% endif %}</span></div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card card-pad"><p class="muted">No students to show{% if active_class %} in {{ active_class }}{% endif %}.</p></div>
+{% endif %}
+{% endblock %}

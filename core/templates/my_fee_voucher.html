@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block heading %}Fee Voucher{% endblock %}
+{% block content %}
+<a class="btn-ghost btn-auto no-print" href="{% url 'my_fees' %}" style="margin-bottom:16px;display:inline-flex">&larr; Back to Fees</a>
+<div class="bar no-print" style="margin-bottom:14px">
+  <button class="btn-primary btn-auto" onclick="window.print()">Print / Save voucher</button>
+  {% if can_pay_online %}<a class="act-btn" href="{% url 'pay_online' c.id %}" style="text-decoration:none">Pay online</a>{% endif %}
+</div>
+
+{% include 'fee_voucher_body.html' with st=child %}
+{% endblock %}

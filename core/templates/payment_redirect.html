@@ -1,0 +1,20 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Redirecting to {{ gateway_label }}…</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body class="login-page">
+  <div class="login-card">
+    <h3>Redirecting to {{ gateway_label }}</h3>
+    <p>Please wait — do not close this window. You are being taken to the secure payment page.</p>
+    <form id="gw" method="post" action="{{ post_url }}">
+      {% for k, v in fields.items %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+      <button class="btn-primary" type="submit">Continue to {{ gateway_label }}</button>
+    </form>
+  </div>
+  <script>document.getElementById('gw').submit();</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block heading %}Salary Slip{% endblock %}
+{% block content %}
+<div class="bar">
+  <a class="btn-ghost" href="javascript:history.back()">&larr; Back</a>
+  <button class="btn-primary btn-auto" onclick="window.print()" type="button">Print / Save PDF</button>
+</div>
+<div class="card receipt">
+  <div class="rcpt-head">
+    <div class="rcpt-crest">R</div>
+    <div><b>{{ school.name|default:"Roshni Public School" }}</b><span>{{ school.campus|default:"Main Campus, Lahore" }} &middot; Salary Slip</span></div>
+    <div class="rcpt-no">{{ p.label }}</div>
+  </div>
+  <div class="rcpt-body">
+    <div class="rcpt-line"><span>Employee</span><b>{{ s.name }}</b></div>
+    <div class="rcpt-line"><span>Designation</span><b>{{ s.designation|default:"—" }}</b></div>
+    <div class="rcpt-line"><span>Joined</span><b>{{ s.joined|date:"d M Y" }}</b></div>
+    <div class="rcpt-line"><span>Pay period</span><b>{{ p.label }}</b></div>
+    <hr class="rcpt-hr">
+    <div class="rcpt-line"><span>Basic salary</span><b>Rs {{ p.basic }}</b></div>
+    <div class="rcpt-line"><span>Allowances</span><b>Rs {{ p.allowances }}</b></div>
+    <div class="rcpt-line"><span>Gross earnings</span><b>Rs {{ p.gross }}</b></div>
+    <div class="rcpt-line"><span>Deductions</span><b>&minus; Rs {{ p.deductions }}</b></div>
+    <div class="rcpt-line total"><span>Net salary payable</span><b>Rs {{ p.net }}</b></div>
+  </div>
+  <div class="rcpt-foot">
+    <div class="rcpt-sign">Generated on {{ p.generated_on|date:"d M Y" }}</div>
+    <div class="rcpt-sign">Authorised signature</div>
+  </div>
+</div>
+<p class="hint-inline no-print" style="max-width:520px">Tip: use <b>Print / Save PDF</b> and choose "Save as PDF" as the printer to download a clean, formatted copy.</p>
+{% endblock %}

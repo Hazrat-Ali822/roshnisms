@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block heading %}Academics{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Academics</h1><p>Class-wise attendance and exam results across the school. Review only — no data entry.</p></div>
+
+<div class="card">
+  <div class="sec-head"><h3>Class overview</h3><span class="muted" style="font-size:12px">Attendance: {{ month_label }}{% if latest_exam_name %} &middot; Result: {{ latest_exam_name }}{% endif %}</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Class</th><th class="ta-r">Students</th><th class="ta-r">Attendance</th><th class="ta-r">Avg result</th><th class="ta-r">Pass rate</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><b style="color:var(--ink)">{{ r.room }}</b></td>
+        <td class="ta-r num">{{ r.students }}</td>
+        <td class="ta-r num">{% if r.att_pct is not None %}{{ r.att_pct }}%{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td class="ta-r num">{% if r.avg is not None %}{{ r.avg }}%{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td class="ta-r num">{% if r.pass_pct is not None %}{{ r.pass_pct }}%{% else %}<span class="muted">—</span>{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="muted">No classes yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+<div class="muted" style="font-size:12px;margin-top:6px;line-height:1.55">Attendance is for the current month. Results are from the most recent exam with marks. A dash means no data has been recorded yet.</div>
+{% endblock %}

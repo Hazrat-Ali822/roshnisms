@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block heading %}Students{% endblock %}
+{% block content %}
+<div class="welcome" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+  <div><h1>Students</h1><p>Active students, plus the full archive of those who left or graduated.</p></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button type="button" class="act-btn ghost no-print" onclick="exportTableToCSV('#students-table', 'students_list.csv')" style="font-size:12.5px; padding:6px 12px; height:auto; min-height:0;">Export to Excel</button>
+    <a class="act-btn ghost no-print" href="{% url 'report_cards_bulk' %}" style="text-decoration:none">Report cards</a>
+    <a class="act-btn ghost no-print" href="{% url 'students_import' %}" style="text-decoration:none">Import CSV</a>
+    <a class="btn-primary btn-auto no-print" href="{% url 'student_add' %}" style="text-decoration:none">+ Add Student</a>
+  </div>
+</div>
+
+{% if q %}
+<div class="bar no-print" style="margin-bottom:16px">
+  <span class="pill pill-info">Search results for &ldquo;{{ q }}&rdquo; &mdash; {{ students.paginator.count }} found</span>
+  <a class="act-btn ghost" href="{% url 'students_list' %}" style="text-decoration:none">Clear search</a>
+</div>
+{% else %}
+<div class="bar no-print" style="margin-bottom:16px">
+  <a class="act-btn {% if tab == 'active' %}{% else %}ghost{% endif %}" href="?tab=active" style="text-decoration:none">Active ({{ counts.active }})</a>
+  <a class="act-btn {% if tab == 'left' %}{% else %}ghost{% endif %}" href="?tab=left" style="text-decoration:none">Left ({{ counts.left }})</a>
+  <a class="act-btn {% if tab == 'graduated' %}{% else %}ghost{% endif %}" href="?tab=graduated" style="text-decoration:none">Graduated / Alumni ({{ counts.graduated }})</a>
+  <a class="act-btn {% if tab == 'all' %}{% else %}ghost{% endif %}" href="?tab=all" style="text-decoration:none">All ({{ counts.all }})</a>
+</div>
+{% endif %}
+
+{% if counts.all == 0 and not q %}
+<div class="card card-pad empty-state">
+  <div class="es-icon">+</div>
+  <h3>No students yet</h3>
+  <p>This is where every student record lives. Add your first student to get started &mdash; a login is created automatically.</p>
+  <a class="btn-primary btn-auto" href="{% url 'student_add' %}" style="text-decoration:none">+ Add your first student</a>
+</div>
+{% else %}
+<div class="card">
+  <div class="sec-head"><h3>{% if q %}Matching students{% elif tab == 'active' %}Active students{% elif tab == 'left' %}Left / struck off{% elif tab == 'graduated' %}Graduated (alumni){% else %}All students{% endif %} ({{ students.paginator.count }})</h3></div>
+  <div class="table-wrap"><table id="students-table">
+    <thead><tr><th>Name</th><th>Class</th><th>Roll</th><th>Admission</th><th>Guardian</th><th>Status</th><th>Fee</th></tr></thead>
+    <tbody>
+    {% for s in students %}
+      <tr>
+        <td><a class="link" href="{% url 'student_detail' s.id %}"><b>{{ s.name }}</b></a></td>
+        <td>{{ s.classroom|default:"&mdash;" }}</td>
+        <td class="num">{{ s.roll_no|default:"&mdash;" }}</td>
+        <td class="muted">{{ s.admission_no }}</td>
+        <td>{{ s.guardian_name|default:"&mdash;" }}</td>
+        <td>
+          {% if s.status == 'Graduated' or s.graduated %}<span class="pill pill-info">Graduated</span>
+          {% elif s.status == 'Left' %}<span class="pill pill-pending">Left</span>
+          {% elif s.status == 'Struck Off' %}<span class="pill pill-overdue">Struck off</span>
+          {% else %}<span class="pill pill-paid">Active</span>{% endif %}
+        </td>
+        <td><span class="pill pill-{{ s.fee_status|lower }}">{{ s.fee_status }}</span></td>
+      </tr>
+    {% empty %}<tr><td colspan="7" class="dempty">{% if q %}No student matches &ldquo;{{ q }}&rdquo;.{% else %}No students in this view.{% endif %}</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+  {% include 'pager.html' with page=students qs=page_qs %}
+</div>
+{% endif %}
+{% endblock %}

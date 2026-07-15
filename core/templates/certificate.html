@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block heading %}Certificate{% endblock %}
+{% block content %}
+<div class="bar">
+  <a class="btn-ghost" href="{% url 'certificates' %}">&larr; Back</a>
+  <button class="btn-primary btn-auto" onclick="window.print()" type="button">Print</button>
+</div>
+<div class="card doc">
+  <div class="doc-head">
+    <div class="doc-crest">R</div>
+    <h2>Roshni Public School</h2>
+    <div class="doc-sub">Main Campus, Lahore &middot; Est. 2008</div>
+  </div>
+  <div class="doc-body">
+    <div class="doc-title">{{ cert.get_cert_type_display }}</div>
+    {% if cert.cert_type == 'Leaving' %}
+      <p>This is to certify that <b>{{ cert.student.name }}</b>, son/daughter of <b>{{ cert.student.guardian_name }}</b>, was a bonafide student of this school in class <b>{{ cert.student.classroom }}</b> (Admission No. {{ cert.student.admission_no }}). He/She bears a good moral character and has cleared all dues. This certificate is issued on request.</p>
+    {% elif cert.cert_type == 'Character' %}
+      <p>This is to certify that <b>{{ cert.student.name }}</b> of class <b>{{ cert.student.classroom }}</b> (Admission No. {{ cert.student.admission_no }}) has been a student of good moral character and conduct during the period of study at this institution. We wish him/her success in all future endeavours.</p>
+    {% elif cert.cert_type == 'Bonafide' %}
+      <p>This is to certify that <b>{{ cert.student.name }}</b>, son/daughter of <b>{{ cert.student.guardian_name }}</b>, is a bonafide student of class <b>{{ cert.student.classroom }}</b> (Admission No. {{ cert.student.admission_no }}) for the session 2025-26. This certificate is issued on request for official purposes.</p>
+    {% else %}
+      <p>This is to certify that <b>{{ cert.student.name }}</b> of class <b>{{ cert.student.classroom }}</b> (Admission No. {{ cert.student.admission_no }}) has paid all tuition and other fees up to date for the session 2025-26. No dues are pending against the student.</p>
+    {% endif %}
+    <p style="margin-top:20px"><b>Date of issue:</b> {{ cert.issued_on|date:"d M Y" }}</p>
+  </div>
+  <div class="doc-sign">
+    <div>Class Teacher</div>
+    <div>Principal - Asad Mehmood</div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block heading %}Datesheet{% endblock %}
+{% block content %}
+<div class="welcome"><h1>{% if is_student %}My Datesheet{% else %}Exam Datesheet{% endif %}</h1><p>{% if exam %}{{ exam.name }} &middot; {{ child.classroom }}.{% else %}No exam datesheet has been published yet.{% endif %}</p></div>
+
+{% if seat %}
+<div class="card card-pad" style="margin-bottom:16px">
+  <div class="sec-head" style="border:none;padding:0;margin-bottom:6px"><h3>Your seat</h3></div>
+  <p style="margin:0;font-size:15px">Room <b style="color:var(--ink)">{{ seat.room.name }}</b> &middot; Seat <b style="color:var(--accent)">#{{ seat.seat_no }}</b></p>
+</div>
+{% endif %}
+
+{% if rows %}
+<div class="card">
+  <div class="sec-head"><h3>{{ exam.name }} &mdash; {{ child.classroom }}</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Day</th><th>Subject</th><th>Time</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr><td><b style="color:var(--ink)">{{ r.date|date:"d M Y" }}</b></td><td>{{ r.date|date:"l" }}</td><td>{{ r.subject }}</td><td class="num">{{ r.time|default:"—" }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% else %}
+<div class="card card-pad"><p class="muted">No exam datesheet is available for your class right now. It will appear here once the school publishes it.</p></div>
+{% endif %}
+{% endblock %}

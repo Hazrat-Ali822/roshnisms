@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block heading %}Report Cards{% endblock %}
+{% block content %}
+<div class="welcome no-print"><h1>Report cards &mdash; whole class</h1><p>Pick a class and exam, then print every student's report card in one go.</p></div>
+
+<form method="get" class="bar no-print" style="margin-bottom:16px">
+  <label class="bar-label">Class</label>
+  <select name="class" onchange="this.form.submit()">
+    {% for c in classes %}<option value="{{ c.id }}" {% if classroom and c.id == classroom.id %}selected{% endif %}>{{ c }}</option>{% endfor %}
+  </select>
+  {% if sessions|length > 1 %}
+  <label class="bar-label">Session</label>
+  <select name="session" onchange="this.form.submit()">
+    {% for s in sessions %}<option value="{{ s }}" {% if s == sel_session %}selected{% endif %}>{{ s }}</option>{% endfor %}
+  </select>
+  {% endif %}
+  <label class="bar-label">Exam</label>
+  <select name="exam" onchange="this.form.submit()">
+    {% for e in exams %}<option value="{{ e.id }}" {% if exam and e.id == exam.id %}selected{% endif %}>{{ e.name }}</option>{% empty %}<option>No exams</option>{% endfor %}
+  </select>
+  <noscript><button class="btn-ghost" type="submit">Show</button></noscript>
+</form>
+
+{% if cards %}
+<div class="bar no-print" style="margin-bottom:16px">
+  <button class="btn-primary btn-auto" onclick="window.print()">Print all ({{ cards|length }})</button>
+  <span class="muted" style="font-size:13px">{{ classroom }} &middot; {{ exam.name }}</span>
+</div>
+{% for card in cards %}
+<div class="rc-page">{% include 'report_card_body.html' with student=card.student rows=card.rows obtained=card.obtained maximum=card.maximum pct=card.pct overall_grade=card.overall_grade result=card.result failed=card.failed position=card.position total_ranked=card.total_ranked %}</div>
+{% endfor %}
+{% else %}
+<div class="card card-pad"><p class="muted">{% if not exam %}No exam selected.{% else %}No marks entered for {{ classroom }} in {{ exam.name }} yet.{% endif %}</p></div>
+{% endif %}
+{% endblock %}

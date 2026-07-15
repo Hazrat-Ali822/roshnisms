@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block heading %}Admissions{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Admissions</h1><p>Track applicants from enquiry to enrollment.</p></div>
+<div class="stat-grid">
+  <div class="card stat"><span class="s-label">Enquiry</span><span class="s-val">{{ enquiry_count }}</span></div>
+  <div class="card stat"><span class="s-label">Test</span><span class="s-val">{{ test_count }}</span></div>
+  <div class="card stat"><span class="s-label">Offer</span><span class="s-val">{{ offer_count }}</span></div>
+  <div class="card stat"><span class="s-label">Enrolled</span><span class="s-val">{{ enrolled_count }}</span></div>
+</div>
+<details class="add-wrap no-print">
+  <summary class="add-btn">New enquiry</summary>
+  <div class="card card-pad" style="max-width:680px">
+  <h3 style="margin-bottom:14px">New enquiry</h3>
+  <form method="post">
+    {% csrf_token %}
+    <div class="frow"><label>Applicant name</label><input name="name" placeholder="Full name"></div>
+    <div class="frow"><label>Class applied</label><input name="class_applied" placeholder="e.g. Class 6"></div>
+    <div class="frow"><label>Parent name</label><input name="parent_name" placeholder="Guardian"></div>
+    <div class="frow"><label>Phone</label><input name="phone" placeholder="03xx-xxxxxxx"></div>
+    <button class="btn-primary btn-auto" type="submit">Add enquiry</button>
+  </form>
+</div>
+</details>
+<div class="card">
+  <div class="sec-head"><h3>Applicants</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Applicant</th><th>Class</th><th>Parent</th><th>Phone</th><th>Stage</th><th class="ta-c">Action</th></tr></thead>
+    <tbody>
+    {% for a in applicants %}
+      <tr>
+        <td>{{ a.name }}</td><td>{{ a.class_applied }}</td><td>{{ a.parent_name }}</td><td>{{ a.phone }}</td>
+        <td><span class="pill stage-{{ a.stage|lower }}">{{ a.stage }}</span></td>
+        <td class="ta-c">{% if a.stage == 'Enrolled' %}{% if a.converted %}<span class="pill pill-paid">Student &check;</span>{% else %}<a class="act-btn" href="{% url 'applicant_convert' a.id %}">Create student</a>{% endif %}{% else %}<a class="act-btn" href="?advance={{ a.id }}">Advance &rarr;</a>{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="muted">No applicants yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

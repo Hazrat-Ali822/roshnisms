@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block heading %}Receipt{% endblock %}
+{% block content %}
+<div class="bar">
+  {% if role == 'finance' or role == 'admin' %}<a class="btn-ghost" href="{% url 'receipts' %}">&larr; All receipts</a>{% endif %}
+  <button class="btn-primary btn-auto" onclick="window.print()" type="button">Print</button>
+</div>
+<div class="card receipt">
+  <div class="rcpt-head">
+    <div class="rcpt-crest">R</div>
+    <div><b>Roshni Public School</b><span>Main Campus, Lahore &middot; Fee Receipt</span></div>
+    <div class="rcpt-no">{{ p.receipt_no }}</div>
+  </div>
+  <div class="rcpt-body">
+    <div class="rcpt-line"><span>Student</span><b>{{ p.student.name }}</b></div>
+    <div class="rcpt-line"><span>Class / Roll</span><b>{{ p.student.classroom }} &middot; {{ p.student.roll_no }}</b></div>
+    <div class="rcpt-line"><span>Fee month</span><b>{{ p.month }}</b></div>
+    <div class="rcpt-line"><span>Date</span><b>{{ p.date|date:"d M Y" }}</b></div>
+    <div class="rcpt-line"><span>Payment mode</span><b>{{ p.get_mode_display }}</b></div>
+    <hr class="rcpt-hr">
+    <div class="rcpt-line"><span>Tuition</span><b>Rs {{ p.amount }}</b></div>
+    <div class="rcpt-line"><span>Late fee</span><b>Rs {{ p.late_fee }}</b></div>
+    <div class="rcpt-line total"><span>Total received</span><b>Rs {{ p.total }}</b></div>
+  </div>
+  <div class="rcpt-foot">
+    <span class="paid-stamp">PAID</span>
+    <div class="rcpt-sign">Received by: {{ p.received_by }}</div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block heading %}Import Staff{% endblock %}
+{% block content %}
+<div class="welcome" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+  <div><h1>Import staff from CSV</h1><p>Load your whole team at once. You can create a login for anyone later from the Staff page.</p></div>
+  <a class="act-btn ghost" href="{% url 'staff_list' %}" style="text-decoration:none">&larr; Back to staff</a>
+</div>
+
+{% if result %}
+<div class="card card-pad" style="margin-bottom:16px">
+  <h3 style="margin-bottom:8px">Import finished</h3>
+  <p style="margin:0 0 6px"><span class="pill pill-paid">{{ result.created }} imported</span>
+    {% if result.error_count %}<span class="pill pill-overdue" style="margin-left:6px">{{ result.error_count }} skipped</span>{% endif %}</p>
+  {% if result.errors %}
+  <div class="msg msg-error" style="margin-top:10px">
+    <b>Rows that need attention:</b>
+    <ul style="margin:6px 0 0 18px">{% for e in result.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="card card-pad" style="max-width:720px">
+  <h3 style="margin-bottom:6px">Step 1 &mdash; Get the template</h3>
+  <p class="muted" style="margin:0 0 12px;font-size:13px">Download the CSV, fill one staff member per row, keep the header row unchanged. Only <b>Name</b> is required.</p>
+  <form method="post" style="margin-bottom:22px">{% csrf_token %}
+    <input type="hidden" name="action" value="template">
+    <button class="act-btn" type="submit" style="text-decoration:none">Download template CSV</button>
+  </form>
+
+  <h3 style="margin-bottom:6px">Step 2 &mdash; Upload your file</h3>
+  <p class="muted" style="margin:0 0 12px;font-size:13px">Salary columns take plain numbers (e.g. 45000). Monthly salary = basic + allowances.</p>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <div class="frow"><label>CSV file</label><input type="file" name="file" accept=".csv" required></div>
+    <button class="btn-primary btn-auto" type="submit">Import staff</button>
+  </form>
+
+  <p class="hint-inline" style="margin-top:18px">Columns: {% for c in columns %}<b>{{ c }}</b>{% if not forloop.last %}, {% endif %}{% endfor %}.</p>
+</div>
+{% endblock %}

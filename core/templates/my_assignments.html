@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block heading %}Assignments{% endblock %}
+{% block content %}
+
+{% if not is_student %}
+  {# ---------- Parent: subject-wise progress ---------- #}
+  <div class="welcome"><h1>Assignments</h1><p>{% if child %}{{ child.name }} &middot; Class {{ child.classroom }} &middot; progress by subject.{% else %}No student linked to this account.{% endif %}</p></div>
+  {% if summary %}
+  <div class="subj-grid">
+    {% for s in summary %}
+      <div class="card card-pad">
+        <h3 style="font-size:15.5px;margin-bottom:12px">{{ s.subject }}</h3>
+        <div class="prog-row"><span>Assigned</span><b>{{ s.total }}</b></div>
+        <div class="prog-row"><span style="color:#0B5F4F">Completed</span><b style="color:#0B5F4F">{{ s.done }}</b></div>
+        <div class="prog-row"><span style="color:#7A5712">Pending</span><b style="color:#7A5712">{{ s.pending }}</b></div>
+        <div class="pbar"><span style="width:{% widthratio s.done s.total 100 %}%"></span></div>
+      </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card card-pad"><p class="muted">No assignments have been given yet.</p></div>
+  {% endif %}
+
+{% elif assignment %}
+  {# ---------- Student: one assignment ---------- #}
+  <a class="btn-ghost btn-auto no-print" href="{% url 'my_assignments' %}" style="margin-bottom:16px;display:inline-flex">&larr; All assignments</a>
+  <div class="welcome"><h1>{{ assignment.title }}</h1><p>{% if assignment.subject %}{{ assignment.subject.name }} &middot; {% endif %}Due {{ assignment.due_date }}</p></div>
+
+  <div class="card card-pad" style="margin-bottom:16px">
+    <p style="white-space:pre-wrap;margin:0;color:var(--text)">{{ assignment.description|default:"No description provided." }}</p>
+    {% if assignment.attachment %}
+      <a class="act-btn" href="{% url 'assignment_file' assignment.id %}" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;margin-top:12px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M12 4v10M8 11l4 4 4-4"/><path d="M5 19h14"/></svg>
+        Download assignment file
+      </a>
+    {% endif %}
+  </div>
+
+  <div class="card card-pad">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <h3>{% if submission %}Your submission{% else %}Submit your work{% endif %}</h3>
+      {% if submission %}<span class="pill pill-{% if submission.status == 'Graded' %}paid{% else %}info{% endif %}">{{ submission.status }}</span>{% endif %}
+    </div>
+
+    {% if submission %}
+      {% if submission.file %}
+        <a class="act-btn ghost" href="{% url 'submission_file' submission.id %}" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M12 4v10M8 11l4 4 4-4"/><path d="M5 19h14"/></svg>
+          Download my file
+        </a>
+      {% endif %}
+      {% if submission.answer_text %}<p style="white-space:pre-wrap;margin:10px 0 0;color:var(--text)">{{ submission.answer_text }}</p>{% endif %}
+      <div class="muted" style="font-size:12px;margin-top:8px">Submitted on {{ submission.submitted_on }}</div>
+      {% if submission.grade %}<div style="margin-top:6px">Teacher's grade / feedback: <b style="color:var(--ink)">{{ submission.grade }}</b></div>{% endif %}
+      <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
+      <h4 style="margin-bottom:8px;font-size:14px">Uploaded the wrong file? Replace it below.</h4>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}
+      <div class="frow"><label>Upload your file (PDF, image, document...)</label><input type="file" name="file"></div>
+      <div class="frow"><label>Notes (optional)</label><textarea name="answer_text" rows="3" placeholder="Anything you want to tell the teacher...">{{ submission.answer_text|default:'' }}</textarea></div>
+      <button class="btn-primary btn-auto" type="submit">{% if submission %}Replace submission{% else %}Submit assignment{% endif %}</button>
+    </form>
+  </div>
+
+{% else %}
+  {# ---------- Student: list ---------- #}
+  <div class="welcome"><h1>Assignments</h1><p>{% if child %}Class {{ child.classroom }} &middot; work assigned to you.{% else %}No student linked to this account.{% endif %}</p></div>
+  {% if assignments %}
+  <div class="card">
+    {% for a in assignments %}
+      <a class="mat-row" href="{% url 'my_assignments' %}?id={{ a.obj.id }}" style="text-decoration:none">
+        <span class="mat-ic" style="background:#E6EEF8;color:#2C5FA8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="6" y="4.5" width="12" height="16" rx="2"/><path d="M9 4.5V3.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 11h6M9 14.5h4"/></svg></span>
+        <div class="mat-b"><b>{{ a.obj.title }}</b><span>{% if a.obj.subject %}{{ a.obj.subject.name }} &middot; {% endif %}Due {{ a.obj.due_date }}</span></div>
+        {% if a.submission %}<span class="pill pill-{% if a.submission.status == 'Graded' %}paid{% else %}info{% endif %}">{{ a.submission.status }}</span>{% else %}<span class="pill pill-pending">Pending</span>{% endif %}
+      </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card card-pad"><p class="muted">No assignments yet.</p></div>
+  {% endif %}
+{% endif %}
+{% endblock %}

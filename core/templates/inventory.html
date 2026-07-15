@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block heading %}Inventory{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Inventory / Store</h1><p>Track uniforms, books, stationery and supplies.</p></div>
+<div class="stat-grid">
+  <div class="card stat"><span class="s-label">Items</span><span class="s-val">{{ total }}</span></div>
+  <div class="card stat"><span class="s-label">Low stock</span><span class="s-val">{{ low }}</span></div>
+</div>
+<details class="add-wrap no-print">
+  <summary class="add-btn">Add item</summary>
+  <div class="card card-pad" style="max-width:680px">
+  <h3 style="margin-bottom:14px">Add item</h3>
+  <form method="post">{% csrf_token %}
+    <div class="frow"><label>Item</label><input name="name" placeholder="Item name"></div>
+    <div class="frow"><label>Category</label>
+      <select name="category"><option>Uniform</option><option>Stationery</option><option>Supplies</option><option>Books</option><option>Other</option></select>
+    </div>
+    <div class="frow"><label>Quantity</label><input type="number" name="quantity" min="0" value="0"></div>
+    <div class="frow"><label>Reorder at</label><input type="number" name="reorder_level" min="0" value="0"></div>
+    <button class="btn-primary btn-auto" type="submit">Add item</button>
+  </form>
+</div>
+</details>
+<div class="card">
+  <div class="sec-head"><h3>Stock items</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Item</th><th>Category</th><th>Quantity</th><th>Reorder at</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for i in items %}
+      <tr><td>{{ i.name }}</td><td>{{ i.category }}</td><td>{{ i.quantity }} {{ i.unit }}</td><td>{{ i.reorder_level }}</td>
+      <td>{% if i.low %}<span class="pill pill-overdue">Low</span>{% else %}<span class="pill pill-paid">OK</span>{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="5" class="muted">No items yet.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block heading %}Staff{% endblock %}
+{% block content %}
+<div class="welcome" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+  <div><h1>Staff HR</h1><p>Directory, attendance, payroll and leave for all employees.</p></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button type="button" class="act-btn ghost no-print" onclick="exportTableToCSV('#staff-table', 'staff_list.csv')" style="font-size:12.5px; padding:6px 12px; height:auto; min-height:0;">Export to Excel</button>
+    <a class="act-btn ghost no-print" href="{% url 'staff_import' %}" style="text-decoration:none">Import CSV</a>
+  </div>
+</div>
+
+<div class="bar no-print" style="margin-bottom:18px">
+  <a class="act-btn" href="{% url 'staff_list' %}" style="text-decoration:none">Directory</a>
+  <a class="act-btn ghost" href="{% url 'staff_attendance' %}" style="text-decoration:none">Attendance</a>
+  <a class="act-btn ghost" href="{% url 'payroll' %}" style="text-decoration:none">Payroll</a>
+  <a class="act-btn ghost" href="{% url 'staff_leave' %}" style="text-decoration:none">Leave</a>
+</div>
+
+<details class="add-wrap no-print">
+  <summary class="add-btn">Add staff</summary>
+  <div class="card card-pad" style="max-width:680px">
+  <h3 style="margin-bottom:14px">Add staff member</h3>
+  <form method="post">{% csrf_token %}
+    <div class="frow"><label>Name</label><input name="name" placeholder="Full name"></div>
+    <div class="frow"><label>Designation</label><input name="designation" placeholder="e.g. Senior Teacher"></div>
+    <div class="frow"><label>Phone</label><input name="phone" placeholder="03xx-xxxxxxx"></div>
+    <div class="frow"><label>Email</label><input name="email" placeholder="name@roshni.edu.pk"></div>
+    <div class="frow"><label>Basic salary (Rs)</label><input name="basic_salary" type="number" placeholder="e.g. 40000"></div>
+    <div class="frow"><label>Allowances (Rs)</label><input name="allowances" type="number" placeholder="e.g. 5000"></div>
+    <div class="frow" style="border-top:1px solid var(--line);padding-top:12px">
+      <label style="text-transform:none;letter-spacing:0;font-size:13.5px"><input type="checkbox" name="create_login"> Create a login account for this staff member</label>
+    </div>
+    <div class="row-2x">
+      <div class="frow"><label>Login role</label><select name="login_role">{% for val, lbl in login_roles %}<option value="{{ val }}">{{ lbl }}</option>{% endfor %}</select></div>
+      <div class="frow"><label>Class (for a teacher)</label><select name="login_class"><option value="">- none -</option>{% for c in classes %}<option value="{{ c.id }}">{{ c }}</option>{% endfor %}</select></div>
+    </div>
+    <button class="btn-primary btn-auto" type="submit">Add staff</button>
+  </form>
+</div>
+</details>
+<div class="card">
+  <div class="sec-head"><h3>All staff ({{ staff|length }})</h3></div>
+  <div class="table-wrap"><table id="staff-table">
+    <thead><tr><th>Name</th><th>Designation</th><th>Phone</th><th class="ta-r">Basic</th><th class="ta-r">Allow.</th><th class="ta-r">Monthly</th><th>Joined</th></tr></thead>
+    <tbody>
+    {% for s in staff %}
+      <tr><td><b style="color:var(--ink)">{{ s.name }}</b></td><td>{{ s.designation }}</td><td class="num">{{ s.phone }}</td><td class="ta-r num">{{ s.basic_salary }}</td><td class="ta-r num">{{ s.allowances }}</td><td class="ta-r num">Rs {{ s.monthly_salary }}</td><td>{{ s.joined|date:"d M Y" }}</td></tr>
+    {% empty %}<tr><td colspan="7" class="muted">No staff yet. Use &ldquo;Add staff&rdquo; above to add your first employee &mdash; you can create their login at the same time.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

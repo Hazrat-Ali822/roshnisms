@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<div class="bar no-print" style="margin-bottom:14px">
+  <button class="btn-primary btn-auto" onclick="window.print()">Print / Save as PDF</button>
+  <a class="act-btn ghost" href="{% url 'reports' %}" style="text-decoration:none">&larr; Back to reports</a>
+</div>
+
+<div class="card report">
+  <div class="rc-head">
+    <div class="rc-crest">{% if brand_logo %}<img src="{% url 'school_logo' %}" alt="">{% else %}{{ brand_name|slice:":1"|upper }}{% endif %}</div>
+    <h2>{{ brand_name }}</h2>
+    <div class="sub">{{ title }}{% if subtitle %} &middot; {{ subtitle }}{% endif %}</div>
+  </div>
+
+  {% for sec in sections %}
+  <div class="rep-sec">
+    <h3 class="rep-h">{{ sec.heading }}</h3>
+    <div class="rep-grid">
+      {% for label, value in sec.rows %}
+      <div class="rep-stat"><div class="rep-lbl">{{ label }}</div><div class="rep-val">{{ value }}</div></div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="rc-foot" style="justify-content:center">
+    <div class="muted" style="font-size:12px">Generated from {{ brand_name }} SMS &middot; {{ subtitle }}</div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+<div class="card voucher">
+  <div class="vch-head">
+    <div class="rc-crest">{% if brand_logo %}<img src="{% url 'school_logo' %}" alt="">{% else %}{{ brand_name|slice:":1"|upper }}{% endif %}</div>
+    <div class="vch-title"><b>{{ brand_name }}</b><span>{% if school %}{{ school.campus }} &middot; {% endif %}Fee Voucher</span></div>
+    <div class="vch-tag">{{ c.status }}</div>
+  </div>
+  <div class="vch-meta">
+    <div><span>Student</span><b>{{ st.name }}</b></div>
+    <div><span>Class / Roll</span><b>{{ st.classroom }} &middot; {{ st.roll_no }}</b></div>
+    <div><span>Month</span><b>{{ c.label }}</b></div>
+    <div><span>Due date</span><b>{{ c.due_date }}</b></div>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Particulars</th><th class="ta-r">Amount</th></tr></thead>
+    <tbody>
+      <tr><td>Tuition fee</td><td class="ta-r num">Rs {{ c.tuition }}</td></tr>
+      {% for ln in c.lines.all %}<tr><td>{{ ln.label }}</td><td class="ta-r num">Rs {{ ln.amount }}</td></tr>{% endfor %}
+      {% if c.transport_fee %}<tr><td>Transport fee</td><td class="ta-r num">Rs {{ c.transport_fee }}</td></tr>{% endif %}
+      {% if c.hostel_fee %}<tr><td>Hostel fee</td><td class="ta-r num">Rs {{ c.hostel_fee }}</td></tr>{% endif %}
+      {% if c.other_charges %}<tr><td>{{ c.other_label|default:"Other charges" }}</td><td class="ta-r num">Rs {{ c.other_charges }}</td></tr>{% endif %}
+      {% if c.arrears %}<tr><td>Previous dues (arrears)</td><td class="ta-r num">Rs {{ c.arrears }}</td></tr>{% endif %}
+      {% if c.late_fee %}<tr><td>Late fee</td><td class="ta-r num">Rs {{ c.late_fee }}</td></tr>{% endif %}
+      {% if c.discount %}<tr><td>Discount{% if c.discount_reason %} ({{ c.discount_reason }}){% endif %}</td><td class="ta-r num" style="color:#0B5F4F">&minus; Rs {{ c.discount }}</td></tr>{% endif %}
+      {% if c.scholarship %}<tr><td>Scholarship{% if c.scholarship_name %} ({{ c.scholarship_name }}){% endif %}</td><td class="ta-r num" style="color:#0B5F4F">&minus; Rs {{ c.scholarship }}</td></tr>{% endif %}
+      <tr><td><b style="color:var(--ink)">Net Payable</b></td><td class="ta-r num"><b style="color:var(--ink);font-size:15px">Rs {{ c.net_payable }}</b></td></tr>
+      <tr><td>Paid</td><td class="ta-r num">Rs {{ c.paid }}</td></tr>
+      <tr><td><b style="color:var(--ink)">Balance</b></td><td class="ta-r num"><b style="color:#922A1B">Rs {{ c.balance }}</b></td></tr>
+    </tbody>
+  </table></div>
+  {% if c.discount_by %}<div class="vch-note">Discount approved by: {{ c.discount_by }}.</div>{% endif %}
+  <div class="vch-note">Please pay before the due date to avoid a late charge. This voucher is computer-generated.</div>
+</div>

@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block heading %}Approvals{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Approvals</h1><p>Items waiting for your decision. Approving applies the change at once — the Office and Accounts then see the result.</p></div>
+
+<div class="card">
+  <div class="sec-head"><h3>Admissions awaiting enrolment ({{ pending_admissions|length }})</h3></div>
+  <div style="padding:8px">
+    {% for a in pending_admissions %}
+      <div class="appr-row">
+        <div class="appr-info">
+          <b>{{ a.name }}</b>
+          <span>{{ a.class_applied|default:"—" }} &middot; Parent: {{ a.parent_name|default:"—" }}{% if a.phone %} &middot; {{ a.phone }}{% endif %}</span>
+        </div>
+        <form method="post" class="appr-actions">{% csrf_token %}
+          <input type="hidden" name="applicant_id" value="{{ a.id }}">
+          <button class="btn-primary btn-auto" name="action" value="approve_admission" type="submit">Approve &amp; enrol</button>
+          <button class="btn-reject" name="action" value="reject_admission" type="submit">Reject</button>
+        </form>
+      </div>
+    {% empty %}
+      <div class="dempty">No admissions waiting. The Office moves applicants up to the Offer stage; they appear here for your decision.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="sec-head"><h3>Fee concessions awaiting approval ({{ pending_concessions|length }})</h3></div>
+  <div style="padding:8px">
+    {% for r in pending_concessions %}
+      <div class="appr-row">
+        <div class="appr-info">
+          <b>{{ r.student.name }} <span class="muted" style="font-weight:600">&middot; {{ r.student.classroom }}</span></b>
+          <span><span class="pill {% if r.kind == 'scholarship' %}pill-info{% else %}pill-paid{% endif %}">{{ r.get_kind_display }}</span> Rs {{ r.amount }} on {{ r.challan.label }}{% if r.label %} &mdash; {{ r.label }}{% endif %} &middot; requested by {{ r.requested_by|default:"Accounts" }}</span>
+        </div>
+        <form method="post" class="appr-actions">{% csrf_token %}
+          <input type="hidden" name="req_id" value="{{ r.id }}">
+          <button class="btn-primary btn-auto" name="action" value="approve_concession" type="submit">Approve</button>
+          <button class="btn-reject" name="action" value="reject_concession" type="submit">Reject</button>
+        </form>
+      </div>
+    {% empty %}
+      <div class="dempty">No concession requests pending. Accounts requests a discount or scholarship from a student's fee page, and it appears here for approval.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="sec-head"><h3>Staff leave awaiting approval ({{ pending_leaves|length }})</h3></div>
+  <div style="padding:8px">
+    {% for l in pending_leaves %}
+      <div class="appr-row">
+        <div class="appr-info">
+          <b>{{ l.staff.name }} <span class="muted" style="font-weight:600">&middot; {{ l.staff.designation }}</span></b>
+          <span>{{ l.from_date|date:"d M" }} &rarr; {{ l.to_date|date:"d M Y" }} ({{ l.days }} day{{ l.days|pluralize }}){% if l.reason %} &middot; {{ l.reason }}{% endif %}{% if l.applied_by %} &middot; filed by {{ l.applied_by }}{% endif %}</span>
+        </div>
+        <form method="post" class="appr-actions">{% csrf_token %}
+          <input type="hidden" name="leave_id" value="{{ l.id }}">
+          <button class="btn-primary btn-auto" name="action" value="approve_leave" type="submit">Approve</button>
+          <button class="btn-reject" name="action" value="reject_leave" type="submit">Reject</button>
+        </form>
+      </div>
+    {% empty %}
+      <div class="dempty">No staff leave requests pending. The Office files leave from Staff &rarr; Leave; it appears here for your decision.</div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if recent_decisions %}
+<div class="card">
+  <div class="sec-head"><h3>Recent decisions</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Student</th><th>Type</th><th class="ta-r">Amount</th><th>Month</th><th>Status</th><th>By</th></tr></thead>
+    <tbody>
+    {% for r in recent_decisions %}
+      <tr>
+        <td><b style="color:var(--ink)">{{ r.student.name }}</b></td>
+        <td>{{ r.get_kind_display }}</td>
+        <td class="ta-r num">Rs {{ r.amount }}</td>
+        <td>{{ r.challan.label }}</td>
+        <td>{% if r.status == 'Approved' %}<span class="pill pill-paid">Approved</span>{% else %}<span class="pill pill-overdue">Rejected</span>{% endif %}</td>
+        <td class="muted">{{ r.decided_by|default:"—" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endif %}
+{% endblock %}

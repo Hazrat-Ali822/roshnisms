@@ -1,0 +1,84 @@
+============================================================
+   ROSHNI SCHOOL MANAGEMENT SYSTEM  --  START GUIDE
+============================================================
+
+Kuch install karne ki zaroorat NAHI. Bas ye karein:
+
+
+------------------------------------------------------------
+CHALANA
+------------------------------------------------------------
+
+1. Is folder mein file dhoondein:
+
+        RoshniSchool.exe
+
+2. Us par DOUBLE-CLICK karein.
+
+3. Pehli baar Windows ye keh sakta hai:
+   "Windows protected your PC"
+
+     -> "More info" par click karein
+     -> phir "Run anyway" dabayein
+
+   (Ghabrayein nahi -- ye har naye software ke sath hota hai;
+    system bilkul mehfooz hai.)
+
+4. Ek kaali window khulegi (system chal raha hai) aur thodi der
+   mein browser KHUD khul jayega.
+
+   Agar browser khud na khule to Chrome/Edge kholein aur upar
+   address bar mein likhein:     http://localhost:8000
+
+
+------------------------------------------------------------
+PEHLI DAFA LOGIN
+------------------------------------------------------------
+
+   Username:  admin
+   Password:  admin123
+
+Login ke baad:
+  - Upar dayein taraf apni photo/naam par click -> "Change password"
+    se apna password badal lein.
+  - "School Settings" mein school ka naam, logo, rang set karein.
+  - "Help & Guide" (bayein neechay) mein har cheez ka tareeqa likha hai.
+  - Tafseeli guide ke liye is folder mein "USER_GUIDE.md" bhi hai.
+
+
+------------------------------------------------------------
+BAND KARNA
+------------------------------------------------------------
+
+Jo kaali window khuli hai use band kar dein -- system band ho jayega.
+Dobara chalane ke liye phir se "RoshniSchool.exe" double-click.
+
+
+------------------------------------------------------------
+DOOSRE COMPUTER / MOBILE SE ISTEMAL (aik hi Wi-Fi par)
+------------------------------------------------------------
+
+Jis PC par system chal raha hai uska IP maloom karein:
+  - Start menu mein "cmd" likh kar Command Prompt kholein,
+    phir likhein:  ipconfig
+  - "IPv4 Address" dhoondein, misaal:  192.168.1.10
+
+Baaqi devices ke browser mein kholein:   http://192.168.1.10:8000
+(Sab devices aik hi Wi-Fi/LAN par hon. Internet ki zaroorat nahi.)
+
+
+------------------------------------------------------------
+ZAROORI BAATEIN
+------------------------------------------------------------
+
+  - Aap ka DATA isi folder mein "db.sqlite3" file mein rehta hai.
+    Is POORE folder ki copy kabhi kabhi USB ya Google Drive par
+    rakh lein -- ya system ke andar "School Settings -> Download
+    backup now" se backup le lein.
+  - Is folder ko idhar-udhar move/rename kar sakte hain, par "exe"
+    aur "_internal" folder hamesha SATH rakhein.
+  - "Testing tools" (Settings mein) se demo data load / sab reset
+    ho sakta hai (ye asli data mita dete hain -- ehtiyat se).
+  - Ye abhi TESTING ke liye hai (school ke andar / LAN). Internet
+    par public mat karein jab tak bataya na jaye.
+  - Koi masla ya tajweez ho to note kar ke bhej dein -- shukriya!

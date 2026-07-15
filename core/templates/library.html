@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block heading %}Library{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Library</h1><p>Catalogue, issue and return of books.</p></div>
+<div class="stat-grid">
+  <div class="card stat"><span class="s-label">Total copies</span><span class="s-val">{{ total_copies }}</span></div>
+  <div class="card stat"><span class="s-label">Available</span><span class="s-val">{{ available }}</span></div>
+  <div class="card stat"><span class="s-label">Issued</span><span class="s-val">{{ issued|length }}</span></div>
+  <div class="card stat"><span class="s-label">Overdue</span><span class="s-val">{{ overdue }}</span></div>
+</div>
+<div class="row-2x">
+  <details class="add-wrap no-print">
+  <summary class="add-btn">Add book</summary>
+  <div class="card card-pad">
+    <h3 style="margin-bottom:14px">Add book</h3>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_book">
+      <div class="frow"><label>Title</label><input name="title" placeholder="Book title"></div>
+      <div class="frow"><label>Author</label><input name="author" placeholder="Author"></div>
+      <div class="frow"><label>Copies</label><input type="number" name="copies" min="1" value="1"></div>
+      <button class="btn-primary btn-auto" type="submit">Add book</button>
+    </form>
+  </div>
+</details>
+  <details class="add-wrap no-print">
+  <summary class="add-btn">Issue book</summary>
+  <div class="card card-pad">
+    <h3 style="margin-bottom:14px">Issue a book</h3>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="issue">
+      <div class="frow"><label>Book</label>
+        <select name="book">
+          {% for b in available_books %}<option value="{{ b.id }}">{{ b.title }} ({{ b.available }} left)</option>{% endfor %}
+        </select>
+      </div>
+      <div class="frow"><label>Borrower</label><input name="borrower" placeholder="Student name &amp; class"></div>
+      <div class="frow"><label>Due date</label><input type="date" name="due"></div>
+      <button class="btn-primary btn-auto" type="submit">Issue book</button>
+    </form>
+  </div>
+</details>
+</div>
+<div class="card">
+  <div class="sec-head"><h3>Catalogue</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Code</th><th>Title</th><th>Author</th><th>Copies</th><th>Available</th></tr></thead>
+    <tbody>
+    {% for b in books %}
+      <tr><td>{{ b.code }}</td><td>{{ b.title }}</td><td>{{ b.author }}</td><td>{{ b.copies }}</td>
+      <td><b {% if b.available == 0 %}style="color:var(--overdue)"{% endif %}>{{ b.available }}</b></td></tr>
+    {% empty %}
+      <tr><td colspan="5" class="muted">No books yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+<div class="card">
+  <div class="sec-head"><h3>Currently issued</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Book</th><th>Borrower</th><th>Due date</th><th>Status</th><th class="ta-c">Action</th></tr></thead>
+    <tbody>
+    {% for i in issued %}
+      <tr>
+        <td>{{ i.obj.book.title }}</td><td>{{ i.obj.student_name }}</td><td>{{ i.obj.due_on|date:"d M Y" }}</td>
+        <td>{% if i.overdue %}<span class="pill pill-overdue">Overdue</span>{% else %}<span class="pill pill-paid">On time</span>{% endif %}</td>
+        <td class="ta-c"><a class="act-btn ghost" href="?return={{ i.obj.id }}">Return</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="muted">No books issued.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

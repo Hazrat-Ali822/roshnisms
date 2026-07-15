@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block heading %}Restore from backup{% endblock %}
+{% block content %}
+<div class="welcome no-print"><h1>Restore from backup</h1><p>Replace all current data with a backup file. Read the steps carefully.</p></div>
+
+<a class="btn-ghost btn-auto" href="{% url 'school_settings' %}" style="margin-bottom:16px;display:inline-flex;text-decoration:none">&larr; Back to Settings</a>
+
+{% if not staged %}
+<div class="card card-pad" style="max-width:620px;border:1px solid #F0D6CE">
+  <h3 style="margin-bottom:6px">Step 1 — Upload a backup</h3>
+  <div class="msg msg-error" style="margin-bottom:14px">
+    <b>Warning:</b> Restoring <b>replaces everything</b> in the system with the
+    contents of the backup file. Your current data will be swapped out (a safety
+    copy is kept automatically). Everyone will need to sign in again afterwards.
+  </div>
+  <ol class="help-steps" style="margin-bottom:16px">
+    <li>Use a <b>.sqlite3</b> backup downloaded from this system (Settings → “Download backup now”).</li>
+    <li>The file is checked before anything changes — a wrong file is rejected.</li>
+    <li>You will see a preview of what the backup contains, then type <b>RESTORE</b> to confirm.</li>
+  </ol>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <input type="hidden" name="step" value="upload">
+    <div class="frow"><label>Backup file (.sqlite3)</label><input type="file" name="backup" accept=".sqlite3" required></div>
+    <button class="btn-primary btn-auto" type="submit">Upload &amp; check</button>
+  </form>
+</div>
+{% else %}
+<div class="card card-pad" style="max-width:620px;border:1px solid #F0D6CE">
+  <h3 style="margin-bottom:6px">Step 2 — Review &amp; confirm</h3>
+  <p class="muted" style="font-size:13px;margin:0 0 14px">The backup <b>{{ filename }}</b> is valid. It contains:</p>
+  <div class="info-grid" style="margin-bottom:16px">
+    <div class="ig"><span>School</span><b>{{ preview.school_name|default:'—' }}</b></div>
+    <div class="ig"><span>Session</span><b>{{ preview.session|default:'—' }}</b></div>
+    <div class="ig"><span>Students</span><b>{{ preview.students }}</b></div>
+    <div class="ig"><span>Staff</span><b>{{ preview.staff }}</b></div>
+    <div class="ig"><span>Logins</span><b>{{ preview.users }}</b></div>
+    <div class="ig"><span>Fee payments</span><b>{{ preview.payments }}</b></div>
+  </div>
+  <div class="msg msg-error" style="margin-bottom:14px">
+    Restoring will <b>permanently replace</b> the current data with the above.
+    A safety copy of the current data is saved to the <b>backups</b> folder first.
+  </div>
+  <form method="post" onsubmit="return confirm('Restore now? Current data will be replaced.')">{% csrf_token %}
+    <input type="hidden" name="step" value="confirm">
+    <div class="frow" style="max-width:240px"><label>Type RESTORE to confirm</label><input type="text" name="confirm_text" placeholder="RESTORE" autocomplete="off" required></div>
+    <button class="btn-reject" type="submit">Restore now</button>
+    <a class="act-btn ghost" href="{% url 'restore_db' %}" style="margin-left:8px;text-decoration:none">Cancel</a>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block heading %}Defaulters{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Defaulters</h1><p>Students with outstanding fees, and exactly which months are pending.</p></div>
+{% if defaulter_count %}
+<div class="bar no-print" style="margin-bottom:16px; align-items: center;">
+  <a class="act-btn" href="?remind=all" onclick="return confirm('Send a fee reminder SMS to every guardian with an outstanding balance?');" style="text-decoration:none">Remind all ({{ defaulter_count }})</a>
+  <button type="button" class="btn-ghost" onclick="exportTableToCSV('#defaulters-table', 'defaulters_list.csv')" style="font-size:12.5px; padding:6px 12px; height:auto; min-height:0;">Export to Excel</button>
+  <span class="pill pill-overdue" style="margin-left:8px">Total outstanding: Rs {{ total_outstanding }}</span>
+</div>
+{% endif %}
+<div class="card">
+  <div class="sec-head"><h3>Outstanding ({{ defaulter_count }})</h3></div>
+  <div class="table-wrap"><table id="defaulters-table">
+    <thead><tr><th>Name</th><th>Class</th><th>Pending months</th><th class="ta-r">Outstanding</th><th class="ta-r">Action</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><b style="color:var(--ink)">{{ r.student.name }}</b><div class="muted" style="font-size:11.5px">{{ r.student.guardian_name }} &middot; {{ r.student.guardian_phone }}</div></td>
+        <td>{{ r.student.classroom }}</td>
+        <td><span class="pill pill-pending">{{ r.count }} month{{ r.count|pluralize }}</span> <span class="muted" style="font-size:12px">{{ r.months }}</span></td>
+        <td class="ta-r num"><b style="color:#922A1B">Rs {{ r.outstanding }}</b></td>
+        <td class="ta-r" style="white-space:nowrap">
+          <a class="act-btn ghost" href="?remind={{ r.student.id }}">Send reminder</a>
+          <a class="act-btn" href="{% url 'student_fees' r.student.id %}" style="text-decoration:none">Collect</a>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="muted">No defaulters. Everyone is up to date.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% include 'pager.html' with page=rows qs=page_qs %}
+</div>
+{% endblock %}

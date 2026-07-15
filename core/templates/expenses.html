@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block heading %}Expenses{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Expenses</h1><p>Record and review school expenses.</p></div>
+<div class="stat-grid">
+  <div class="card stat"><span class="s-label">Total expenses</span><span class="s-val">Rs {{ total }}</span></div>
+  <div class="card stat"><span class="s-label">Entries</span><span class="s-val">{{ items|length }}</span></div>
+</div>
+<div class="card card-pad" style="max-width:560px">
+  <h3 style="margin-bottom:14px">Add expense</h3>
+  <form method="post">
+    {% csrf_token %}
+    <div class="frow"><label>Title</label><input name="title" placeholder="e.g. Electricity bill"></div>
+    <div class="frow"><label>Category</label>
+      <select name="category">
+        <option>Utilities</option><option>Salaries</option><option>Supplies</option>
+        <option>Maintenance</option><option>Other</option>
+      </select>
+    </div>
+    <div class="frow"><label>Amount (Rs)</label><input type="number" name="amount" min="0" value="0"></div>
+    <button class="btn-primary btn-auto" type="submit">Add expense</button>
+  </form>
+</div>
+<div class="card">
+  <div class="sec-head" style="display:flex; justify-content:space-between; align-items:center;">
+    <h3>All expenses</h3>
+    <button type="button" class="act-btn ghost no-print" onclick="exportTableToCSV('#expenses-table', 'expenses_list.csv')" style="font-size:12.5px; padding:6px 12px; height:auto; min-height:0;">Export to Excel</button>
+  </div>
+  <div class="table-wrap"><table id="expenses-table">
+    <thead><tr><th>Title</th><th>Category</th><th>Amount</th><th>Date</th></tr></thead>
+    <tbody>
+    {% for e in items %}
+      <tr><td>{{ e.title }}</td><td>{{ e.category }}</td><td>Rs {{ e.amount }}</td><td>{{ e.date|date:"d M Y" }}</td></tr>
+    {% empty %}
+      <tr><td colspan="4" class="muted">No expenses recorded.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

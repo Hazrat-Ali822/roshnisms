@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block heading %}Subjects & Materials{% endblock %}
+{% block content %}
+{% if selected %}
+  <a class="btn-ghost btn-auto no-print" href="{% url 'my_subjects' %}" style="margin-bottom:16px;display:inline-flex">&larr; All subjects</a>
+  <div class="welcome"><h1>{{ selected.name }}</h1><p>{% if child %}Class {{ child.classroom }} &middot; {% endif %}{{ materials|length }} file{{ materials|length|pluralize }} available</p></div>
+  <div class="card">
+    {% for m in materials %}
+      <div class="mat-row">
+        <span class="mat-ic" style="background:{{ m.bg }};color:{{ m.fg }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 3.5h7l5 5V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M13 3.5V8h4"/></svg></span>
+        <div class="mat-b"><b>{{ m.obj.title }}</b><span>{{ m.obj.get_mat_type_display }} &middot; {{ m.obj.uploaded_on }}{% if m.obj.size %} &middot; {{ m.obj.size }}{% endif %}</span></div>
+        <span class="pill" style="background:{{ m.bg }};color:{{ m.fg }}">{{ m.obj.mat_type }}</span>
+        <a class="act-btn" href="{% url 'material_download' m.obj.id %}" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;text-decoration:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M12 4v10M8 11l4 4 4-4"/><path d="M5 19h14"/></svg>
+          Download
+        </a>
+      </div>
+    {% empty %}
+      <div class="card-pad"><p class="muted">No materials uploaded for this subject yet.</p></div>
+    {% endfor %}
+  </div>
+  <p class="muted" style="font-size:12.5px;margin-top:10px">Each button downloads a sample PDF for now. When teachers upload real files in the school's deployment, this same button will download the actual file.</p>
+{% else %}
+  <div class="welcome"><h1>Subjects &amp; Materials</h1><p>{% if child %}Class {{ child.classroom }} &middot; notes, books, slides and past papers.{% else %}No student linked to this account.{% endif %}</p></div>
+  {% if subjects %}
+  <div class="subj-grid">
+    {% for s in subjects %}
+      <a class="card subj-card" href="{% url 'my_subjects' %}?subject={{ s.obj.id }}">
+        <div class="subj-ic" style="background:{{ s.bg }};color:{{ s.fg }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 4.5h11a2 2 0 0 1 2 2V20a1.5 1.5 0 0 0-1.5-1.5H5z"/><path d="M5 4.5A1.5 1.5 0 0 0 3.5 6v13A1.5 1.5 0 0 1 5 17.5"/></svg></div>
+        <h3>{{ s.obj.name }}</h3>
+        <div class="count">{{ s.count }} file{{ s.count|pluralize }} &rarr;</div>
+      </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card card-pad"><p class="muted">No subjects found for this class.</p></div>
+  {% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block heading %}Profile{% endblock %}
+{% block content %}
+<div class="welcome no-print"><h1>{% if role == 'parent' %}Student Profile{% else %}My Profile{% endif %}</h1><p>{% if child %}{% if role == 'parent' %}Your child's complete record at Roshni Public School.{% else %}Complete student record at Roshni Public School.{% endif %}{% else %}No student linked to this account.{% endif %}</p></div>
+
+{% if child %}
+<div class="card profile-hero">
+  <div class="ph-ava">
+    {% if child.photo %}<img src="{% url 'student_photo' child.id %}" alt="{{ child.name }}">{% else %}<span>{{ initials }}</span>{% endif %}
+  </div>
+  <div class="ph-main">
+    <h2>{{ child.name }}</h2>
+    <div class="ph-sub">Class {{ child.classroom }} &middot; Roll {{ child.roll_no }} &middot; Adm {{ child.admission_no }}</div>
+    <div class="ph-chips">
+      <span class="pill pill-{{ child.fee_status|lower }}">Fee {{ child.fee_status }}</span>
+      {% if child.is_hostel %}<span class="chip"><b>Hostel</b> Resident</span>{% else %}<span class="chip"><b>Day</b> Scholar</span>{% endif %}
+      {% if child.route %}<span class="chip"><b>Bus</b> {{ child.route.name }}</span>{% else %}<span class="chip">Own transport</span>{% endif %}
+      {% if child.blood_group %}<span class="chip"><b>Blood</b> {{ child.blood_group }}</span>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="prof-grid">
+  <div class="card card-pad prof-card">
+    <div class="pc-head"><span class="pc-ic personal">●</span><h3>Personal</h3></div>
+    <div class="kv"><span>Date of birth</span><b>{{ child.date_of_birth|default:"—" }}{% if age %} &middot; {{ age }} yrs{% endif %}</b></div>
+    <div class="kv"><span>Gender</span><b>{{ child.gender|default:"—" }}</b></div>
+    <div class="kv"><span>Blood group</span><b>{{ child.blood_group|default:"—" }}</b></div>
+    <div class="kv"><span>Address</span><b>{{ child.address|default:"—" }}</b></div>
+  </div>
+
+  <div class="card card-pad prof-card">
+    <div class="pc-head"><span class="pc-ic academic">▣</span><h3>Academic</h3></div>
+    <div class="kv"><span>Admission no</span><b class="num">{{ child.admission_no }}</b></div>
+    <div class="kv"><span>Class / Section</span><b>{{ child.classroom }}</b></div>
+    <div class="kv"><span>Roll number</span><b class="num">{{ child.roll_no }}</b></div>
+    <div class="kv"><span>Admission date</span><b>{{ child.admission_date|default:"—" }}</b></div>
+  </div>
+
+  <div class="card card-pad prof-card">
+    <div class="pc-head"><span class="pc-ic guardian">◆</span><h3>Guardian</h3></div>
+    <div class="kv"><span>Name</span><b>{{ child.guardian_name|default:"—" }}</b></div>
+    <div class="kv"><span>Phone</span><b class="num">{{ child.guardian_phone|default:"—" }}</b></div>
+    <div class="kv"><span>Relation</span><b>Guardian</b></div>
+    <div class="kv"><span>Residence</span><b>{{ child.address|default:"—" }}</b></div>
+  </div>
+
+  <div class="card card-pad prof-card">
+    <div class="pc-head"><span class="pc-ic transport">▲</span><h3>Transport</h3></div>
+    {% if child.route %}
+      <div class="kv"><span>Route</span><b>{{ child.route.name }}</b></div>
+      <div class="kv"><span>Driver</span><b>{{ child.route.driver|default:"—" }}</b></div>
+      <div class="kv"><span>Vehicle no.</span><b class="num">{{ child.route.vehicle|default:"—" }}</b></div>
+      <div class="kv"><span>Pickup point</span><b>{{ child.pickup_point|default:"—" }}</b></div>
+      <div class="kv"><span>Monthly fare</span><b>Rs {{ child.route.fee }}</b></div>
+    {% else %}
+      <div class="prof-empty">Day scholar — uses own pick &amp; drop. No school transport assigned.</div>
+    {% endif %}
+  </div>
+
+  {% if child.is_hostel %}
+  <div class="card card-pad prof-card">
+    <div class="pc-head"><span class="pc-ic hostel">⌂</span><h3>Hostel</h3></div>
+    <div class="kv"><span>Status</span><b>Resident</b></div>
+    <div class="kv"><span>Room</span><b>{% if child.hostel_room %}{{ child.hostel_room.name }}{% else %}Not yet assigned{% endif %}</b></div>
+    {% if child.hostel_room.warden %}<div class="kv"><span>Warden</span><b>{{ child.hostel_room.warden }}</b></div>{% endif %}
+    <div class="kv"><span>Monthly hostel fee</span><b>Rs 8,000</b></div>
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<div class="card card-pad"><p class="muted">No student linked to this account.</p></div>
+{% endif %}
+{% endblock %}

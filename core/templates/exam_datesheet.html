@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block heading %}Exams{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Exam Datesheet</h1><p>Build the paper-by-paper schedule for each exam. Students and parents see their own class datesheet.</p></div>
+
+<div class="bar no-print" style="margin-bottom:18px">
+  <a class="act-btn" href="{% url 'exam_datesheet' %}{% if exam %}?exam={{ exam.id }}{% endif %}" style="text-decoration:none">Datesheet</a>
+  <a class="act-btn ghost" href="{% url 'exam_rooms' %}" style="text-decoration:none">Rooms</a>
+  <a class="act-btn ghost" href="{% url 'exam_seating' %}{% if exam %}?exam={{ exam.id }}{% endif %}" style="text-decoration:none">Seating</a>
+</div>
+
+<div class="card card-pad" style="margin-bottom:16px">
+  <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;justify-content:space-between">
+    <form method="get" class="inline-form">
+      {% if sessions|length > 1 %}
+      <label class="muted" style="font-size:12px">Session:</label>
+      <select name="session" onchange="this.form.submit()" class="mini-select" style="width:120px">
+        {% for s in sessions %}<option value="{{ s }}" {% if s == sel_session %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select>
+      {% endif %}
+      <label class="muted" style="font-size:12px">Exam:</label>
+      <select name="exam" onchange="this.form.submit()" class="mini-select" style="width:200px">
+        {% for e in exams %}<option value="{{ e.id }}" {% if exam and e.id == exam.id %}selected{% endif %}>{{ e.name }}</option>{% empty %}<option>No exams yet</option>{% endfor %}
+      </select>
+    </form>
+    <form method="post" class="inline-form">{% csrf_token %}
+      <input type="hidden" name="action" value="add_exam">
+      <input name="name" class="mini-select" style="width:180px" placeholder="New exam name">
+      <button class="act-btn ghost" type="submit">+ Create exam</button>
+    </form>
+  </div>
+</div>
+
+{% if exam %}
+<div class="card card-pad" style="margin-bottom:16px">
+  <h3 style="margin-bottom:12px">Add paper to {{ exam.name }}</h3>
+  <form method="post" class="inline-form" style="align-items:flex-end">{% csrf_token %}
+    <input type="hidden" name="action" value="add_row">
+    <input type="hidden" name="exam" value="{{ exam.id }}">
+    <span><label class="muted" style="font-size:11px;display:block">Class</label><select name="classroom" class="mini-select" style="width:110px">{% for c in classes %}<option value="{{ c.id }}">{{ c }}</option>{% endfor %}</select></span>
+    <span><label class="muted" style="font-size:11px;display:block">Subject</label><input name="subject" class="mini-select" style="width:150px" placeholder="e.g. Mathematics"></span>
+    <span><label class="muted" style="font-size:11px;display:block">Date</label><input name="date" type="date" class="mini-select" style="width:150px"></span>
+    <span><label class="muted" style="font-size:11px;display:block">Time</label><input name="time" class="mini-select" style="width:170px" placeholder="09:00 AM - 12:00 PM"></span>
+    <button class="btn-primary btn-auto" type="submit">Add paper</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="sec-head"><h3>{{ exam.name }} &mdash; datesheet ({{ rows|length }} papers)</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Time</th><th>Class</th><th>Subject</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><b style="color:var(--ink)">{{ r.date|date:"D, d M Y" }}</b></td>
+        <td class="num">{{ r.time|default:"—" }}</td>
+        <td>{{ r.classroom }}</td>
+        <td>{{ r.subject }}</td>
+        <td><form method="post" style="display:inline">{% csrf_token %}<input type="hidden" name="action" value="delete_row"><input type="hidden" name="exam" value="{{ exam.id }}"><input type="hidden" name="row_id" value="{{ r.id }}"><button class="btn-reject" type="submit" style="padding:5px 11px">Remove</button></form></td>
+      </tr>
+    {% empty %}<tr><td colspan="5" class="muted">No papers yet. Add the first one above.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% else %}
+<div class="card card-pad"><p class="muted">No exams yet. Create one above to start building its datesheet.</p></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% block heading %}{% if mode == 'edit' %}Edit Student{% else %}Add Student{% endif %}{% endblock %}
+{% block content %}
+<div class="welcome" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+  <div><h1>{% if mode == 'edit' %}Edit Student{% else %}New Admission{% endif %}</h1><p>{% if mode == 'edit' %}Update the saved details, then click Update.{% else %}Fill in the student's details. Only the name is required &mdash; everything else is optional.{% endif %}</p></div>
+  <a class="act-btn ghost no-print" href="{% if st %}{% url 'student_detail' st.id %}{% else %}{% url 'students_list' %}{% endif %}" style="text-decoration:none">&larr; Back</a>
+</div>
+
+<form method="post" enctype="multipart/form-data" {% if st %}action="{% url 'student_edit' st.id %}"{% endif %}>{% csrf_token %}
+
+  <div class="card">
+    <div class="sec-head"><h3>Personal</h3></div>
+    <div class="card-pad" style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+      <div class="frow" style="grid-column:1/-1"><label>Full name *</label><input name="name" placeholder="Full name" value="{{ st.name }}" required></div>
+      <div class="frow"><label>Class</label><select name="classroom"><option value="">&mdash; Select class &mdash;</option>{% for c in classes %}<option value="{{ c.id }}" {% if st and st.classroom_id == c.id %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+      <div class="frow"><label>Roll no</label><input name="roll_no" placeholder="e.g. 09-A-12" value="{{ st.roll_no }}"></div>
+      <div class="frow"><label>Admission no</label><input name="admission_no" placeholder="Leave blank to auto-generate" value="{{ st.admission_no }}"></div>
+      <div class="frow"><label>Admission date</label><input type="date" name="admission_date" value="{% if st %}{{ st.admission_date|date:'Y-m-d' }}{% else %}{{ today }}{% endif %}"></div>
+      <div class="frow"><label>Date of birth</label><input type="date" name="date_of_birth" value="{{ st.date_of_birth|date:'Y-m-d' }}"></div>
+      <div class="frow"><label>Gender</label><select name="gender"><option value="">&mdash;</option><option {% if st.gender == 'Male' %}selected{% endif %}>Male</option><option {% if st.gender == 'Female' %}selected{% endif %}>Female</option></select></div>
+      <div class="frow"><label>Blood group</label><input name="blood_group" placeholder="e.g. B+" value="{{ st.blood_group }}"></div>
+      <div class="frow"><label>B-Form / CRC no</label><input name="b_form" placeholder="Child registration number" value="{{ st.b_form }}"></div>
+      <div class="frow"><label>Religion</label><input name="religion" value="{{ st.religion }}"></div>
+      <div class="frow"><label>Nationality</label><input name="nationality" value="{{ st.nationality|default:'Pakistani' }}"></div>
+      <div class="frow" style="grid-column:1/-1"><label>Photo</label><input type="file" name="photo" accept="image/*">{% if st.photo %}<span class="muted" style="font-size:12px;margin-top:4px;display:block">A photo is already on file. Choose a new file only to replace it.</span>{% endif %}</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-head"><h3>Family &amp; Guardian</h3></div>
+    <div class="card-pad" style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+      <div class="frow"><label>Father's name</label><input name="father_name" value="{{ st.father_name }}"></div>
+      <div class="frow"><label>Father's CNIC</label><input name="father_cnic" placeholder="xxxxx-xxxxxxx-x" value="{{ st.father_cnic }}"></div>
+      <div class="frow"><label>Father's occupation</label><input name="father_occupation" value="{{ st.father_occupation }}"></div>
+      <div class="frow"><label>Father's phone</label><input name="father_phone" placeholder="03xx-xxxxxxx" value="{{ st.father_phone }}"></div>
+      <div class="frow"><label>Mother's name</label><input name="mother_name" value="{{ st.mother_name }}"></div>
+      <div class="frow"><label>Mother's phone</label><input name="mother_phone" placeholder="03xx-xxxxxxx" value="{{ st.mother_phone }}"></div>
+      <div class="frow"><label>Guardian's name</label><input name="guardian_name" placeholder="If not the father" value="{{ st.guardian_name }}"></div>
+      <div class="frow"><label>Guardian's relation</label><input name="guardian_relation" placeholder="e.g. Uncle" value="{{ st.guardian_relation }}"></div>
+      <div class="frow"><label>Guardian's phone</label><input name="guardian_phone" placeholder="03xx-xxxxxxx" value="{{ st.guardian_phone }}"></div>
+      <div class="frow"><label>Family monthly income</label><input name="monthly_income" placeholder="For fee concession review" value="{{ st.monthly_income }}"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-head"><h3>Contact &amp; Emergency</h3></div>
+    <div class="card-pad" style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+      <div class="frow" style="grid-column:1/-1"><label>Present address</label><input name="address" value="{{ st.address }}"></div>
+      <div class="frow" style="grid-column:1/-1"><label>Permanent address</label><input name="permanent_address" value="{{ st.permanent_address }}"></div>
+      <div class="frow"><label>City</label><input name="city" value="{{ st.city }}"></div>
+      <div class="frow"></div>
+      <div class="frow"><label>Emergency contact name</label><input name="emergency_name" value="{{ st.emergency_name }}"></div>
+      <div class="frow"><label>Emergency contact relation</label><input name="emergency_relation" value="{{ st.emergency_relation }}"></div>
+      <div class="frow"><label>Emergency contact phone</label><input name="emergency_phone" placeholder="03xx-xxxxxxx" value="{{ st.emergency_phone }}"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-head"><h3>Admission details</h3></div>
+    <div class="card-pad">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+        <div class="frow"><label>Admission type</label>
+          <select name="admission_type" id="admtype" onchange="toggleTransfer()">
+            {% for val, lbl in admission_types %}<option value="{{ val }}" {% if st.admission_type == val %}selected{% endif %}>{{ lbl }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="frow"><label>Board registration no</label><input name="board_reg_no" placeholder="For matric / inter students" value="{{ st.board_reg_no }}"></div>
+      </div>
+      <div id="transfer-block" style="display:none;border-top:1px solid var(--line);margin-top:6px;padding-top:14px">
+        <p class="muted" style="margin:0 0 12px;font-size:13px">For students transferring from another school:</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+          <div class="frow" style="grid-column:1/-1"><label>Previous school name</label><input name="previous_school" value="{{ st.previous_school }}"></div>
+          <div class="frow"><label>Last class passed</label><input name="previous_class" placeholder="e.g. Class 8 (2025)" value="{{ st.previous_class }}"></div>
+          <div class="frow"><label>Reason for leaving</label><input name="leaving_reason" value="{{ st.leaving_reason }}"></div>
+          <div class="frow"><label>School Leaving Certificate no</label><input name="slc_number" value="{{ st.slc_number }}"></div>
+          <div class="frow" style="display:flex;align-items:center;gap:9px;padding-top:22px">
+            <input type="checkbox" name="slc_received" id="slc" style="width:auto" {% if st.slc_received %}checked{% endif %}><label for="slc" style="margin:0">School Leaving Certificate received</label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-head"><h3>Documents received</h3></div>
+    <div class="card-pad" style="display:grid;grid-template-columns:1fr 1fr;gap:8px 18px">
+      <label style="display:flex;align-items:center;gap:9px"><input type="checkbox" name="doc_birth" style="width:auto" {% if st.doc_birth %}checked{% endif %}> Birth certificate / B-Form copy</label>
+      <label style="display:flex;align-items:center;gap:9px"><input type="checkbox" name="doc_cnic" style="width:auto" {% if st.doc_cnic %}checked{% endif %}> Father's CNIC copy</label>
+      <label style="display:flex;align-items:center;gap:9px"><input type="checkbox" name="doc_slc" style="width:auto" {% if st.doc_slc %}checked{% endif %}> School Leaving Certificate</label>
+      <label style="display:flex;align-items:center;gap:9px"><input type="checkbox" name="doc_result" style="width:auto" {% if st.doc_result %}checked{% endif %}> Previous result card</label>
+      <label style="display:flex;align-items:center;gap:9px"><input type="checkbox" name="doc_photos" style="width:auto" {% if st.doc_photos %}checked{% endif %}> Passport-size photographs</label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-head"><h3>Transport &amp; Hostel</h3></div>
+    <div class="card-pad" style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+      <div class="frow" style="grid-column:1/-1;display:flex;align-items:center;gap:9px">
+        <input type="checkbox" name="is_hostel" id="hostel" style="width:auto" {% if st.is_hostel %}checked{% endif %}><label for="hostel" style="margin:0">Hostel resident (boarder)</label>
+      </div>
+      <div class="frow"><label>Transport route</label><select name="route"><option value="">&mdash; None / day scholar &mdash;</option>{% for r in routes %}<option value="{{ r.id }}" {% if st and st.route_id == r.id %}selected{% endif %}>{{ r.name }}</option>{% endfor %}</select></div>
+      <div class="frow"><label>Pickup point</label><input name="pickup_point" value="{{ st.pickup_point }}"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-head"><h3>Status &amp; Fees</h3></div>
+    <div class="card-pad" style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px;max-width:520px">
+      <div class="frow"><label>Enrolment status</label>
+        <select name="status">{% for val, lbl in statuses %}<option value="{{ val }}" {% if st.status == val %}selected{% endif %}>{{ lbl }}</option>{% endfor %}</select>
+      </div>
+      <div class="frow"><label>Custom monthly fee (Rs)</label><input type="number" name="custom_fee" min="0" value="{{ st.custom_fee|default:0 }}" placeholder="0 = use class fee"></div>
+    </div>
+    <p class="muted" style="font-size:12px;padding:0 16px 4px">Leave this 0 to charge the class's standard monthly fee. Set a value for a concession (lower) or a different rate for this student.</p>
+  </div>
+
+  <div class="bar" style="margin-bottom:30px">
+    <button class="btn-primary btn-auto" type="submit">{% if mode == 'edit' %}Update student{% else %}Save student{% endif %}</button>
+    <a class="act-btn ghost" href="{% if st %}{% url 'student_detail' st.id %}{% else %}{% url 'students_list' %}{% endif %}" style="text-decoration:none">Cancel</a>
+  </div>
+</form>
+
+<script>
+function toggleTransfer(){
+  var t = document.getElementById('admtype').value;
+  document.getElementById('transfer-block').style.display = (t === 'Transfer') ? 'block' : 'none';
+}
+toggleTransfer();
+</script>
+{% endblock %}

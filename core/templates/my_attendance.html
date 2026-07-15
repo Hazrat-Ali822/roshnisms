@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block heading %}Attendance{% endblock %}
+{% block content %}
+<div class="welcome">
+  <h1>My Attendance</h1>
+  <p>{% if child %}{{ child.name }} &middot; Class {{ child.classroom }} &middot; {{ month_name }} {{ year }}{% else %}No student linked to this account.{% endif %}</p>
+</div>
+
+<div class="stat-grid">
+  <div class="card stat"><span class="s-label">This month</span><span class="s-val">{{ pct }}%</span><span class="s-sub" style="color:#0E7C66">{{ present }} / {{ total }} days present</span></div>
+  <div class="card stat"><span class="s-label">Present</span><span class="s-val" style="color:#0B5F4F">{{ present }}</span></div>
+  <div class="card stat"><span class="s-label">Leave</span><span class="s-val" style="color:#7A5712">{{ leave }}</span></div>
+  <div class="card stat"><span class="s-label">Absent</span><span class="s-val" style="color:#922A1B">{{ absent }}</span></div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <div class="sec-head"><h3>{{ month_name }} {{ year }}</h3></div>
+  <div class="cal">
+    <div class="dow">Mon</div><div class="dow">Tue</div><div class="dow">Wed</div><div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div><div class="dow">Sun</div>
+    {% for c in cells %}{% if c.empty %}<div class="cell empty"></div>{% else %}<div class="cell {{ c.cls }}{% if c.today %} today{% endif %}">{{ c.day }}{% if c.label %}<small>{{ c.label }}</small>{% endif %}</div>{% endif %}{% endfor %}
+  </div>
+  <div class="cal-legend">
+    <span class="lg"><span class="sw" style="background:#E3F1EC;border:1px solid #C7E6DB"></span>Present</span>
+    <span class="lg"><span class="sw" style="background:#FBE7E2;border:1px solid #F2C9C0"></span>Absent</span>
+    <span class="lg"><span class="sw" style="background:#F6EEDD;border:1px solid #EAD9B4"></span>Leave</span>
+    <span class="lg"><span class="sw" style="background:#F7F9FB;border:1px solid #E3E8EF"></span>Holiday / Sunday</span>
+  </div>
+</div>
+{% endblock %}

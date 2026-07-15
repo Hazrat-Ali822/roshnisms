@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% block heading %}Student Record{% endblock %}
+{% block content %}
+<div class="welcome" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+  <div>
+    <h1>{{ st.name }}</h1>
+    <p>{{ st.classroom|default:"No class" }} &middot; Admission {{ st.admission_no }} &middot;
+      {% if st.status == 'Graduated' or st.graduated %}<span class="pill pill-info">Graduated</span>
+      {% elif st.status == 'Left' %}<span class="pill pill-pending">Left</span>
+      {% elif st.status == 'Struck Off' %}<span class="pill pill-overdue">Struck off</span>
+      {% else %}<span class="pill pill-paid">Active</span>{% endif %}
+    </p>
+  </div>
+  <div class="bar no-print" style="margin:0">
+    <a class="act-btn" href="{% url 'student_edit' st.id %}" style="text-decoration:none">Edit details</a>
+    <a class="act-btn ghost" href="{% url 'students_list' %}" style="text-decoration:none">&larr; Back to list</a>
+  </div>
+</div>
+
+{% if not is_active %}
+<div class="card card-pad" style="border-color:#D2D9E2;background:#F6EEDD;margin-bottom:16px">
+  <b style="color:#7A5712">This student is in the archive ({{ st.status }}).</b>
+  <span class="muted" style="font-size:13px">
+    {% if st.left_on %}Left on {{ st.left_on|date:"d M Y" }}.{% endif %}
+    {% if st.leaving_reason %} Reason: {{ st.leaving_reason }}.{% endif %}
+    The full record is kept below for reference.</span>
+</div>
+{% endif %}
+
+{% comment %} ---- Exit / status management ---- {% endcomment %}
+<div class="card">
+  <div class="sec-head"><h3>Status &amp; exit</h3></div>
+  <div class="card-pad">
+    {% if is_active %}
+    <p class="muted" style="margin:0 0 12px;font-size:13px">Mark this student's exit. Nothing is deleted &mdash; the record moves to the archive (Left / Graduated tab) and stays searchable.</p>
+    <form method="post">{% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 2fr;gap:0 18px;max-width:560px">
+        <div class="frow"><label>Date</label><input type="date" name="left_on" value="{{ today }}"></div>
+        <div class="frow"><label>Reason / note</label><input name="reason" placeholder="e.g. Family relocation, completed schooling"></div>
+      </div>
+      <div class="bar">
+        <button class="act-btn ghost" name="action" value="mark_left" type="submit">Mark as Left</button>
+        <button class="btn-reject" name="action" value="mark_struck" type="submit" onclick="return confirm('Mark this student as struck off?');">Mark as Struck off</button>
+        <button class="act-btn" name="action" value="mark_graduated" type="submit">Mark as Graduated</button>
+      </div>
+    </form>
+    {% else %}
+    <div class="prog-row"><span>Status</span><b>{{ st.status }}</b></div>
+    {% if st.left_on %}<div class="prog-row"><span>Date left</span><b>{{ st.left_on|date:"d M Y" }}</b></div>{% endif %}
+    {% if st.leaving_reason %}<div class="prog-row"><span>Reason</span><b>{{ st.leaving_reason }}</b></div>{% endif %}
+    <form method="post" style="margin-top:12px">{% csrf_token %}
+      <button class="act-btn ghost" name="action" value="reactivate" type="submit" onclick="return confirm('Re-activate this student?');">Re-activate student</button>
+    </form>
+    {% endif %}
+    <form method="post" style="margin-top:10px">{% csrf_token %}
+      <button class="btn-primary btn-auto" name="action" value="issue_slc" type="submit">Issue School Leaving Certificate</button>
+    </form>
+    {% if certs %}
+    <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
+      <div class="muted" style="font-size:12px;margin-bottom:6px">Certificates issued:</div>
+      {% for c in certs %}<a class="link" href="{% url 'certificate_view' c.id %}" style="margin-right:14px">{{ c.get_cert_type_display }} &middot; {{ c.issued_on|date:"d M Y" }}</a>{% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="sec-head"><h3>Login accounts</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Who</th><th>Username</th><th>Status</th><th class="ta-r">Action</th></tr></thead>
+    <tbody>
+      {% if student_login %}
+      <tr>
+        <td>Student</td>
+        <td><b class="num" style="color:var(--ink)">{{ student_login.user.username }}</b></td>
+        <td>{% if student_login.user.is_active %}<span class="pill pill-paid">Active</span>{% else %}<span class="pill pill-overdue">Disabled</span>{% endif %}</td>
+        <td class="ta-r">
+          <form method="post" class="inline-form">{% csrf_token %}
+            <input type="hidden" name="action" value="reset_login">
+            <input type="hidden" name="user_id" value="{{ student_login.user.id }}">
+            <button class="act-btn ghost" type="submit">Reset password</button>
+          </form>
+        </td>
+      </tr>
+      {% endif %}
+      {% for g in guardian_logins %}
+      <tr>
+        <td>Parent / Guardian</td>
+        <td><b class="num" style="color:var(--ink)">{{ g.user.username }}</b></td>
+        <td>{% if g.user.is_active %}<span class="pill pill-paid">Active</span>{% else %}<span class="pill pill-overdue">Disabled</span>{% endif %}</td>
+        <td class="ta-r">
+          <form method="post" class="inline-form">{% csrf_token %}
+            <input type="hidden" name="action" value="reset_login">
+            <input type="hidden" name="user_id" value="{{ g.user.id }}">
+            <button class="act-btn ghost" type="submit">Reset password</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      {% if not student_login and not guardian_logins %}
+      <tr><td colspan="4">
+        <span class="muted">No login accounts yet. </span>
+        <form method="post" class="inline-form">{% csrf_token %}
+          <input type="hidden" name="action" value="create_login">
+          <button class="act-btn" type="submit">Create logins</button>
+        </form>
+      </td></tr>
+      {% endif %}
+    </tbody>
+  </table></div>
+  <div class="card-pad" style="padding-top:0"><p class="muted" style="font-size:12px;margin:0">Default password for a reset / new login: <b>{{ default_password }}</b>. Each person can change it after signing in.</p></div>
+</div>
+
+{% if exams %}
+<div class="card">
+  <div class="sec-head"><h3>Report cards</h3></div>
+  <div class="card-pad">
+    <p class="muted" style="margin:0 0 10px;font-size:13px">Printable report card per exam.</p>
+    {% for e in exams %}<a class="act-btn ghost" href="{% url 'report_card' st.id e.id %}" style="text-decoration:none;margin:0 8px 8px 0;display:inline-block">{{ e.name }} &rarr;</a>{% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% comment %} ---- Full record (archive) ---- {% endcomment %}
+<div class="card">
+  <div class="sec-head"><h3>Personal</h3></div>
+  <div class="card-pad" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px 18px">
+    <div><div class="rl">Roll no</div><div class="rv">{{ st.roll_no|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Date of birth</div><div class="rv">{{ st.date_of_birth|date:"d M Y"|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Gender</div><div class="rv">{{ st.gender|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Blood group</div><div class="rv">{{ st.blood_group|default:"&mdash;" }}</div></div>
+    <div><div class="rl">B-Form / CRC</div><div class="rv">{{ st.b_form|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Religion</div><div class="rv">{{ st.religion|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Nationality</div><div class="rv">{{ st.nationality|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Admission date</div><div class="rv">{{ st.admission_date|date:"d M Y"|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Fee status</div><div class="rv">{{ st.fee_status }}</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="sec-head"><h3>Family &amp; Guardian</h3></div>
+  <div class="card-pad" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px 18px">
+    <div><div class="rl">Father's name</div><div class="rv">{{ st.father_name|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Father's CNIC</div><div class="rv">{{ st.father_cnic|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Father's occupation</div><div class="rv">{{ st.father_occupation|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Father's phone</div><div class="rv">{{ st.father_phone|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Mother's name</div><div class="rv">{{ st.mother_name|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Mother's phone</div><div class="rv">{{ st.mother_phone|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Guardian</div><div class="rv">{{ st.guardian_name|default:"&mdash;" }}{% if st.guardian_relation %} ({{ st.guardian_relation }}){% endif %}</div></div>
+    <div><div class="rl">Guardian phone</div><div class="rv">{{ st.guardian_phone|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Monthly income</div><div class="rv">{{ st.monthly_income|default:"&mdash;" }}</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="sec-head"><h3>Contact &amp; Emergency</h3></div>
+  <div class="card-pad" style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px 18px">
+    <div><div class="rl">Present address</div><div class="rv">{{ st.address|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Permanent address</div><div class="rv">{{ st.permanent_address|default:"&mdash;" }}</div></div>
+    <div><div class="rl">City</div><div class="rv">{{ st.city|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Emergency contact</div><div class="rv">{{ st.emergency_name|default:"&mdash;" }}{% if st.emergency_relation %} ({{ st.emergency_relation }}){% endif %}{% if st.emergency_phone %} &middot; {{ st.emergency_phone }}{% endif %}</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="sec-head"><h3>Admission</h3></div>
+  <div class="card-pad" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px 18px">
+    <div><div class="rl">Admission type</div><div class="rv">{{ st.get_admission_type_display }}</div></div>
+    <div><div class="rl">Board reg no</div><div class="rv">{{ st.board_reg_no|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Previous school</div><div class="rv">{{ st.previous_school|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Last class passed</div><div class="rv">{{ st.previous_class|default:"&mdash;" }}</div></div>
+    <div><div class="rl">SLC received</div><div class="rv">{% if st.slc_received %}Yes{% if st.slc_number %} ({{ st.slc_number }}){% endif %}{% else %}&mdash;{% endif %}</div></div>
+    <div><div class="rl">Documents on file</div><div class="rv">{% if st.doc_birth %}B-Form, {% endif %}{% if st.doc_cnic %}CNIC, {% endif %}{% if st.doc_slc %}SLC, {% endif %}{% if st.doc_result %}Result, {% endif %}{% if st.doc_photos %}Photos{% endif %}{% if not st.doc_birth and not st.doc_cnic and not st.doc_slc and not st.doc_result and not st.doc_photos %}&mdash;{% endif %}</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="sec-head"><h3>Medical, Transport &amp; Hostel</h3></div>
+  <div class="card-pad" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px 18px">
+    <div><div class="rl">Allergies</div><div class="rv">{{ st.allergies|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Medical notes</div><div class="rv">{{ st.medical_notes|default:"&mdash;" }}</div></div>
+    <div><div class="rl">Boarder</div><div class="rv">{% if st.is_hostel %}Yes{% if st.hostel_room %} &middot; {{ st.hostel_room.name }}{% endif %}{% else %}Day scholar{% endif %}</div></div>
+    <div><div class="rl">Transport route</div><div class="rv">{% if st.route %}{{ st.route.name }}{% else %}&mdash;{% endif %}</div></div>
+    <div><div class="rl">Pickup point</div><div class="rv">{{ st.pickup_point|default:"&mdash;" }}</div></div>
+  </div>
+</div>
+{% endblock %}

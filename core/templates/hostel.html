@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block heading %}Hostel{% endblock %}
+{% block content %}
+<div class="welcome">
+  <h1>Hostel</h1>
+  <p>Rooms and resident allocation &mdash; {{ total_residents }} hostel resident{{ total_residents|pluralize }} across {{ rooms|length }} room{{ rooms|length|pluralize }}{% if unassigned %}, <b style="color:#7A5712">{{ unassigned }} not yet assigned</b>{% endif %}.</p>
+</div>
+
+<div class="stat-grid" style="margin-bottom:18px">
+  <div class="stat"><span class="s-ic">⌂</span><span class="s-label">Rooms</span><span class="s-val">{{ rooms|length }}</span><span class="s-sub">{{ capacity_total }} beds total</span></div>
+  <div class="stat"><span class="s-ic">●</span><span class="s-label">Residents</span><span class="s-val">{{ total_residents }}</span><span class="s-sub">marked hostel</span></div>
+  <div class="stat"><span class="s-ic">○</span><span class="s-label">Unassigned</span><span class="s-val">{{ unassigned }}</span><span class="s-sub">need a room</span></div>
+</div>
+
+<details class="add-wrap no-print">
+  <summary class="add-btn">Add room</summary>
+  <div class="card card-pad" style="max-width:620px">
+  <h3 style="margin-bottom:12px">Add room</h3>
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="action" value="add_room">
+    <div class="frow"><label>Room name</label><input name="name" placeholder="e.g. Block A - Room 1" required></div>
+    <div class="frow"><label>Capacity (beds)</label><input name="capacity" type="number" min="1" value="4"></div>
+    <div class="frow"><label>Warden</label><input name="warden" placeholder="Optional"></div>
+    <button class="btn-primary btn-auto" type="submit">Add room</button>
+  </form>
+</div>
+</details>
+
+<div class="card">
+  <div class="sec-head"><h3>Rooms</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Room</th><th class="ta-r">Beds</th><th class="ta-r">Occupied</th><th>Warden</th><th>Residents</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rooms %}
+      <tr>
+        <td><b style="color:var(--ink)">{{ r.name }}</b></td>
+        <td class="ta-r num">{{ r.capacity }}</td>
+        <td class="ta-r num">{% if r.occupied > r.capacity %}<b style="color:#922A1B">{{ r.occupied }}</b>{% else %}{{ r.occupied }}{% endif %}</td>
+        <td>{{ r.warden|default:"&mdash;" }}</td>
+        <td class="muted" style="font-size:12.5px">{% for s in r.residents.all %}{{ s.name }}{% if not forloop.last %}, {% endif %}{% empty %}&mdash;{% endfor %}</td>
+        <td>
+          <form method="post" style="display:inline" onsubmit="return confirm('Remove this room? Its residents will become unassigned.');">{% csrf_token %}
+            <input type="hidden" name="action" value="delete_room">
+            <input type="hidden" name="room_id" value="{{ r.id }}">
+            <button class="btn-reject" type="submit" style="padding:5px 11px">Remove</button>
+          </form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="dempty">No rooms yet. Add the first room above.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+<div class="card">
+  <div class="sec-head"><h3>Allocate residents</h3></div>
+  {% if residents %}
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="action" value="allocate">
+    <div class="table-wrap"><table>
+      <thead><tr><th>Student</th><th>Class</th><th>Roll</th><th>Room</th></tr></thead>
+      <tbody>
+      {% for s in residents %}
+        <tr>
+          <td><b style="color:var(--ink)">{{ s.name }}</b></td>
+          <td>{{ s.classroom }}</td>
+          <td class="muted">{{ s.admission_no|default:"&mdash;" }}</td>
+          <td>
+            <select name="room_{{ s.id }}" class="mini-select" style="width:210px">
+              <option value="">&mdash; Unassigned &mdash;</option>
+              {% for r in rooms %}<option value="{{ r.id }}" {% if s.hostel_room_id == r.id %}selected{% endif %}>{{ r.name }}</option>{% endfor %}
+            </select>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    <div class="card-pad"><button class="btn-primary btn-auto" type="submit">Save allocations</button></div>
+  </form>
+  {% else %}
+  <div class="card-pad"><p class="muted">No hostel residents yet. Mark a student as a hostel resident from the student record (or Django admin), and they will appear here for room allocation.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

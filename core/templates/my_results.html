@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block heading %}Results{% endblock %}
+{% block content %}
+<div class="welcome no-print">
+  <h1>Results</h1>
+  <p>{% if child %}{{ child.name }} &middot; Class {{ child.classroom }}{% if exam %} &middot; {{ exam.name }}{% endif %}{% else %}No student linked to this account.{% endif %}</p>
+</div>
+
+{% if sessions|length > 1 or exams|length > 1 %}
+<form method="get" class="bar no-print">
+  {% if sessions|length > 1 %}
+  <label class="bar-label">Session</label>
+  <select name="session" onchange="this.form.submit()">
+    {% for s in sessions %}<option value="{{ s }}" {% if s == sel_session %}selected{% endif %}>{{ s }}</option>{% endfor %}
+  </select>
+  {% endif %}
+  {% if exams|length > 1 %}
+  <label class="bar-label">Exam</label>
+  <select name="exam" onchange="this.form.submit()">
+    {% for e in exams %}<option value="{{ e.id }}" {% if exam and e.id == exam.id %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
+  </select>
+  {% endif %}
+  <noscript><button class="btn-ghost" type="submit">Show</button></noscript>
+</form>
+{% endif %}
+
+{% if rows %}
+<div class="bar no-print" style="margin-bottom:14px">
+  <button class="btn-primary btn-auto" onclick="window.print()">Print / Save PDF</button>
+</div>
+<div class="card report">
+  <div class="rc-head">
+    <div class="rc-crest">{{ brand_name|slice:":1"|upper }}</div>
+    <h2>{{ brand_name }}</h2>
+    <div class="sub">Progress Report{% if exam %} &middot; {{ exam.name }}{% endif %}{% if sel_session %} &middot; {{ sel_session }}{% endif %}</div>
+  </div>
+  <div class="rc-meta">
+    <div><span>Student</span><b>{{ child.name }}</b></div>
+    <div><span>Class</span><b>{{ child.classroom }}</b></div>
+    <div><span>Roll No</span><b class="num">{{ child.roll_no }}</b></div>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Subject</th><th class="ta-r">Max</th><th class="ta-r">Obtained</th><th class="ta-r">%</th><th class="ta-r">Grade</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><b style="color:var(--ink)">{{ r.subject }}</b></td>
+        <td class="ta-r num">{{ r.total }}</td>
+        <td class="ta-r num"{% if r.obtained < 50 %} style="color:#C0432F;font-weight:700"{% endif %}>{{ r.obtained }}</td>
+        <td class="ta-r num">{{ r.pct }}%</td>
+        <td class="ta-r"><span class="pill" style="background:{{ r.color }}1a;color:{{ r.color }}">{{ r.grade }}</span></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <div class="rc-foot">
+    <div><div class="rc-cap">Total &middot; Percentage</div><div class="big serif"><span class="num">{{ obtained }}</span>/{{ maximum }} &middot; <span class="num">{{ pct }}%</span></div></div>
+    {% if position %}<div style="text-align:center"><div class="rc-cap">Position</div><div class="big serif"><span class="num">{{ position }}</span><span style="font-size:15px;color:var(--muted)"> / {{ total_ranked }}</span></div></div>{% endif %}
+    <div style="text-align:right"><div class="rc-cap">Grade</div><div class="big serif" style="color:{{ overall_color }}">{{ overall_grade }}</div></div>
+  </div>
+</div>
+{% else %}
+<div class="card card-pad"><p class="muted">No results published yet.</p></div>
+{% endif %}
+
+{% if exams %}
+<div class="card" style="margin-top:16px">
+  <div class="sec-head"><h3>Report cards</h3></div>
+  <div class="card-pad">
+    <p class="muted" style="margin:0 0 10px;font-size:13px">Printable report card for each exam.</p>
+    {% for e in exams %}<a class="act-btn ghost" href="{% url 'report_card' child.id e.id %}" style="text-decoration:none;margin:0 8px 8px 0;display:inline-block">{{ e.name }} &rarr;</a>{% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

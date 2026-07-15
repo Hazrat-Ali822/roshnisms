@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block heading %}Timetable{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Timetable</h1><p>{% if child %}Class {{ child.classroom }} weekly schedule.{% else %}No student linked to this account.{% endif %}{% if today_name %} Today ({{ today_name }}) is highlighted.{% endif %}</p></div>
+{% if rows %}
+<div class="card"><div class="tt-wrap"><table class="tt">
+  <thead><tr><th></th>{% for d in days %}<th{% if d == today_name %} style="color:var(--accent)"{% endif %}>{{ d }}{% if d == today_name %} • Today{% endif %}</th>{% endfor %}</tr></thead>
+  <tbody>
+  {% for row in rows %}
+    <tr>
+      <td class="time">{{ row.time }}</td>
+      {% for c in row.cells %}
+        <td>
+        {% if c.slot %}
+          {% if c.slot.subject == 'Break' %}
+            <div class="slot break">Break</div>
+          {% else %}
+            <div class="slot {% if c.today %}now{% else %}subj{% endif %}"><b>{{ c.slot.subject }}</b><span>{{ c.slot.teacher }}</span></div>
+          {% endif %}
+        {% else %}
+          <div class="slot" style="background:var(--surface-2);border-style:dashed"></div>
+        {% endif %}
+        </td>
+      {% endfor %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div></div>
+{% else %}
+<div class="card card-pad"><p class="muted">No timetable set for this class yet.</p></div>
+{% endif %}
+{% endblock %}

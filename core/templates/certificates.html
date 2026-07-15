@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block heading %}Certificates{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Certificates</h1><p>Generate a printable certificate for a student.</p></div>
+<details class="add-wrap no-print">
+  <summary class="add-btn">Generate certificate</summary>
+  <div class="card card-pad" style="max-width:600px">
+  <h3 style="margin-bottom:14px">Generate certificate</h3>
+  <form method="post">{% csrf_token %}
+    <div class="frow"><label>Student</label><select name="student">{% for s in students %}<option value="{{ s.id }}">{{ s.name }} - {{ s.classroom }}</option>{% endfor %}</select></div>
+    <div class="frow"><label>Type</label>
+      <select name="cert_type">
+        <option value="Leaving">Leaving Certificate</option>
+        <option value="Character">Character Certificate</option>
+        <option value="Bonafide">Bonafide Certificate</option>
+        <option value="Fee">Fee Certificate</option>
+      </select>
+    </div>
+    <button class="btn-primary btn-auto" type="submit">Generate</button>
+  </form>
+</div>
+</details>
+<div class="card">
+  <div class="sec-head"><h3>Recently generated</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Type</th><th>Student</th><th>Date</th><th class="ta-c">View</th></tr></thead>
+    <tbody>
+    {% for c in certs %}
+      <tr><td>{{ c.get_cert_type_display }}</td><td>{{ c.student.name }}</td><td>{{ c.issued_on|date:"d M Y" }}</td>
+      <td class="ta-c"><a class="act-btn ghost" href="{% url 'certificate_view' c.id %}">View</a></td></tr>
+    {% empty %}<tr><td colspan="4" class="muted">No certificates generated yet.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

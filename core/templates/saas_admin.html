@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block heading %}SaaS Admin Panel{% endblock %}
+{% block content %}
+<div class="welcome" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+  <div>
+    <h1>SaaS Admin Dashboard</h1>
+    <p>Manage school registration instances, subdomains, and subscription lifecycles.</p>
+  </div>
+  <a class="btn-primary btn-auto no-print" href="{% url 'saas_school_add' %}" style="text-decoration:none">+ Register School</a>
+</div>
+
+<div class="card">
+  <div class="sec-head"><h3>All Registered Schools ({{ schools|length }})</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>School Name</th>
+          <th>Subdomain</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th class="ta-c">Status</th>
+          <th class="ta-r">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for school in schools %}
+          <tr>
+            <td>
+              <b style="color:var(--ink)">{{ school.name }}</b>
+              <div class="muted" style="font-size:11.5px">{{ school.campus|default:"-" }}</div>
+            </td>
+            <td>
+              <span class="pill pill-role" style="font-family: monospace;">
+                {% if school.subdomain %}{{ school.subdomain }}{% else %}default (fallback){% endif %}
+              </span>
+            </td>
+            <td>{{ school.subscription_start|date:"d M Y"|default:"&mdash;" }}</td>
+            <td>{{ school.subscription_end|date:"d M Y"|default:"&mdash;" }}</td>
+            <td class="ta-c">
+              {% if not school.subscription_active %}
+                <span class="pill pill-overdue">Suspended</span>
+              {% elif school.is_expired %}
+                <span class="pill pill-pending">Expired</span>
+              {% else %}
+                <span class="pill pill-paid">Active</span>
+              {% endif %}
+            </td>
+            <td class="ta-r" style="white-space:nowrap">
+              <a class="act-btn ghost" href="{% url 'saas_school_edit' school.id %}" style="text-decoration:none">Edit</a>
+              <a class="act-btn {% if school.subscription_active %}ghost{% endif %}" href="{% url 'saas_school_toggle' school.id %}" style="text-decoration:none; margin-left: 5px; {% if school.subscription_active %}border-color: var(--overdue); color: var(--overdue);{% endif %}">
+                {% if school.subscription_active %}Suspend{% else %}Activate{% endif %}
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="dempty">No schools registered in this tenant database yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block heading %}Attendance Register{% endblock %}
+{% block content %}
+<div class="welcome no-print"><h1>Monthly attendance register</h1><p>Full P/A/L grid for a class. Students below {{ threshold }}% are flagged.</p></div>
+
+<form method="get" class="bar no-print" style="margin-bottom:16px">
+  <label class="bar-label">Class</label>
+  <select name="class" onchange="this.form.submit()">
+    {% for c in classes %}<option value="{{ c.id }}" {% if classroom and c.id == classroom.id %}selected{% endif %}>{{ c }}</option>{% endfor %}
+  </select>
+  <label class="bar-label">Month</label>
+  <select name="month" onchange="this.form.submit()">
+    {% for num, nm in months %}<option value="{{ num }}" {% if num == month %}selected{% endif %}>{{ nm }}</option>{% endfor %}
+  </select>
+  <label class="bar-label">Year</label>
+  <select name="year" onchange="this.form.submit()">
+    {% for y in years %}<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>{% endfor %}
+  </select>
+  <noscript><button class="btn-ghost" type="submit">Show</button></noscript>
+</form>
+
+{% if rows %}
+<div class="bar no-print" style="margin-bottom:14px">
+  <button class="btn-primary btn-auto" onclick="window.print()">Print register</button>
+  <span class="muted" style="font-size:13px">{{ classroom }} &middot; {{ month_name }} {{ year }}</span>
+  {% if low_count %}<span class="pill pill-overdue">{{ low_count }} below {{ threshold }}%</span>{% endif %}
+</div>
+
+<div class="print-head only-print" style="text-align:center;margin-bottom:10px">
+  <b style="font-size:18px">{{ brand_name }}</b><br>
+  <span class="muted">Attendance Register &middot; {{ classroom }} &middot; {{ month_name }} {{ year }}</span>
+</div>
+
+<div class="card">
+  <div class="table-wrap"><table class="att-reg">
+    <thead>
+      <tr>
+        <th class="stick">Student</th>
+        {% for d in days %}<th class="ta-c">{{ d }}</th>{% endfor %}
+        <th class="ta-c">P</th><th class="ta-c">A</th><th class="ta-c">L</th><th class="ta-c">%</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in rows %}
+      <tr{% if r.low %} class="row-low"{% endif %}>
+        <td class="stick"><b style="color:var(--ink)">{{ r.s.name }}</b>{% if r.low %} <span class="pill pill-overdue">Low</span>{% endif %}<div class="muted" style="font-size:11px">Roll {{ r.s.roll_no|default:"—" }}</div></td>
+        {% for cell in r.cells %}<td class="ta-c att-{{ cell|lower }}">{{ cell|default:"·" }}</td>{% endfor %}
+        <td class="ta-c num">{{ r.p }}</td>
+        <td class="ta-c num">{{ r.a }}</td>
+        <td class="ta-c num">{{ r.l }}</td>
+        <td class="ta-c num">{% if r.pct is not None %}<b{% if r.low %} style="color:#C0432F"{% endif %}>{{ r.pct }}%</b>{% else %}&mdash;{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+<p class="muted" style="font-size:12px;margin-top:10px">P = Present, A = Absent, L = Leave, &middot; = not marked. A blank day means attendance was not taken.</p>
+{% else %}
+<div class="card card-pad"><p class="muted">{% if classroom %}No active students in {{ classroom }}.{% else %}No class selected.{% endif %}</p></div>
+{% endif %}
+{% endblock %}
