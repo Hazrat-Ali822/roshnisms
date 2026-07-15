@@ -54,14 +54,38 @@ def notifications(request):
     role = profile.role if profile else 'admin'
     
     alerts = []
+    badge_counts = {}
     
     # Import inside functions to avoid circular imports
-    from .models import Applicant, LeaveRequest, ConcessionRequest, OnlinePayment, InventoryItem, Submission, Announcement, Student
+    from .models import Applicant, LeaveRequest, ConcessionRequest, OnlinePayment, InventoryItem, Submission, Announcement, Student, School
+    from django.utils import timezone
+    today = timezone.localdate()
     
-    if role == 'admin':
+    if user.is_superuser:
+        # SaaS Admin notifications
+        expired_count = School.objects.filter(subscription_end__lt=today, subscription_active=True).count()
+        suspended_count = School.objects.filter(subscription_active=False).count()
+        total_saas = expired_count + suspended_count
+        if total_saas > 0:
+            badge_counts['saas_admin_dashboard'] = total_saas
+            if expired_count > 0:
+                alerts.append({
+                    'text': f'{expired_count} school subscriptions have expired.',
+                    'url_name': 'saas_admin_dashboard',
+                    'type': 'danger'
+                })
+            if suspended_count > 0:
+                alerts.append({
+                    'text': f'{suspended_count} school portals are currently suspended.',
+                    'url_name': 'saas_admin_dashboard',
+                    'type': 'warning'
+                })
+                
+    elif role == 'admin':
         # 1. New Admissions
         enquiries = Applicant.objects.filter(stage='Enquiry').count()
         if enquiries > 0:
+            badge_counts['admissions'] = enquiries
             alerts.append({
                 'text': f'{enquiries} new admission enquiries to review.',
                 'url_name': 'admissions',
@@ -71,6 +95,7 @@ def notifications(request):
         low_stock = InventoryItem.objects.all()
         low_count = sum(1 for item in low_stock if item.low)
         if low_count > 0:
+            badge_counts['inventory'] = low_count
             alerts.append({
                 'text': f'{low_count} items in inventory are running low.',
                 'url_name': 'inventory',
@@ -80,34 +105,39 @@ def notifications(request):
     elif role == 'principal':
         # 1. Leaves Awaiting Approval
         leaves = LeaveRequest.objects.filter(status='Pending').count()
-        if leaves > 0:
-            alerts.append({
-                'text': f'{leaves} staff leave requests pending approval.',
-                'url_name': 'principal_approvals',
-                'type': 'warning'
-            })
         # 2. Concessions Pending
         concessions = ConcessionRequest.objects.filter(status='Pending').count()
-        if concessions > 0:
-            alerts.append({
-                'text': f'{concessions} fee concession requests pending.',
-                'url_name': 'principal_approvals',
-                'type': 'warning'
-            })
         # 3. Admissions to enrol
         enrol = Applicant.objects.filter(stage='Offer').count()
-        if enrol > 0:
-            alerts.append({
-                'text': f'{enrol} admission offers ready for enrollment.',
-                'url_name': 'principal_approvals',
-                'type': 'info'
-            })
+        
+        total_approvals = leaves + concessions + enrol
+        if total_approvals > 0:
+            badge_counts['principal_approvals'] = total_approvals
+            if leaves > 0:
+                alerts.append({
+                    'text': f'{leaves} staff leave requests pending approval.',
+                    'url_name': 'principal_approvals',
+                    'type': 'warning'
+                })
+            if concessions > 0:
+                alerts.append({
+                    'text': f'{concessions} fee concession requests pending.',
+                    'url_name': 'principal_approvals',
+                    'type': 'warning'
+                })
+            if enrol > 0:
+                alerts.append({
+                    'text': f'{enrol} admission offers ready for enrollment.',
+                    'url_name': 'principal_approvals',
+                    'type': 'info'
+                })
 
     elif role == 'teacher':
         # 1. Submissions to grade
         if profile.classroom_id:
             pending_submissions = Submission.objects.filter(grade__isnull=True, assignment__classroom_id=profile.classroom_id).count()
             if pending_submissions > 0:
+                badge_counts['teacher_assignments'] = pending_submissions
                 alerts.append({
                     'text': f'{pending_submissions} assignments submissions to grade.',
                     'url_name': 'teacher_assignments',
@@ -118,6 +148,7 @@ def notifications(request):
         # 1. Online payments to confirm
         payments = OnlinePayment.objects.filter(status='Pending').count()
         if payments > 0:
+            badge_counts['online_payments'] = payments
             alerts.append({
                 'text': f'{payments} online fee payments pending proof check.',
                 'url_name': 'online_payments',
@@ -126,6 +157,7 @@ def notifications(request):
         # 2. Overdue/defaulter count
         defaulters = Student.objects.filter(fee_status='Overdue').count()
         if defaulters > 0:
+            badge_counts['defaulters'] = defaulters
             alerts.append({
                 'text': f'{defaulters} student fee accounts are overdue.',
                 'url_name': 'defaulters',
@@ -165,5 +197,6 @@ def notifications(request):
 
     return {
         'notifications': alerts,
-        'notifications_count': len(alerts)
+        'notifications_count': len(alerts),
+        'badge_counts': badge_counts
     }

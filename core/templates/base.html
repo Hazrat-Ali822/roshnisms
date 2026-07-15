@@ -7,7 +7,7 @@
   <title>{% block title %}{{ brand_name }}{% endblock %}</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Spectral:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
-  <style>:root{--ink:{{ brand_primary }};--accent:{{ brand_accent }};--accent-d:{{ brand_accent }}}</style>
+  <style>:root{--ink:{{ brand_primary }};--accent:{{ brand_accent }};--accent-d:{{ brand_accent }}}.badge-pending{display:inline-flex;align-items:center;justify-content:center;background-color:#EF4444;color:white;font-size:11px;font-weight:700;width:18px;height:18px;border-radius:50%;margin-left:auto;}</style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   {% block head %}{% endblock %}
 </head>
@@ -34,7 +34,12 @@
     </div>
     <nav class="nav">
       {% if active == 'saas_admin' %}
-        <a class="nav-item active" href="{% url 'saas_admin_dashboard' %}">SaaS Dashboard</a>
+        <a class="nav-item active" href="{% url 'saas_admin_dashboard' %}">
+          SaaS Dashboard
+          {% if badge_counts.saas_admin_dashboard %}
+            <span class="badge-pending">{{ badge_counts.saas_admin_dashboard }}</span>
+          {% endif %}
+        </a>
         <a class="nav-item" href="/admin/" target="_blank">Django Admin</a>
         <div class="nav-soon">System Administration Console. Manage subscriptions and school portals.</div>
       {% else %}
@@ -47,13 +52,33 @@
           <a class="nav-item {% if active == 'staff' or active == 'staff_attendance' or active == 'leave' %}active{% endif %}" href="{% url 'staff_list' %}">Staff</a>
           <a class="nav-item {% if active == 'payroll' %}active{% endif %}" href="{% url 'payroll' %}">Payroll</a>
           <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'fee_collection' %}">Fee Collection</a>
-          <a class="nav-item {% if active == 'online_payments' %}active{% endif %}" href="{% url 'online_payments' %}">Online Payments</a>
+          <a class="nav-item {% if active == 'online_payments' %}active{% endif %}" href="{% url 'online_payments' %}">
+            Online Payments
+            {% if badge_counts.online_payments %}
+              <span class="badge-pending">{{ badge_counts.online_payments }}</span>
+            {% endif %}
+          </a>
           <a class="nav-item {% if active == 'receipts' %}active{% endif %}" href="{% url 'receipts' %}">Receipts</a>
-          <a class="nav-item {% if active == 'defaulters' %}active{% endif %}" href="{% url 'defaulters' %}">Defaulters</a>
+          <a class="nav-item {% if active == 'defaulters' %}active{% endif %}" href="{% url 'defaulters' %}">
+            Defaulters
+            {% if badge_counts.defaulters %}
+              <span class="badge-pending">{{ badge_counts.defaulters }}</span>
+            {% endif %}
+          </a>
           <a class="nav-item {% if active == 'expenses' %}active{% endif %}" href="{% url 'expenses' %}">Expenses</a>
           <a class="nav-item {% if active == 'exams' %}active{% endif %}" href="{% url 'exam_datesheet' %}">Exams</a>
-          <a class="nav-item {% if active == 'admissions' %}active{% endif %}" href="{% url 'admissions' %}">Admissions</a>
-          <a class="nav-item {% if active == 'approvals' %}active{% endif %}" href="{% url 'principal_approvals' %}">Approvals</a>
+          <a class="nav-item {% if active == 'admissions' %}active{% endif %}" href="{% url 'admissions' %}">
+            Admissions
+            {% if badge_counts.admissions %}
+              <span class="badge-pending">{{ badge_counts.admissions }}</span>
+            {% endif %}
+          </a>
+          <a class="nav-item {% if active == 'approvals' %}active{% endif %}" href="{% url 'principal_approvals' %}">
+            Approvals
+            {% if badge_counts.principal_approvals %}
+              <span class="badge-pending">{{ badge_counts.principal_approvals }}</span>
+            {% endif %}
+          </a>
           <a class="nav-item {% if active == 'academics' %}active{% endif %}" href="{% url 'principal_academics' %}">Academics</a>
           <a class="nav-item {% if active == 'promotion' %}active{% endif %}" href="{% url 'promotion' %}">Year-End (Promotion)</a>
           <a class="nav-item {% if active == 'communication' %}active{% endif %}" href="{% url 'communication' %}">Communication</a>
@@ -64,7 +89,12 @@
           <a class="nav-item {% if active == 'idcards' %}active{% endif %}" href="{% url 'id_cards' %}">ID Cards</a>
           <a class="nav-item {% if active == 'reports' %}active{% endif %}" href="{% url 'reports' %}">Reports</a>
           <a class="nav-item {% if active == 'calendar' %}active{% endif %}" href="{% url 'calendar' %}">Calendar</a>
-          <a class="nav-item {% if active == 'inventory' %}active{% endif %}" href="{% url 'inventory' %}">Inventory</a>
+          <a class="nav-item {% if active == 'inventory' %}active{% endif %}" href="{% url 'inventory' %}">
+            Inventory
+            {% if badge_counts.inventory %}
+              <span class="badge-pending">{{ badge_counts.inventory }}</span>
+            {% endif %}
+          </a>
           <a class="nav-item {% if active == 'visitors' %}active{% endif %}" href="{% url 'visitors' %}">Visitors</a>
           <a class="nav-item {% if active == 'users' %}active{% endif %}" href="{% url 'users_list' %}">Users &amp; Roles</a>
           <a class="nav-item {% if active == 'audit' %}active{% endif %}" href="{% url 'audit_log' %}">Audit Log</a>
@@ -72,15 +102,30 @@
         {% elif role == 'teacher' %}
           <a class="nav-item {% if active == 'attendance' %}active{% endif %}" href="{% url 'attendance_mark' %}">Mark Attendance</a>
           <a class="nav-item {% if active == 'marks' %}active{% endif %}" href="{% url 'marks_entry' %}">Enter Marks</a>
-          <a class="nav-item {% if active == 'assignments' %}active{% endif %}" href="{% url 'teacher_assignments' %}">Assignments</a>
+          <a class="nav-item {% if active == 'assignments' %}active{% endif %}" href="{% url 'teacher_assignments' %}">
+            Assignments
+            {% if badge_counts.teacher_assignments %}
+              <span class="badge-pending">{{ badge_counts.teacher_assignments }}</span>
+            {% endif %}
+          </a>
           <a class="nav-item {% if active == 'quizzes' %}active{% endif %}" href="{% url 'teacher_quizzes' %}">Quizzes</a>
           <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'teacher_timetable' %}">My Timetable</a>
           <a class="nav-item {% if active == 'myhr' %}active{% endif %}" href="{% url 'my_hr' %}">My Pay &amp; Attendance</a>
         {% elif role == 'finance' %}
           <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'fee_collection' %}">Fee Collection</a>
-          <a class="nav-item {% if active == 'online_payments' %}active{% endif %}" href="{% url 'online_payments' %}">Online Payments</a>
+          <a class="nav-item {% if active == 'online_payments' %}active{% endif %}" href="{% url 'online_payments' %}">
+            Online Payments
+            {% if badge_counts.online_payments %}
+              <span class="badge-pending">{{ badge_counts.online_payments }}</span>
+            {% endif %}
+          </a>
           <a class="nav-item {% if active == 'receipts' %}active{% endif %}" href="{% url 'receipts' %}">Receipts</a>
-          <a class="nav-item {% if active == 'defaulters' %}active{% endif %}" href="{% url 'defaulters' %}">Defaulters</a>
+          <a class="nav-item {% if active == 'defaulters' %}active{% endif %}" href="{% url 'defaulters' %}">
+            Defaulters
+            {% if badge_counts.defaulters %}
+              <span class="badge-pending">{{ badge_counts.defaulters }}</span>
+            {% endif %}
+          </a>
           <a class="nav-item {% if active == 'expenses' %}active{% endif %}" href="{% url 'expenses' %}">Expenses</a>
         {% elif role == 'student' %}
           <a class="nav-item {% if active == 'subjects' %}active{% endif %}" href="{% url 'my_subjects' %}">Subjects &amp; Materials</a>
