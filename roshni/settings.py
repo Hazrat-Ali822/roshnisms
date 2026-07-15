@@ -139,6 +139,9 @@ if os.environ.get('ROSHNI_HTTPS', '0') == '1':
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Use cookie-based sessions to prevent SessionInterrupted exceptions when switching databases mid-request
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
+
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
