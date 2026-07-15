@@ -168,7 +168,7 @@ class TenantRoutingMiddleware:
             profile = getattr(user, 'profile', None)
             if profile and profile.school:
                 # If they visit a path with a different school subdomain/prefix, log them out
-                if school and profile.school != school:
+                if school and profile.school.subdomain != school.subdomain:
                     allowed_paths = [
                         reverse('logout_get'),
                         '/static/',
