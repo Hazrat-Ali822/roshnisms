@@ -126,6 +126,14 @@ class TenantDatabaseMiddleware:
             conn.settings_dict = copy.deepcopy(settings.DATABASES['default'])
             conn.settings_dict['NAME'] = db_path
 
+            # Clean up other schools from the tenant database to ensure School.objects.first() resolves correctly
+            if school and school.subdomain and school.subdomain != 'default':
+                try:
+                    from core.models import School as TenantSchool
+                    TenantSchool.objects.exclude(subdomain=school.subdomain).delete()
+                except Exception:
+                    pass
+
         return self.get_response(request)
 
 
@@ -201,6 +209,14 @@ class TenantRoutingMiddleware:
                         conn.close()
                         conn.settings_dict = copy.deepcopy(settings.DATABASES['default'])
                         conn.settings_dict['NAME'] = db_path
+
+                        # Clean up other schools from the tenant database to ensure School.objects.first() resolves correctly
+                        if school and school.subdomain and school.subdomain != 'default':
+                            try:
+                                from core.models import School as TenantSchool
+                                TenantSchool.objects.exclude(subdomain=school.subdomain).delete()
+                            except Exception:
+                                pass
             
         # Calculate subscription status (using the global database record!)
         # Only lock down if it is an explicit school tenant request! The SaaS root/admin itself is never expired.
