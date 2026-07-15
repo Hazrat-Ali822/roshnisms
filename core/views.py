@@ -4879,6 +4879,7 @@ def saas_admin_dashboard(request):
     today = timezone.localdate()
     
     for school in schools:
+        school.portal_url = school.get_portal_url(request)
         if school.subscription_end and school.subscription_end < today:
             school.is_expired = True
         else:
@@ -4901,15 +4902,41 @@ def saas_school_add(request):
         start_date = request.POST.get('subscription_start') or None
         end_date = request.POST.get('subscription_end') or None
         
+        admin_username = request.POST.get('admin_username')
+        admin_email = request.POST.get('admin_email')
+        admin_password = request.POST.get('admin_password')
+        
         if name and subdomain:
-            School.objects.create(
+            school = School.objects.create(
                 name=name,
                 subdomain=subdomain,
                 subscription_start=start_date,
                 subscription_end=end_date,
-                subscription_active=True
+                subscription_active=True,
+                admin_username=admin_username or '',
+                admin_email=admin_email or '',
+                admin_password=admin_password or ''
             )
-            messages.success(request, f"School '{name}' created successfully!")
+            
+            if admin_username and admin_password:
+                from django.contrib.auth.models import User
+                from core.models import Profile
+                
+                if not User.objects.filter(username=admin_username).exists():
+                    user = User.objects.create_user(
+                        username=admin_username,
+                        email=admin_email or '',
+                        password=admin_password,
+                        first_name=name
+                    )
+                    Profile.objects.create(
+                        user=user,
+                        role='admin',
+                        school=school,
+                        must_change_password=False
+                    )
+            
+            messages.success(request, f"School '{name}' and Admin account created successfully!")
             return redirect('saas_admin_dashboard')
             
     return render(request, 'saas_school_form.html', {
@@ -4929,8 +4956,62 @@ def saas_school_edit(request, pk):
         school.subscription_start = request.POST.get('subscription_start') or None
         school.subscription_end = request.POST.get('subscription_end') or None
         school.subscription_active = request.POST.get('subscription_active') == 'on'
+        
+        old_username = school.admin_username
+        admin_username = request.POST.get('admin_username')
+        admin_email = request.POST.get('admin_email')
+        admin_password = request.POST.get('admin_password')
+        
+        school.admin_username = admin_username or ''
+        school.admin_email = admin_email or ''
+        if admin_password:
+            school.admin_password = admin_password
+            
         school.save()
-        messages.success(request, f"School '{school.name}' updated successfully!")
+        
+        if admin_username:
+            from django.contrib.auth.models import User
+            from core.models import Profile
+            
+            user = User.objects.filter(username=admin_username).first()
+            if not user and old_username:
+                user = User.objects.filter(username=old_username).first()
+                
+            if user:
+                user.username = admin_username
+                user.email = admin_email or ''
+                if admin_password:
+                    user.set_password(admin_password)
+                user.save()
+                
+                profile = getattr(user, 'profile', None)
+                if profile:
+                    profile.school = school
+                    profile.role = 'admin'
+                    profile.save()
+                else:
+                    Profile.objects.create(
+                        user=user,
+                        role='admin',
+                        school=school,
+                        must_change_password=False
+                    )
+            else:
+                if not User.objects.filter(username=admin_username).exists():
+                    user = User.objects.create_user(
+                        username=admin_username,
+                        email=admin_email or '',
+                        password=admin_password or 'school123',
+                        first_name=school.name
+                    )
+                    Profile.objects.create(
+                        user=user,
+                        role='admin',
+                        school=school,
+                        must_change_password=False
+                    )
+                    
+        messages.success(request, f"School '{school.name}' and Admin credentials updated successfully!")
         return redirect('saas_admin_dashboard')
         
     start_str = school.subscription_start.strftime('%Y-%m-%d') if school.subscription_start else ''

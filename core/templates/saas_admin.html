@@ -34,6 +34,9 @@
               <span class="pill pill-role" style="font-family: monospace;">
                 {% if school.subdomain %}{{ school.subdomain }}{% else %}default (fallback){% endif %}
               </span>
+              <div style="font-size: 11px; margin-top: 4px;">
+                <a href="{{ school.portal_url }}" target="_blank" style="color: var(--accent); text-decoration: underline;">{{ school.portal_url }}</a>
+              </div>
             </td>
             <td>{{ school.subscription_start|date:"d M Y"|default:"&mdash;" }}</td>
             <td>{{ school.subscription_end|date:"d M Y"|default:"&mdash;" }}</td>
@@ -47,7 +50,8 @@
               {% endif %}
             </td>
             <td class="ta-r" style="white-space:nowrap">
-              <a class="act-btn ghost" href="{% url 'saas_school_edit' school.id %}" style="text-decoration:none">Edit</a>
+              <a class="act-btn ghost" href="{{ school.portal_url }}" target="_blank" style="text-decoration:none; border-color: var(--accent); color: var(--accent);">Visit Portal</a>
+              <a class="act-btn ghost" href="{% url 'saas_school_edit' school.id %}" style="text-decoration:none; margin-left: 5px;">Edit</a>
               <a class="act-btn {% if school.subscription_active %}ghost{% endif %}" href="{% url 'saas_school_toggle' school.id %}" style="text-decoration:none; margin-left: 5px; {% if school.subscription_active %}border-color: var(--overdue); color: var(--overdue);{% endif %}">
                 {% if school.subscription_active %}Suspend{% else %}Activate{% endif %}
               </a>

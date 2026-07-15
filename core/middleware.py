@@ -93,10 +93,23 @@ class TenantMiddleware:
             if (school.subscription_end and school.subscription_end < today) or not school.subscription_active:
                 request.tenant_expired = True
         
-        # Apply lockout redirect for non-superusers unless accessing permitted views
         user = getattr(request, 'user', None)
         is_superuser = user.is_superuser if (user and user.is_authenticated) else False
         
+        # Verify that the logged-in user belongs to the current tenant school
+        if user and user.is_authenticated and not is_superuser:
+            profile = getattr(user, 'profile', None)
+            if profile and profile.school and profile.school != school:
+                allowed_paths = [
+                    reverse('logout'),
+                    '/static/',
+                    '/media/'
+                ]
+                if not any(request.path.startswith(p) for p in allowed_paths):
+                    logout(request)
+                    messages.error(request, "Access denied. Please log in through your school's subdomain portal.")
+                    return redirect('login')
+                    
         if request.tenant_expired and not is_superuser:
             allowed_paths = [
                 reverse('subscription_expired'),

@@ -28,6 +28,12 @@ class School(models.Model):
     name = models.CharField(max_length=120, default='Roshni Public School')
     campus = models.CharField(max_length=120, default='Main Campus, Lahore')
     session = models.CharField(max_length=20, default='2025-26')
+    
+    # SaaS administrator credentials
+    admin_username = models.CharField(max_length=60, blank=True)
+    admin_email = models.CharField(max_length=120, blank=True)
+    admin_password = models.CharField(max_length=128, blank=True)
+    
     final_grade = models.CharField(max_length=10, default='10')
     pass_mark = models.PositiveIntegerField(default=40)
     hostel_fee = models.PositiveIntegerField(default=8000)
@@ -101,6 +107,25 @@ class School(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_portal_url(self, request):
+        import datetime
+        host = request.get_host().split(':')[0]
+        parts = host.split('.')
+        if len(parts) > 2:
+            domain = '.'.join(parts[1:])
+        elif len(parts) == 2 and parts[1] == 'localhost':
+            domain = parts[1]
+        else:
+            domain = host
+            
+        port = request.get_host().split(':')[1] if ':' in request.get_host() else ''
+        port_suffix = f":{port}" if port else ""
+        
+        sub = self.subdomain or 'default'
+        if sub == 'default':
+            return f"{request.scheme}://{domain}{port_suffix}/"
+        return f"{request.scheme}://{sub}.{domain}{port_suffix}/"
 
 
 class ClassRoom(models.Model):
@@ -209,6 +234,7 @@ class Profile(models.Model):
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='admin')
+    school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True, related_name='profiles')
     classroom = models.ForeignKey(
         ClassRoom, on_delete=models.SET_NULL, null=True, blank=True)
     # For a student: their own record. For a parent: the primary/first child

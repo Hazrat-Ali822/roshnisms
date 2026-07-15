@@ -32,8 +32,24 @@
       </div>
     </div>
 
+    <div style="margin-top: 22px; border-top: 1px solid var(--line); padding-top: 16px;">
+      <h3 style="margin-bottom: 12px; color: var(--ink); font-size: 15px;">Administrator Credentials</h3>
+      <div class="frow">
+        <label for="admin_username">Admin Username</label>
+        <input type="text" id="admin_username" name="admin_username" value="{{ school.admin_username|default:'' }}" required placeholder="e.g. unicom_admin">
+      </div>
+      <div class="frow">
+        <label for="admin_email">Admin Email</label>
+        <input type="email" id="admin_email" name="admin_email" value="{{ school.admin_email|default:'' }}" required placeholder="e.g. admin@unicom.edu">
+      </div>
+      <div class="frow">
+        <label for="admin_password">Admin Password</label>
+        <input type="password" id="admin_password" name="admin_password" {% if not school %}required{% endif %} placeholder="{% if school %}Leave blank to keep current password{% else %}Enter initial password{% endif %}">
+      </div>
+    </div>
+
     {% if school %}
-    <div class="frow" style="margin-top: 10px; border-top: 1px solid var(--line); padding-top: 14px;">
+    <div class="frow" style="margin-top: 18px; border-top: 1px solid var(--line); padding-top: 14px;">
       <label style="text-transform: none; font-size: 13.5px; display: flex; align-items: center; gap: 8px;">
         <input type="checkbox" id="subscription_active" name="subscription_active" {% if school.subscription_active %}checked{% endif %} style="width: auto; height: auto; cursor: pointer;">
         Subscription Active / Enabled
