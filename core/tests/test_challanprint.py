@@ -31,6 +31,6 @@ class ChallanPrintTests(TestCase):
                           % self.w.c9.id).content.decode()
         self.assertIn('No challans found', html)
 
-    def test_admin_cannot_access_finance_page(self):
+    def test_admin_can_access_finance_page(self):
         c = Client(); c.force_login(self.w.admin_u)
-        self.assertIn(c.get('/fees/challans/print/').status_code, (302, 403))
+        self.assertEqual(c.get('/fees/challans/print/').status_code, 200)
