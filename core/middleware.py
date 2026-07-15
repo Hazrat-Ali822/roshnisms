@@ -116,7 +116,7 @@ class TenantMiddleware:
         # log them out to prevent auto-accessing the school portal as superuser.
         if is_superuser and is_explicit_tenant:
             allowed_paths = [
-                reverse('logout'),
+                reverse('logout_get'),
                 '/static/',
                 '/media/',
                 '/saas-admin/'
@@ -124,7 +124,7 @@ class TenantMiddleware:
             if not any(request.path.startswith(p) for p in allowed_paths):
                 sub = school.subdomain or 'default'
                 next_url = f"/{sub}/login/" if is_path_based else "/login/"
-                return redirect(reverse('logout') + f"?next={next_url}")
+                return redirect(reverse('logout_get') + f"?next={next_url}")
         
         if user and user.is_authenticated and not is_superuser:
             profile = getattr(user, 'profile', None)
@@ -132,14 +132,14 @@ class TenantMiddleware:
                 # If they visit a path with a different school subdomain/prefix, log them out
                 if school and profile.school != school:
                     allowed_paths = [
-                        reverse('logout'),
+                        reverse('logout_get'),
                         '/static/',
                         '/media/'
                     ]
                     if not any(request.path.startswith(p) for p in allowed_paths):
                         sub = profile.school.subdomain or 'default'
                         next_url = f"/{sub}/login/"
-                        return redirect(reverse('logout') + f"?next={next_url}")
+                        return redirect(reverse('logout_get') + f"?next={next_url}")
                 elif not school:
                     # Keep them on their school
                     school = profile.school

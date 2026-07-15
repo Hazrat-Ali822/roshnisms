@@ -89,6 +89,7 @@ urlpatterns = [
     path('help/', views.help_guide, name='help_guide'),
     path('login/', views.LockoutLoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('logout-get/', views.logout_then_login, name='logout_get'),
     path('account/password/', views.ForcedPasswordChangeView.as_view(),
          name='password_change'),
     path('account/password/done/', auth_views.PasswordChangeDoneView.as_view(

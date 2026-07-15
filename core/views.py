@@ -5250,6 +5250,15 @@ def subscription_expired(request):
         'school': school
     })
 
+def logout_then_login(request):
+    """
+    Log out the current user via a GET request safely, then redirect to the login page.
+    """
+    from django.contrib.auth import logout
+    logout(request)
+    next_url = request.GET.get('next', 'login')
+    return redirect(next_url)
+
 
 def run_daily_jobs(school, today):
     from core.models import Student, FeeChallan, ChallanLine
