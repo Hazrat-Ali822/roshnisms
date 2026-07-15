@@ -17,85 +17,110 @@
   <label for="nav-toggle" class="nav-overlay" aria-hidden="true"></label>
   <aside class="sidebar">
     <div class="brand">
-      <div class="crest">{% if brand_logo %}<img src="{% url 'school_logo' %}" alt="{{ brand_name }}">{% else %}{{ brand_name|slice:":1"|upper }}{% endif %}</div>
-      <div><b>{{ brand_name }}</b><span>{{ user.profile.get_role_display }}</span></div>
+      <div class="crest">
+        {% if active == 'saas_admin' %}
+          S
+        {% else %}
+          {% if brand_logo %}<img src="{% url 'school_logo' %}" alt="{{ brand_name }}">{% else %}{{ brand_name|slice:":1"|upper }}{% endif %}
+        {% endif %}
+      </div>
+      <div>
+        {% if active == 'saas_admin' %}
+          <b>SaaS Admin</b><span>Superuser</span>
+        {% else %}
+          <b>{{ brand_name }}</b><span>{{ user.profile.get_role_display }}</span>
+        {% endif %}
+      </div>
     </div>
     <nav class="nav">
-      <a class="nav-item {% if active == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Dashboard</a>
-      {% if role == 'admin' %}
-        <a class="nav-item {% if active == 'students' %}active{% endif %}" href="{% url 'students_list' %}">Students</a>
-        <a class="nav-item {% if active == 'classes' %}active{% endif %}" href="{% url 'classes_manage' %}">Classes &amp; Subjects</a>
-        <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'timetable_manage' %}">Timetable</a>
-        <a class="nav-item {% if active == 'discipline' %}active{% endif %}" href="{% url 'discipline' %}">Discipline</a>
-        <a class="nav-item {% if active == 'staff' or active == 'staff_attendance' or active == 'leave' %}active{% endif %}" href="{% url 'staff_list' %}">Staff</a>
-        <a class="nav-item {% if active == 'payroll' %}active{% endif %}" href="{% url 'payroll' %}">Payroll</a>
-        <a class="nav-item {% if active == 'exams' %}active{% endif %}" href="{% url 'exam_datesheet' %}">Exams</a>
-        <a class="nav-item {% if active == 'admissions' %}active{% endif %}" href="{% url 'admissions' %}">Admissions</a>
-        <a class="nav-item {% if active == 'communication' %}active{% endif %}" href="{% url 'communication' %}">Communication</a>
-        <a class="nav-item {% if active == 'transport' %}active{% endif %}" href="{% url 'transport' %}">Transport</a>
-        <a class="nav-item {% if active == 'hostel' %}active{% endif %}" href="{% url 'hostel' %}">Hostel</a>
-        <a class="nav-item {% if active == 'library' %}active{% endif %}" href="{% url 'library' %}">Library</a>
-        <a class="nav-item {% if active == 'certificates' %}active{% endif %}" href="{% url 'certificates' %}">Certificates</a>
-        <a class="nav-item {% if active == 'idcards' %}active{% endif %}" href="{% url 'id_cards' %}">ID Cards</a>
-        <a class="nav-item {% if active == 'reports' %}active{% endif %}" href="{% url 'reports' %}">Reports</a>
-        <a class="nav-item {% if active == 'calendar' %}active{% endif %}" href="{% url 'calendar' %}">Calendar</a>
-        <a class="nav-item {% if active == 'inventory' %}active{% endif %}" href="{% url 'inventory' %}">Inventory</a>
-        <a class="nav-item {% if active == 'visitors' %}active{% endif %}" href="{% url 'visitors' %}">Visitors</a>
-        <a class="nav-item {% if active == 'users' %}active{% endif %}" href="{% url 'users_list' %}">Users &amp; Roles</a>
-        <a class="nav-item {% if active == 'audit' %}active{% endif %}" href="{% url 'audit_log' %}">Audit Log</a>
-        <a class="nav-item {% if active == 'settings' %}active{% endif %}" href="{% url 'school_settings' %}">School Settings</a>
-      {% elif role == 'teacher' %}
-        <a class="nav-item {% if active == 'attendance' %}active{% endif %}" href="{% url 'attendance_mark' %}">Mark Attendance</a>
-        <a class="nav-item {% if active == 'marks' %}active{% endif %}" href="{% url 'marks_entry' %}">Enter Marks</a>
-        <a class="nav-item {% if active == 'assignments' %}active{% endif %}" href="{% url 'teacher_assignments' %}">Assignments</a>
-        <a class="nav-item {% if active == 'quizzes' %}active{% endif %}" href="{% url 'teacher_quizzes' %}">Quizzes</a>
-        <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'teacher_timetable' %}">My Timetable</a>
-        <a class="nav-item {% if active == 'myhr' %}active{% endif %}" href="{% url 'my_hr' %}">My Pay &amp; Attendance</a>
-      {% elif role == 'finance' %}
-        <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'fee_collection' %}">Fee Collection</a>
-        <a class="nav-item {% if active == 'online_payments' %}active{% endif %}" href="{% url 'online_payments' %}">Online Payments</a>
-        <a class="nav-item {% if active == 'receipts' %}active{% endif %}" href="{% url 'receipts' %}">Receipts</a>
-        <a class="nav-item {% if active == 'defaulters' %}active{% endif %}" href="{% url 'defaulters' %}">Defaulters</a>
-        <a class="nav-item {% if active == 'expenses' %}active{% endif %}" href="{% url 'expenses' %}">Expenses</a>
-      {% elif role == 'student' %}
-        <a class="nav-item {% if active == 'subjects' %}active{% endif %}" href="{% url 'my_subjects' %}">Subjects &amp; Materials</a>
-        <a class="nav-item {% if active == 'attendance' %}active{% endif %}" href="{% url 'my_attendance' %}">Attendance</a>
-        <a class="nav-item {% if active == 'results' %}active{% endif %}" href="{% url 'my_results' %}">Results</a>
-        <a class="nav-item {% if active == 'assignments' %}active{% endif %}" href="{% url 'my_assignments' %}">Assignments</a>
-        <a class="nav-item {% if active == 'quizzes' %}active{% endif %}" href="{% url 'my_quizzes' %}">Quizzes</a>
-        <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'my_timetable' %}">Timetable</a>
-        <a class="nav-item {% if active == 'datesheet' %}active{% endif %}" href="{% url 'my_datesheet' %}">Datesheet</a>
-        <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'my_fees' %}">Fees</a>
-        <a class="nav-item {% if active == 'profile' %}active{% endif %}" href="{% url 'my_profile' %}">Profile</a>
-      {% elif role == 'parent' %}
-        <a class="nav-item {% if active == 'subjects' %}active{% endif %}" href="{% url 'my_subjects' %}">Subjects &amp; Materials</a>
-        <a class="nav-item {% if active == 'attendance' %}active{% endif %}" href="{% url 'my_attendance' %}">Attendance</a>
-        <a class="nav-item {% if active == 'results' %}active{% endif %}" href="{% url 'my_results' %}">Results</a>
-        <a class="nav-item {% if active == 'assignments' %}active{% endif %}" href="{% url 'my_assignments' %}">Assignments</a>
-        <a class="nav-item {% if active == 'quizzes' %}active{% endif %}" href="{% url 'my_quizzes' %}">Quizzes</a>
-        <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'my_timetable' %}">Timetable</a>
-        <a class="nav-item {% if active == 'datesheet' %}active{% endif %}" href="{% url 'my_datesheet' %}">Datesheet</a>
-        <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'my_fees' %}">Fees</a>
-        <a class="nav-item {% if active == 'profile' %}active{% endif %}" href="{% url 'my_profile' %}">Profile</a>
-      {% elif role == 'owner' %}
-        <a class="nav-item {% if active == 'students' %}active{% endif %}" href="{% url 'owner_students' %}">Students</a>
-        <a class="nav-item {% if active == 'staff' %}active{% endif %}" href="{% url 'owner_staff' %}">Staff</a>
-        <a class="nav-item {% if active == 'finance' %}active{% endif %}" href="{% url 'owner_finance' %}">Finance</a>
-      {% elif role == 'principal' %}
-        <a class="nav-item {% if active == 'approvals' %}active{% endif %}" href="{% url 'principal_approvals' %}">Approvals</a>
-        <a class="nav-item {% if active == 'academics' %}active{% endif %}" href="{% url 'principal_academics' %}">Academics</a>
-        <a class="nav-item {% if active == 'promotion' %}active{% endif %}" href="{% url 'promotion' %}">Year-End</a>
-        <a class="nav-item {% if active == 'staff' %}active{% endif %}" href="{% url 'principal_staff' %}">Staff</a>
+      {% if active == 'saas_admin' %}
+        <a class="nav-item active" href="{% url 'saas_admin_dashboard' %}">SaaS Dashboard</a>
+        <a class="nav-item" href="/admin/" target="_blank">Django Admin</a>
+        <div class="nav-soon">System Administration Console. Manage subscriptions and school portals.</div>
+      {% else %}
+        <a class="nav-item {% if active == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Dashboard</a>
+        {% if role == 'admin' %}
+          <a class="nav-item {% if active == 'students' %}active{% endif %}" href="{% url 'students_list' %}">Students</a>
+          <a class="nav-item {% if active == 'classes' %}active{% endif %}" href="{% url 'classes_manage' %}">Classes &amp; Subjects</a>
+          <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'timetable_manage' %}">Timetable</a>
+          <a class="nav-item {% if active == 'discipline' %}active{% endif %}" href="{% url 'discipline' %}">Discipline</a>
+          <a class="nav-item {% if active == 'staff' or active == 'staff_attendance' or active == 'leave' %}active{% endif %}" href="{% url 'staff_list' %}">Staff</a>
+          <a class="nav-item {% if active == 'payroll' %}active{% endif %}" href="{% url 'payroll' %}">Payroll</a>
+          <a class="nav-item {% if active == 'exams' %}active{% endif %}" href="{% url 'exam_datesheet' %}">Exams</a>
+          <a class="nav-item {% if active == 'admissions' %}active{% endif %}" href="{% url 'admissions' %}">Admissions</a>
+          <a class="nav-item {% if active == 'communication' %}active{% endif %}" href="{% url 'communication' %}">Communication</a>
+          <a class="nav-item {% if active == 'transport' %}active{% endif %}" href="{% url 'transport' %}">Transport</a>
+          <a class="nav-item {% if active == 'hostel' %}active{% endif %}" href="{% url 'hostel' %}">Hostel</a>
+          <a class="nav-item {% if active == 'library' %}active{% endif %}" href="{% url 'library' %}">Library</a>
+          <a class="nav-item {% if active == 'certificates' %}active{% endif %}" href="{% url 'certificates' %}">Certificates</a>
+          <a class="nav-item {% if active == 'idcards' %}active{% endif %}" href="{% url 'id_cards' %}">ID Cards</a>
+          <a class="nav-item {% if active == 'reports' %}active{% endif %}" href="{% url 'reports' %}">Reports</a>
+          <a class="nav-item {% if active == 'calendar' %}active{% endif %}" href="{% url 'calendar' %}">Calendar</a>
+          <a class="nav-item {% if active == 'inventory' %}active{% endif %}" href="{% url 'inventory' %}">Inventory</a>
+          <a class="nav-item {% if active == 'visitors' %}active{% endif %}" href="{% url 'visitors' %}">Visitors</a>
+          <a class="nav-item {% if active == 'users' %}active{% endif %}" href="{% url 'users_list' %}">Users &amp; Roles</a>
+          <a class="nav-item {% if active == 'audit' %}active{% endif %}" href="{% url 'audit_log' %}">Audit Log</a>
+          <a class="nav-item {% if active == 'settings' %}active{% endif %}" href="{% url 'school_settings' %}">School Settings</a>
+        {% elif role == 'teacher' %}
+          <a class="nav-item {% if active == 'attendance' %}active{% endif %}" href="{% url 'attendance_mark' %}">Mark Attendance</a>
+          <a class="nav-item {% if active == 'marks' %}active{% endif %}" href="{% url 'marks_entry' %}">Enter Marks</a>
+          <a class="nav-item {% if active == 'assignments' %}active{% endif %}" href="{% url 'teacher_assignments' %}">Assignments</a>
+          <a class="nav-item {% if active == 'quizzes' %}active{% endif %}" href="{% url 'teacher_quizzes' %}">Quizzes</a>
+          <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'teacher_timetable' %}">My Timetable</a>
+          <a class="nav-item {% if active == 'myhr' %}active{% endif %}" href="{% url 'my_hr' %}">My Pay &amp; Attendance</a>
+        {% elif role == 'finance' %}
+          <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'fee_collection' %}">Fee Collection</a>
+          <a class="nav-item {% if active == 'online_payments' %}active{% endif %}" href="{% url 'online_payments' %}">Online Payments</a>
+          <a class="nav-item {% if active == 'receipts' %}active{% endif %}" href="{% url 'receipts' %}">Receipts</a>
+          <a class="nav-item {% if active == 'defaulters' %}active{% endif %}" href="{% url 'defaulters' %}">Defaulters</a>
+          <a class="nav-item {% if active == 'expenses' %}active{% endif %}" href="{% url 'expenses' %}">Expenses</a>
+        {% elif role == 'student' %}
+          <a class="nav-item {% if active == 'subjects' %}active{% endif %}" href="{% url 'my_subjects' %}">Subjects &amp; Materials</a>
+          <a class="nav-item {% if active == 'attendance' %}active{% endif %}" href="{% url 'my_attendance' %}">Attendance</a>
+          <a class="nav-item {% if active == 'results' %}active{% endif %}" href="{% url 'my_results' %}">Results</a>
+          <a class="nav-item {% if active == 'assignments' %}active{% endif %}" href="{% url 'my_assignments' %}">Assignments</a>
+          <a class="nav-item {% if active == 'quizzes' %}active{% endif %}" href="{% url 'my_quizzes' %}">Quizzes</a>
+          <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'my_timetable' %}">Timetable</a>
+          <a class="nav-item {% if active == 'datesheet' %}active{% endif %}" href="{% url 'my_datesheet' %}">Datesheet</a>
+          <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'my_fees' %}">Fees</a>
+          <a class="nav-item {% if active == 'profile' %}active{% endif %}" href="{% url 'my_profile' %}">Profile</a>
+        {% elif role == 'parent' %}
+          <a class="nav-item {% if active == 'subjects' %}active{% endif %}" href="{% url 'my_subjects' %}">Subjects &amp; Materials</a>
+          <a class="nav-item {% if active == 'attendance' %}active{% endif %}" href="{% url 'my_attendance' %}">Attendance</a>
+          <a class="nav-item {% if active == 'results' %}active{% endif %}" href="{% url 'my_results' %}">Results</a>
+          <a class="nav-item {% if active == 'assignments' %}active{% endif %}" href="{% url 'my_assignments' %}">Assignments</a>
+          <a class="nav-item {% if active == 'quizzes' %}active{% endif %}" href="{% url 'my_quizzes' %}">Quizzes</a>
+          <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'my_timetable' %}">Timetable</a>
+          <a class="nav-item {% if active == 'datesheet' %}active{% endif %}" href="{% url 'my_datesheet' %}">Datesheet</a>
+          <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'my_fees' %}">Fees</a>
+          <a class="nav-item {% if active == 'profile' %}active{% endif %}" href="{% url 'my_profile' %}">Profile</a>
+        {% elif role == 'owner' %}
+          <a class="nav-item {% if active == 'students' %}active{% endif %}" href="{% url 'owner_students' %}">Students</a>
+          <a class="nav-item {% if active == 'staff' %}active{% endif %}" href="{% url 'owner_staff' %}">Staff</a>
+          <a class="nav-item {% if active == 'finance' %}active{% endif %}" href="{% url 'owner_finance' %}">Finance</a>
+        {% elif role == 'principal' %}
+          <a class="nav-item {% if active == 'approvals' %}active{% endif %}" href="{% url 'principal_approvals' %}">Approvals</a>
+          <a class="nav-item {% if active == 'academics' %}active{% endif %}" href="{% url 'principal_academics' %}">Academics</a>
+          <a class="nav-item {% if active == 'promotion' %}active{% endif %}" href="{% url 'promotion' %}">Year-End</a>
+          <a class="nav-item {% if active == 'staff' %}active{% endif %}" href="{% url 'principal_staff' %}">Staff</a>
+        {% endif %}
+        <div class="nav-soon">All core modules are live. Mobile app &amp; offline sync come in the platform phase.</div>
       {% endif %}
-      <div class="nav-soon">All core modules are live. Mobile app &amp; offline sync come in the platform phase.</div>
     </nav>
     <div class="side-foot">
-      <a class="nav-item {% if active == 'help' %}active{% endif %}" href="{% url 'help_guide' %}" style="margin-bottom:8px">Help &amp; Guide</a>
-      <a class="nav-item {% if active == 'account' or active == 'password' %}active{% endif %}" href="{% url 'account' %}" style="margin-bottom:8px">My account</a>
-      <form method="post" action="{% url 'logout' %}">
-        {% csrf_token %}
-        <button class="logout" type="submit">Sign out</button>
-      </form>
+      {% if active == 'saas_admin' %}
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button class="logout" type="submit">Sign out</button>
+        </form>
+      {% else %}
+        <a class="nav-item {% if active == 'help' %}active{% endif %}" href="{% url 'help_guide' %}" style="margin-bottom:8px">Help &amp; Guide</a>
+        <a class="nav-item {% if active == 'account' or active == 'password' %}active{% endif %}" href="{% url 'account' %}" style="margin-bottom:8px">My account</a>
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button class="logout" type="submit">Sign out</button>
+        </form>
+      {% endif %}
     </div>
   </aside>
   <main class="main">
