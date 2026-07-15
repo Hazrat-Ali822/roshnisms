@@ -95,7 +95,7 @@ class TenantMiddleware:
             path_parts = [p for p in request.path_info.split('/') if p]
             if path_parts:
                 first_seg = path_parts[0]
-                if first_seg not in ('saas-admin', 'admin', 'static', 'media', 'logout', 'subscription-expired'):
+                if first_seg not in ('saas-admin', 'admin', 'static', 'media', 'logout', 'logout-get', 'subscription-expired', 'account', 'login'):
                     possible_school = School.objects.filter(subdomain=first_seg).first()
                     if possible_school:
                         school = possible_school
@@ -114,7 +114,7 @@ class TenantMiddleware:
         # 3. User session-based routing and verification
         
         # If the user is a superuser and visits a school portal (subdomain or path segment),
-        # log them out to prevent auto-accessing the school portal as superuser.
+        # redirect them away to prevent auto-accessing the school portal as superuser.
         if is_superuser and is_explicit_tenant:
             allowed_paths = [
                 reverse('logout_get'),
@@ -146,9 +146,9 @@ class TenantMiddleware:
                     school = profile.school
                     is_explicit_tenant = True
                     
-        # Fallback to the first school in the database if no tenant found
-        if not school:
-            school = School.objects.first()
+        # NOTE: No fallback to School.objects.first() — if no school is resolved,
+        # this is a SaaS-level request (root domain, /saas-admin/, etc.)
+        # and school stays None intentionally.
             
         request.tenant = school
         
