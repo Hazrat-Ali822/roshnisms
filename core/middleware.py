@@ -63,6 +63,13 @@ class TenantMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # 0. Restrict Django Admin to superusers only
+        if request.path.startswith('/admin/'):
+            user = getattr(request, 'user', None)
+            if not (user and user.is_authenticated and user.is_superuser):
+                from django.core.exceptions import PermissionDenied
+                raise PermissionDenied
+                
         host = request.get_host().split(':')[0]
         parts = host.split('.')
         

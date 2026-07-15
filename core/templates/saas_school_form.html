@@ -32,6 +32,11 @@
       </div>
     </div>
 
+    <div class="frow" style="margin-top: 10px;">
+      <label for="subscription_rate">Subscription Rate (Rs/Month)</label>
+      <input type="number" id="subscription_rate" name="subscription_rate" value="{{ school.subscription_rate|default:5000 }}" required min="0" placeholder="e.g. 5000">
+    </div>
+
     <div style="margin-top: 22px; border-top: 1px solid var(--line); padding-top: 16px;">
       <h3 style="margin-bottom: 12px; color: var(--ink); font-size: 15px;">Administrator Credentials</h3>
       <div class="frow">

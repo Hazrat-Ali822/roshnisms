@@ -33,6 +33,7 @@ class School(models.Model):
     admin_username = models.CharField(max_length=60, blank=True)
     admin_email = models.CharField(max_length=120, blank=True)
     admin_password = models.CharField(max_length=128, blank=True)
+    subscription_rate = models.PositiveIntegerField(default=5000)
     
     final_grade = models.CharField(max_length=10, default='10')
     pass_mark = models.PositiveIntegerField(default=40)

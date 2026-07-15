@@ -4875,8 +4875,28 @@ def saas_admin_dashboard(request):
     if not request.user.is_superuser:
         raise PermissionDenied
         
+    import json
+    import sqlite3
+    import os
+    from django.conf import settings
+    from django.utils import timezone
+    
     schools = School.objects.all().order_by('name')
     today = timezone.localdate()
+    
+    total_schools = schools.count()
+    active_schools_count = schools.filter(subscription_active=True).count()
+    total_saas_revenue = sum(s.subscription_rate for s in schools.filter(subscription_active=True))
+    
+    total_students_all = 0
+    total_staff_all = 0
+    total_income_all = 0
+    total_expense_all = 0
+    
+    school_names = []
+    student_counts = []
+    school_incomes = []
+    school_expenses = []
     
     for school in schools:
         school.portal_url = school.get_portal_url(request)
@@ -4885,10 +4905,60 @@ def saas_admin_dashboard(request):
         else:
             school.is_expired = False
             
+        # Get stats dynamically from SQLite files
+        sub = school.subdomain or 'default'
+        if sub == 'default':
+            db_path = os.path.join(settings.BASE_DIR, "db.sqlite3")
+        else:
+            db_path = os.path.join(settings.BASE_DIR, f"{sub}.sqlite3")
+            
+        stats = {'students': 0, 'staff': 0, 'income': 0, 'expense': 0}
+        if os.path.exists(db_path):
+            try:
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM core_student")
+                stats['students'] = cursor.fetchone()[0] or 0
+                cursor.execute("SELECT COUNT(*) FROM core_staff")
+                stats['staff'] = cursor.fetchone()[0] or 0
+                cursor.execute("SELECT SUM(amount) FROM core_feepayment")
+                stats['income'] = cursor.fetchone()[0] or 0
+                cursor.execute("SELECT SUM(amount) FROM core_expense")
+                stats['expense'] = cursor.fetchone()[0] or 0
+                conn.close()
+            except Exception:
+                pass
+                
+        school.student_count = stats['students']
+        school.staff_count = stats['staff']
+        school.income = stats['income']
+        school.expense = stats['expense']
+        
+        total_students_all += stats['students']
+        total_staff_all += stats['staff']
+        total_income_all += stats['income']
+        total_expense_all += stats['expense']
+        
+        school_names.append(school.name)
+        student_counts.append(stats['students'])
+        school_incomes.append(stats['income'])
+        school_expenses.append(stats['expense'])
+        
     return render(request, 'saas_admin.html', {
         'schools': schools,
         'today': today,
-        'active': 'saas_admin'
+        'active': 'saas_admin',
+        'total_schools': total_schools,
+        'active_schools_count': active_schools_count,
+        'total_saas_revenue': total_saas_revenue,
+        'total_students_all': total_students_all,
+        'total_staff_all': total_staff_all,
+        'total_income_all': total_income_all,
+        'total_expense_all': total_expense_all,
+        'school_names_json': json.dumps(school_names),
+        'student_counts_json': json.dumps(student_counts),
+        'school_incomes_json': json.dumps(school_incomes),
+        'school_expenses_json': json.dumps(school_expenses),
     })
 
 @login_required(login_url='login')
@@ -4901,6 +4971,7 @@ def saas_school_add(request):
         subdomain = request.POST.get('subdomain')
         start_date = request.POST.get('subscription_start') or None
         end_date = request.POST.get('subscription_end') or None
+        rate = request.POST.get('subscription_rate') or 5000
         
         admin_username = request.POST.get('admin_username')
         admin_email = request.POST.get('admin_email')
@@ -4915,7 +4986,8 @@ def saas_school_add(request):
                 subscription_active=True,
                 admin_username=admin_username or '',
                 admin_email=admin_email or '',
-                admin_password=admin_password or ''
+                admin_password=admin_password or '',
+                subscription_rate=int(rate)
             )
             
             if admin_username and admin_password:
@@ -4956,6 +5028,7 @@ def saas_school_edit(request, pk):
         school.subscription_start = request.POST.get('subscription_start') or None
         school.subscription_end = request.POST.get('subscription_end') or None
         school.subscription_active = request.POST.get('subscription_active') == 'on'
+        school.subscription_rate = int(request.POST.get('subscription_rate') or 5000)
         
         old_username = school.admin_username
         admin_username = request.POST.get('admin_username')
