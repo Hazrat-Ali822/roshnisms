@@ -121,7 +121,6 @@ class TenantMiddleware:
             ]
             if not any(request.path.startswith(p) for p in allowed_paths):
                 logout(request)
-                messages.info(request, "SaaS Superuser signed out. Please log in with your School Admin credentials.")
                 return redirect('login')
         
         if user and user.is_authenticated and not is_superuser:
@@ -136,7 +135,6 @@ class TenantMiddleware:
                     ]
                     if not any(request.path.startswith(p) for p in allowed_paths):
                         logout(request)
-                        messages.error(request, "Access denied. Please log in through your school's subdomain portal.")
                         return redirect('login')
                 elif not school:
                     # Keep them on their school
