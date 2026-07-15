@@ -53,6 +53,9 @@
           <a class="nav-item {% if active == 'expenses' %}active{% endif %}" href="{% url 'expenses' %}">Expenses</a>
           <a class="nav-item {% if active == 'exams' %}active{% endif %}" href="{% url 'exam_datesheet' %}">Exams</a>
           <a class="nav-item {% if active == 'admissions' %}active{% endif %}" href="{% url 'admissions' %}">Admissions</a>
+          <a class="nav-item {% if active == 'approvals' %}active{% endif %}" href="{% url 'principal_approvals' %}">Approvals</a>
+          <a class="nav-item {% if active == 'academics' %}active{% endif %}" href="{% url 'principal_academics' %}">Academics</a>
+          <a class="nav-item {% if active == 'promotion' %}active{% endif %}" href="{% url 'promotion' %}">Year-End (Promotion)</a>
           <a class="nav-item {% if active == 'communication' %}active{% endif %}" href="{% url 'communication' %}">Communication</a>
           <a class="nav-item {% if active == 'transport' %}active{% endif %}" href="{% url 'transport' %}">Transport</a>
           <a class="nav-item {% if active == 'hostel' %}active{% endif %}" href="{% url 'hostel' %}">Hostel</a>
