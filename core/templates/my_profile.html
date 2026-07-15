@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block heading %}Profile{% endblock %}
 {% block content %}
-<div class="welcome no-print"><h1>{% if role == 'parent' %}Student Profile{% else %}My Profile{% endif %}</h1><p>{% if child %}{% if role == 'parent' %}Your child's complete record at Roshni Public School.{% else %}Complete student record at Roshni Public School.{% endif %}{% else %}No student linked to this account.{% endif %}</p></div>
+<div class="welcome no-print"><h1>{% if role == 'parent' %}Student Profile{% else %}My Profile{% endif %}</h1><p>{% if child %}{% if role == 'parent' %}Your child's complete record at {{ brand_name }}.{% else %}Complete student record at {{ brand_name }}.{% endif %}{% else %}No student linked to this account.{% endif %}</p></div>
 
 {% if child %}
 <div class="card profile-hero">

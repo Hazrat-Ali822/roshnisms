@@ -66,9 +66,9 @@
 
 <script>
 function fillTpl(v){
-  var t={fee:"Dear Parent, the monthly fee for your child is now due. Kindly pay by the 10th. - Roshni Public School",
-         absent:"Dear Parent, your child was marked absent today. - Roshni Public School",
-         result:"Dear Parent, the Mid-Term result has been published in the parent portal. - Roshni Public School"};
+  var t={fee:"Dear Parent, the monthly fee for your child is now due. Kindly pay by the 10th. - {{ brand_name }}",
+         absent:"Dear Parent, your child was marked absent today. - {{ brand_name }}",
+         result:"Dear Parent, the Mid-Term result has been published in the parent portal. - {{ brand_name }}"};
   if(t[v]){document.getElementById('body').value=t[v];}
 }
 </script>

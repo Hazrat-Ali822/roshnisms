@@ -7,9 +7,9 @@
 </div>
 <div class="card doc">
   <div class="doc-head">
-    <div class="doc-crest">R</div>
-    <h2>Roshni Public School</h2>
-    <div class="doc-sub">Main Campus, Lahore &middot; Est. 2008</div>
+    <div class="doc-crest">{{ school.name|slice:":1" }}</div>
+    <h2>{{ school.name }}</h2>
+    <div class="doc-sub">{{ school.campus|default:"Main Campus" }}</div>
   </div>
   <div class="doc-body">
     <div class="doc-title">{{ cert.get_cert_type_display }}</div>
