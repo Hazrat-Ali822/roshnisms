@@ -108,6 +108,9 @@ class TenantMiddleware:
                         request.path_info = new_path
                         request.path = new_path
                         
+        user = getattr(request, 'user', None)
+        is_superuser = user.is_superuser if (user and user.is_authenticated) else False
+
         # Verify that the session's tenant matches the request's active school tenant!
         # If the session belongs to a different school/tenant, we log them out
         # to prevent session leakage across database boundaries.
