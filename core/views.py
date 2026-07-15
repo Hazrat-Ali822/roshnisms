@@ -5018,22 +5018,55 @@ def saas_school_add(request):
             )
             
             if admin_username and admin_password:
-                from django.contrib.auth.models import User
-                from core.models import Profile
+                import copy
+                import shutil
+                from django.db import connections
                 
-                if not User.objects.filter(username=admin_username).exists():
-                    user = User.objects.create_user(
-                        username=admin_username,
-                        email=admin_email or '',
-                        password=admin_password,
-                        first_name=name
-                    )
-                    Profile.objects.create(
-                        user=user,
-                        role='admin',
-                        school=school,
-                        must_change_password=False
-                    )
+                tenant_db_path = os.path.join(settings.BASE_DIR, f"{subdomain}.sqlite3")
+                if not os.path.exists(tenant_db_path):
+                    shutil.copyfile(os.path.join(settings.BASE_DIR, "db.sqlite3"), tenant_db_path)
+                    
+                conn = connections['default']
+                conn.close()
+                original_db_name = conn.settings_dict['NAME']
+                conn.settings_dict = copy.deepcopy(conn.settings_dict)
+                conn.settings_dict['NAME'] = tenant_db_path
+                
+                try:
+                    from django.contrib.auth.models import User
+                    from core.models import Profile, School as TenantSchool
+                    
+                    # Ensure the school record itself exists inside the tenant database
+                    tenant_school = TenantSchool.objects.filter(subdomain=subdomain).first()
+                    if not tenant_school:
+                        tenant_school = TenantSchool.objects.create(
+                            name=name,
+                            subdomain=subdomain,
+                            subscription_start=start_date,
+                            subscription_end=end_date,
+                            subscription_active=True,
+                            admin_username=admin_username or '',
+                            admin_email=admin_email or '',
+                            admin_password=admin_password or '',
+                            subscription_rate=int(rate)
+                        )
+                        
+                    if not User.objects.filter(username=admin_username).exists():
+                        user = User.objects.create_user(
+                            username=admin_username,
+                            email=admin_email or '',
+                            password=admin_password,
+                            first_name=name
+                        )
+                        Profile.objects.create(
+                            user=user,
+                            role='admin',
+                            school=tenant_school,
+                            must_change_password=False
+                        )
+                finally:
+                    conn.close()
+                    conn.settings_dict['NAME'] = original_db_name
             
             messages.success(request, f"School '{name}' and Admin account created successfully!")
             return redirect('saas_admin_dashboard')
@@ -5070,46 +5103,92 @@ def saas_school_edit(request, pk):
         school.save()
         
         if admin_username:
-            from django.contrib.auth.models import User
-            from core.models import Profile
+            import copy
+            import shutil
+            from django.db import connections
             
-            user = User.objects.filter(username=admin_username).first()
-            if not user and old_username:
-                user = User.objects.filter(username=old_username).first()
+            subdomain = school.subdomain or 'default'
+            tenant_db_path = os.path.join(settings.BASE_DIR, f"{subdomain}.sqlite3")
+            if not os.path.exists(tenant_db_path):
+                shutil.copyfile(os.path.join(settings.BASE_DIR, "db.sqlite3"), tenant_db_path)
                 
-            if user:
-                user.username = admin_username
-                user.email = admin_email or ''
-                if admin_password:
-                    user.set_password(admin_password)
-                user.save()
+            conn = connections['default']
+            conn.close()
+            original_db_name = conn.settings_dict['NAME']
+            conn.settings_dict = copy.deepcopy(conn.settings_dict)
+            conn.settings_dict['NAME'] = tenant_db_path
+            
+            try:
+                from django.contrib.auth.models import User
+                from core.models import Profile, School as TenantSchool
                 
-                profile = getattr(user, 'profile', None)
-                if profile:
-                    profile.school = school
-                    profile.role = 'admin'
-                    profile.save()
+                # Sync school data inside tenant database
+                tenant_school = TenantSchool.objects.filter(subdomain=subdomain).first()
+                if not tenant_school:
+                    tenant_school = TenantSchool.objects.create(
+                        name=school.name,
+                        subdomain=subdomain,
+                        subscription_start=school.subscription_start,
+                        subscription_end=school.subscription_end,
+                        subscription_active=school.subscription_active,
+                        admin_username=school.admin_username,
+                        admin_email=school.admin_email,
+                        admin_password=school.admin_password,
+                        subscription_rate=school.subscription_rate
+                    )
                 else:
-                    Profile.objects.create(
-                        user=user,
-                        role='admin',
-                        school=school,
-                        must_change_password=False
-                    )
-            else:
-                if not User.objects.filter(username=admin_username).exists():
-                    user = User.objects.create_user(
-                        username=admin_username,
-                        email=admin_email or '',
-                        password=admin_password or 'school123',
-                        first_name=school.name
-                    )
-                    Profile.objects.create(
-                        user=user,
-                        role='admin',
-                        school=school,
-                        must_change_password=False
-                    )
+                    tenant_school.name = school.name
+                    tenant_school.subscription_start = school.subscription_start
+                    tenant_school.subscription_end = school.subscription_end
+                    tenant_school.subscription_active = school.subscription_active
+                    tenant_school.admin_username = school.admin_username
+                    tenant_school.admin_email = school.admin_email
+                    if admin_password:
+                        tenant_school.admin_password = admin_password
+                    tenant_school.subscription_rate = school.subscription_rate
+                    tenant_school.save()
+                
+                # Sync user/profile inside tenant database
+                user = User.objects.filter(username=admin_username).first()
+                if not user and old_username:
+                    user = User.objects.filter(username=old_username).first()
+                    
+                if user:
+                    user.username = admin_username
+                    user.email = admin_email or ''
+                    if admin_password:
+                        user.set_password(admin_password)
+                    user.save()
+                    
+                    profile = getattr(user, 'profile', None)
+                    if profile:
+                        profile.school = tenant_school
+                        profile.role = 'admin'
+                        profile.save()
+                    else:
+                        Profile.objects.create(
+                            user=user,
+                            role='admin',
+                            school=tenant_school,
+                            must_change_password=False
+                        )
+                else:
+                    if not User.objects.filter(username=admin_username).exists():
+                        user = User.objects.create_user(
+                            username=admin_username,
+                            email=admin_email or '',
+                            password=admin_password or 'school123',
+                            first_name=school.name
+                        )
+                        Profile.objects.create(
+                            user=user,
+                            role='admin',
+                            school=tenant_school,
+                            must_change_password=False
+                        )
+            finally:
+                conn.close()
+                conn.settings_dict['NAME'] = original_db_name
                     
         messages.success(request, f"School '{school.name}' and Admin credentials updated successfully!")
         return redirect('saas_admin_dashboard')

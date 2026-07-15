@@ -110,6 +110,20 @@ class TenantMiddleware:
         user = getattr(request, 'user', None)
         is_superuser = user.is_superuser if (user and user.is_authenticated) else False
         
+        # If the user is a superuser and visits a school portal (subdomain or path segment),
+        # log them out to prevent auto-accessing the school portal as superuser.
+        if is_superuser and is_explicit_tenant:
+            allowed_paths = [
+                reverse('logout'),
+                '/static/',
+                '/media/',
+                '/saas-admin/'
+            ]
+            if not any(request.path.startswith(p) for p in allowed_paths):
+                logout(request)
+                messages.info(request, "SaaS Superuser signed out. Please log in with your School Admin credentials.")
+                return redirect('login')
+        
         if user and user.is_authenticated and not is_superuser:
             profile = getattr(user, 'profile', None)
             if profile and profile.school:
