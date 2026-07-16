@@ -10,11 +10,10 @@ def branding(request):
     my_photo = bool(prof and prof.photo)
 
     school = getattr(request, 'tenant', None)
-    if not school:
-        school = School.objects.first()
+    is_explicit_tenant = getattr(request, 'is_explicit_tenant', False)
         
-    if not school:
-        return {'brand_name': 'School', 'brand_logo': False,
+    if not is_explicit_tenant or not school:
+        return {'brand_name': 'Roshni SMS', 'brand_logo': False,
                 'brand_primary': '#15294D', 'brand_accent': '#0E7C66',
                 'current_session': '2025-26', 'my_photo': my_photo}
     return {
