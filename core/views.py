@@ -607,20 +607,26 @@ def attendance_mark(request):
         date = datetime.date.fromisoformat(raw) if raw else timezone.localdate()
     except (ValueError, TypeError):
         date = timezone.localdate()
+    # Never allow attendance for a FUTURE date — it would pollute the register
+    # and the attendance %. Clamp silently to today.
+    if date > timezone.localdate():
+        date = timezone.localdate()
 
     if request.method == 'POST' and students:
         prev = {r.student_id: r.status for r in
                 AttendanceRecord.objects.filter(student__in=students, date=date)}
         newly_absent = []
-        for s in students:
-            status = request.POST.get('status_%d' % s.id, 'P')
-            if status not in ('P', 'A', 'L'):
-                status = 'P'
-            if status == 'A' and prev.get(s.id) != 'A':
-                newly_absent.append(s)
-            AttendanceRecord.objects.update_or_create(
-                student=s, date=date,
-                defaults={'status': status, 'session': _current_session()})
+        # All-or-nothing: a mid-loop failure must not leave the class half-marked.
+        with transaction.atomic():
+            for s in students:
+                status = request.POST.get('status_%d' % s.id, 'P')
+                if status not in ('P', 'A', 'L'):
+                    status = 'P'
+                if status == 'A' and prev.get(s.id) != 'A':
+                    newly_absent.append(s)
+                AttendanceRecord.objects.update_or_create(
+                    student=s, date=date,
+                    defaults={'status': status, 'session': _current_session()})
         sent = 0
         if sms_enabled('SMS_NOTIFY_ON_ABSENT') and newly_absent:
             school = School.objects.first()
@@ -777,17 +783,18 @@ def marks_entry(request):
                 'editing. The latest values are shown below — please re-check and '
                 'save again.')
         else:
-            for s in students:
-                val = (request.POST.get('marks_%d' % s.id, '') or '').strip()
-                if val == '':
-                    continue
-                try:
-                    num = max(0, min(100, int(val)))
-                except ValueError:
-                    continue
-                Mark.objects.update_or_create(
-                    student=s, subject=subject, exam=exam,
-                    defaults={'marks_obtained': num, 'total_marks': 100})
+            with transaction.atomic():
+                for s in students:
+                    val = (request.POST.get('marks_%d' % s.id, '') or '').strip()
+                    if val == '':
+                        continue
+                    try:
+                        num = max(0, min(100, int(val)))
+                    except ValueError:
+                        continue
+                    Mark.objects.update_or_create(
+                        student=s, subject=subject, exam=exam,
+                        defaults={'marks_obtained': num, 'total_marks': 100})
             _audit(request, 'Marks saved',
                    '%s / %s / %s' % (subject.name, classroom, exam.name))
             messages.success(request, 'Marks saved for %s (%s, %s).'

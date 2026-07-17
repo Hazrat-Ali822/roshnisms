@@ -4,7 +4,7 @@ import datetime
 
 from django.test import Client, TestCase
 
-from core.models import Assignment, Question, Quiz
+from core.models import Assignment, AttendanceRecord, Question, Quiz
 from core.tests.factory import build_world, PASSWORD
 
 
@@ -60,3 +60,22 @@ class TeacherEditDeleteTests(TestCase):
         self.c.post('/teacher/assignments/', {
             'action': 'delete', 'assignment_id': other.id, 'class': self.w.c10.id})
         self.assertTrue(Assignment.objects.filter(pk=other.id).exists())
+
+
+class AttendanceHardeningTests(TestCase):
+    def setUp(self):
+        self.w = build_world()
+        self.c = Client()
+        self.c.login(username='teacher1', password=PASSWORD)
+
+    def test_future_date_is_clamped_to_today(self):
+        from django.utils import timezone
+        future = datetime.date(2099, 1, 1)
+        self.c.post('/attendance/', {
+            'class': self.w.c9.id, 'date': future.isoformat(),
+            'status_%d' % self.w.ayaan.id: 'A'})
+        # Nothing may be recorded on the future date...
+        self.assertFalse(AttendanceRecord.objects.filter(date=future).exists())
+        # ...it must land on today instead.
+        self.assertTrue(AttendanceRecord.objects.filter(
+            student=self.w.ayaan, date=timezone.localdate()).exists())
