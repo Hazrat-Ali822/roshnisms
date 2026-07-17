@@ -45,6 +45,10 @@ class School(models.Model):
     late_fee_amount = models.PositiveIntegerField(default=0)      # base, week 0
     late_fee_per_week = models.PositiveIntegerField(default=0)    # added per week overdue
     late_fee_max = models.PositiveIntegerField(default=0)         # ceiling, 0 = none
+    # Email alerts (payment receipts, absence). Uses Django's EMAIL_BACKEND —
+    # console by default (logged, not sent) until SMTP is configured on deploy.
+    email_alerts_enabled = models.BooleanField(default=False)
+    email_from = models.CharField(max_length=120, blank=True)
     # Branding — each school makes the system look like their own.
     logo = models.FileField(upload_to='school/', blank=True, null=True)
     primary_color = models.CharField(max_length=7, default='#15294D')   # headers/sidebar
@@ -143,6 +147,7 @@ class Student(models.Model):
     admission_no = models.CharField(max_length=30, blank=True)
     guardian_name = models.CharField(max_length=120, blank=True)
     guardian_phone = models.CharField(max_length=20, blank=True)
+    guardian_email = models.EmailField(blank=True)   # for email alerts
     fee_status = models.CharField(max_length=10, choices=FEE_CHOICES, default='Pending')
     custom_fee = models.PositiveIntegerField(default=0)  # 0 = use class monthly_fee
     is_hostel = models.BooleanField(default=False)

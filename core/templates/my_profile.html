@@ -77,6 +77,7 @@
       <input type="hidden" name="action" value="update_contact">
       <div class="frow"><label>Guardian name</label><input name="guardian_name" value="{{ child.guardian_name }}" maxlength="120"></div>
       <div class="frow"><label>Guardian phone</label><input name="guardian_phone" value="{{ child.guardian_phone }}" maxlength="20"></div>
+      <div class="frow"><label>Guardian email</label><input type="email" name="guardian_email" value="{{ child.guardian_email }}" maxlength="254" placeholder="For email alerts"></div>
       <div class="frow"><label>Address</label><textarea name="address" rows="2" maxlength="255">{{ child.address }}</textarea></div>
       <button class="btn-primary btn-auto" type="submit">Save contact details</button>
       <p class="muted" style="font-size:11.5px;margin-top:8px">Only contact details can be changed here. For name, class or admission corrections, please contact the office.</p>

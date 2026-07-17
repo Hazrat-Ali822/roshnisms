@@ -124,6 +124,13 @@
       <label style="display:block;font-size:13.5px;text-transform:none;letter-spacing:0"><input type="checkbox" name="notify_feedue" {% if school.notify_feedue %}checked{% endif %}> Fee reminders / due alerts</label>
     </div>
 
+    <div style="border-top:1px solid var(--line);padding-top:12px;margin-top:12px">
+      <p class="muted" style="font-size:12px;margin:0 0 8px"><b>Email alerts</b> &mdash; also email guardians who have an email on file (fee receipts &amp; absence).</p>
+      <label style="display:block;font-size:13.5px;margin-bottom:8px;text-transform:none;letter-spacing:0"><input type="checkbox" name="email_alerts_enabled" {% if school.email_alerts_enabled %}checked{% endif %}> Send email alerts</label>
+      <div class="frow" style="max-width:320px;margin:0"><label>From address</label><input name="email_from" value="{{ school.email_from }}" placeholder="e.g. School Name <office@school.edu>"></div>
+      <p class="muted" style="font-size:11.5px;margin-top:6px">Emails are logged until SMTP is configured on the server (EMAIL_BACKEND).</p>
+    </div>
+
     <button class="btn-primary btn-auto" type="submit" style="margin-top:14px">Save SMS settings</button>
   </form>
 

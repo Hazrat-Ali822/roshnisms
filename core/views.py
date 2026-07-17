@@ -23,6 +23,7 @@ from django.utils.http import urlencode
 from django.views.decorators.csrf import csrf_exempt
 
 from .decorators import role_required
+from .emailer import email_alerts_enabled, send_email_alert
 from .sms import notify, send_sms, sms_enabled
 from . import payments
 from .models import (Announcement, Applicant, Assignment, AttendanceRecord, AuditLog,
@@ -630,21 +631,26 @@ def attendance_mark(request):
                     student=s, date=date,
                     defaults={'status': status, 'session': _current_session()})
         sent = 0
-        if sms_enabled('SMS_NOTIFY_ON_ABSENT') and newly_absent:
+        if newly_absent:
             school = School.objects.first()
             sname = school.name if school else 'School'
+            sms_on = sms_enabled('SMS_NOTIFY_ON_ABSENT')
+            email_on = email_alerts_enabled()
             for s in newly_absent:
+                text = (
+                    '%s: Dear %s, your child %s was marked ABSENT today (%s). '
+                    'If this is unexpected, please contact the school.'
+                    % (sname, s.guardian_name or 'Parent', s.name,
+                       date.strftime('%d %b %Y')))
                 phone = (s.guardian_phone or '').strip()
-                if phone:
-                    notify(
-                        '%s: Dear %s, your child %s was marked ABSENT today (%s). '
-                        'If this is unexpected, please contact the school.'
-                        % (sname, s.guardian_name or 'Parent', s.name,
-                           date.strftime('%d %b %Y')),
-                        to_phone=phone,
-                        recipients=s.guardian_name or s.name,
-                        msg_type='Absent Alert')
+                if sms_on and phone:
+                    notify(text, to_phone=phone,
+                           recipients=s.guardian_name or s.name,
+                           msg_type='Absent Alert')
                     sent += 1
+                if email_on and (s.guardian_email or '').strip():
+                    send_email_alert('Absence alert — %s' % sname, text,
+                                     s.guardian_email, msg_type='Absent Alert')
         msg = ('Attendance saved for %s (%s).'
                % (classroom, date.strftime('%d %b %Y')))
         if sent:
@@ -1527,16 +1533,20 @@ def _record_fee_payment(student, challan, amount, mode, received_by,
                 % (amount, student.name, challan.label if challan else '-',
                    payment.receipt_no, mode))[:255])
     if send_alert:
+        school = School.objects.first()
+        sname = school.name if school else 'School'
+        text = ('%s: received Rs %d for %s (%s). Receipt %s. Thank you.'
+                % (sname, amount, student.name,
+                   challan.label if challan else 'fees', payment.receipt_no))
         phone = (student.guardian_phone or '').strip()
         if sms_enabled('SMS_NOTIFY_ON_PAYMENT') and phone:
-            school = School.objects.first()
-            notify(
-                '%s: received Rs %d for %s (%s). Receipt %s. Thank you.'
-                % (school.name if school else 'School', amount, student.name,
-                   challan.label if challan else 'fees', payment.receipt_no),
-                to_phone=phone,
-                recipients=student.guardian_name or student.name,
-                msg_type='Fee Receipt')
+            notify(text, to_phone=phone,
+                   recipients=student.guardian_name or student.name,
+                   msg_type='Fee Receipt')
+        # Email the same receipt if the school uses email alerts and we have one.
+        if email_alerts_enabled() and (student.guardian_email or '').strip():
+            send_email_alert('Fee received — %s' % sname, text,
+                             student.guardian_email, msg_type='Fee Receipt')
     _sync_fee_status(student)
     return payment
 
@@ -3382,6 +3392,7 @@ def _student_form_data(request):
         'father_phone': g('father_phone'), 'mother_phone': g('mother_phone'),
         'guardian_name': g('guardian_name'),
         'guardian_phone': g('guardian_phone'),
+        'guardian_email': g('guardian_email'),
         'guardian_relation': g('guardian_relation'),
         'monthly_income': g('monthly_income'),
         'address': g('address'), 'permanent_address': g('permanent_address'),
@@ -3856,6 +3867,8 @@ def school_settings(request):
             school.notify_absent = bool(request.POST.get('notify_absent'))
             school.notify_payment = bool(request.POST.get('notify_payment'))
             school.notify_feedue = bool(request.POST.get('notify_feedue'))
+            school.email_alerts_enabled = bool(request.POST.get('email_alerts_enabled'))
+            school.email_from = (request.POST.get('email_from', '') or '').strip()[:120]
             school.save()
             _audit(request, 'SMS settings saved', school.sms_backend)
             messages.success(request, 'SMS settings saved (backend: %s).'
@@ -4984,8 +4997,11 @@ def my_profile(request):
                                or child.guardian_name).strip()[:120]
         child.guardian_phone = (request.POST.get('guardian_phone', '')
                                 or '').strip()[:20]
+        child.guardian_email = (request.POST.get('guardian_email', '')
+                                or '').strip()[:254]
         child.address = (request.POST.get('address', '') or '').strip()[:255]
-        child.save(update_fields=['guardian_name', 'guardian_phone', 'address'])
+        child.save(update_fields=['guardian_name', 'guardian_phone',
+                                  'guardian_email', 'address'])
         _audit(request, 'Contact details updated',
                '%s (by parent)' % child.name)
         messages.success(request, 'Contact details updated.')

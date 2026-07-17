@@ -177,3 +177,10 @@ SMS_HTTP_METHOD = 'GET'     # 'GET' or 'POST'
 SMS_NOTIFY_ON_PAYMENT = True     # send a confirmation when a fee payment is recorded
 SMS_NOTIFY_ON_ADMISSION = True   # send a welcome when an applicant is enrolled
 SMS_NOTIFY_ON_ABSENT = True      # alert a guardian when a student is marked absent
+# --- Email alerts ---
+# Console backend logs emails to the terminal without sending (safe default,
+# works offline and in tests). Point this at SMTP on deploy to actually send:
+#   EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+#   EMAIL_HOST / EMAIL_PORT / EMAIL_HOST_USER / EMAIL_HOST_PASSWORD / EMAIL_USE_TLS
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'Roshni School <noreply@roshni.local>'
