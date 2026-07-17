@@ -64,9 +64,29 @@ class TenantDatabaseMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        import sys
+        testing = 'test' in sys.argv
+
+        # Point the 'default' connection back at the MASTER database BEFORE we
+        # resolve which school owns this request. Without this, a tenant file
+        # left over from a PREVIOUS request on the same worker would answer the
+        # "which subdomain?" lookup — and the user would land on the wrong
+        # school (the "open one school, another opens" bug). Connections are
+        # thread-local, so this reset is per worker-thread and race-free.
+        if not testing:
+            import os
+            import copy
+            from django.db import connections
+            from django.conf import settings
+
+            conn = connections['default']
+            conn.close()
+            conn.settings_dict = copy.deepcopy(settings.DATABASES['default'])
+            conn.settings_dict['NAME'] = os.path.join(settings.BASE_DIR, "db.sqlite3")
+
         host = request.get_host().split(':')[0]
         parts = host.split('.')
-        
+
         # 1. Resolve subdomain
         subdomain = None
         if len(parts) > 2:
@@ -116,18 +136,24 @@ class TenantDatabaseMiddleware:
             from django.conf import settings
 
             db_path = os.path.join(settings.BASE_DIR, "db.sqlite3")
+            just_created = False
             if school and school.subdomain and school.subdomain != 'default' and not request.path.startswith('/saas-admin/'):
                 db_path = os.path.join(settings.BASE_DIR, f"{school.subdomain}.sqlite3")
                 if not os.path.exists(db_path):
                     shutil.copyfile(os.path.join(settings.BASE_DIR, "db.sqlite3"), db_path)
+                    just_created = True
 
             conn = connections['default']
             conn.close()
             conn.settings_dict = copy.deepcopy(settings.DATABASES['default'])
             conn.settings_dict['NAME'] = db_path
 
-            # Clean up other schools from the tenant database to ensure School.objects.first() resolves correctly
-            if school and school.subdomain and school.subdomain != 'default':
+            # A freshly-copied tenant file still contains every school's row.
+            # Trim it to just this tenant ONCE, at creation, so School.objects
+            # .first() inside the tenant resolves correctly. This used to run on
+            # EVERY request (a per-request destructive delete) — wasteful and a
+            # data-loss risk if the tenant was ever misresolved.
+            if just_created and school and school.subdomain and school.subdomain != 'default':
                 try:
                     from core.models import School as TenantSchool
                     TenantSchool.objects.exclude(subdomain=school.subdomain).delete()
@@ -200,18 +226,22 @@ class TenantRoutingMiddleware:
                         from django.conf import settings
 
                         db_path = os.path.join(settings.BASE_DIR, "db.sqlite3")
+                        just_created = False
                         if school and school.subdomain and school.subdomain != 'default' and not request.path.startswith('/saas-admin/'):
                             db_path = os.path.join(settings.BASE_DIR, f"{school.subdomain}.sqlite3")
                             if not os.path.exists(db_path):
                                 shutil.copyfile(os.path.join(settings.BASE_DIR, "db.sqlite3"), db_path)
+                                just_created = True
 
                         conn = connections['default']
                         conn.close()
                         conn.settings_dict = copy.deepcopy(settings.DATABASES['default'])
                         conn.settings_dict['NAME'] = db_path
 
-                        # Clean up other schools from the tenant database to ensure School.objects.first() resolves correctly
-                        if school and school.subdomain and school.subdomain != 'default':
+                        # Trim a freshly-created tenant file to just this school,
+                        # ONCE at creation (not on every request — see the note in
+                        # TenantDatabaseMiddleware).
+                        if just_created and school and school.subdomain and school.subdomain != 'default':
                             try:
                                 from core.models import School as TenantSchool
                                 TenantSchool.objects.exclude(subdomain=school.subdomain).delete()
