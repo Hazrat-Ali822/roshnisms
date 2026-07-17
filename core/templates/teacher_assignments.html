@@ -4,6 +4,22 @@
 {% if assignment %}
   <a class="btn-ghost btn-auto" href="{% url 'teacher_assignments' %}?class={{ classroom.id }}" style="margin-bottom:16px;display:inline-flex">&larr; All assignments</a>
   <div class="welcome"><h1>{{ assignment.title }}</h1><p>{% if assignment.subject %}{{ assignment.subject.name }} &middot; {% endif %}Due {{ assignment.due_date }}</p></div>
+  <details class="add-wrap no-print" style="margin-bottom:16px">
+    <summary class="add-btn">Edit assignment</summary>
+    <div class="card card-pad" style="max-width:640px">
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="action" value="edit">
+        <input type="hidden" name="class" value="{{ classroom.id }}">
+        <div class="row-2x">
+          <div class="frow"><label>Title</label><input name="title" value="{{ assignment.title }}"></div>
+          <div class="frow"><label>Subject</label><select name="subject"><option value="">- none -</option>{% for s in subjects %}<option value="{{ s.id }}" {% if assignment.subject_id == s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></div>
+          <div class="frow"><label>Due date</label><input type="date" name="due_date" value="{{ assignment.due_date|date:'Y-m-d' }}"></div>
+        </div>
+        <div class="frow"><label>Description / instructions</label><textarea name="description" rows="3">{{ assignment.description }}</textarea></div>
+        <button class="btn-primary btn-auto" type="submit">Save changes</button>
+      </form>
+    </div>
+  </details>
   <div class="card">
     <div class="sec-head">
       <h3>Submissions ({{ rows|length }} students)</h3>
@@ -71,11 +87,19 @@
   <div class="card">
     <div class="sec-head"><h3>All assignments</h3></div>
     {% for a in assignments %}
-      <a class="mat-row" href="{% url 'teacher_assignments' %}?id={{ a.obj.id }}&class={{ classroom.id }}" style="text-decoration:none">
-        <span class="mat-ic" style="background:#E6EEF8;color:#2C5FA8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="6" y="4.5" width="12" height="16" rx="2"/><path d="M9 11h6M9 14.5h4"/></svg></span>
-        <div class="mat-b"><b>{{ a.obj.title }}</b><span>{% if a.obj.subject %}{{ a.obj.subject.name }} &middot; {% endif %}Due {{ a.obj.due_date }}</span></div>
-        <span class="pill pill-info">{{ a.count }} submitted</span>
-      </a>
+      <div style="display:flex;align-items:center;gap:8px">
+        <a class="mat-row" href="{% url 'teacher_assignments' %}?id={{ a.obj.id }}&class={{ classroom.id }}" style="text-decoration:none;flex:1">
+          <span class="mat-ic" style="background:#E6EEF8;color:#2C5FA8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="6" y="4.5" width="12" height="16" rx="2"/><path d="M9 11h6M9 14.5h4"/></svg></span>
+          <div class="mat-b"><b>{{ a.obj.title }}</b><span>{% if a.obj.subject %}{{ a.obj.subject.name }} &middot; {% endif %}Due {{ a.obj.due_date }}</span></div>
+          <span class="pill pill-info">{{ a.count }} submitted</span>
+        </a>
+        <form method="post" class="no-print" onsubmit="return confirm('Delete this assignment and all its submissions? This cannot be undone.')" style="margin-right:12px">{% csrf_token %}
+          <input type="hidden" name="action" value="delete">
+          <input type="hidden" name="assignment_id" value="{{ a.obj.id }}">
+          <input type="hidden" name="class" value="{{ classroom.id }}">
+          <button class="act-btn ghost" type="submit">Delete</button>
+        </form>
+      </div>
     {% endfor %}
   </div>
   {% endif %}

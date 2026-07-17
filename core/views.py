@@ -4620,10 +4620,39 @@ def teacher_assignments(request):
         classroom = classes[0] if classes else None
     subjects = list(Subject.objects.filter(classroom=classroom)) if classroom else []
 
+    # Delete an assignment (and its submissions) — mistakes used to be permanent.
+    if request.method == 'POST' and request.POST.get('action') == 'delete':
+        a = Assignment.objects.filter(
+            pk=_pk(request.POST.get('assignment_id')), classroom=classroom).first()
+        if a:
+            a.delete()
+            messages.success(request, 'Assignment deleted.')
+        return redirect('%s?class=%s' % (reverse('teacher_assignments'),
+                                         classroom.id if classroom else ''))
+
     aid = request.GET.get('id')
     if aid:
         assignment = Assignment.objects.filter(pk=aid, classroom=classroom).first()
         if assignment:
+            if request.method == 'POST' and request.POST.get('action') == 'edit':
+                title = (request.POST.get('title', '') or '').strip()
+                if title:
+                    assignment.title = title
+                    assignment.description = (request.POST.get('description', '') or '').strip()
+                    subj = Subject.objects.filter(
+                        pk=_pk(request.POST.get('subject')), classroom=classroom).first()
+                    if subj:
+                        assignment.subject = subj
+                    raw = request.POST.get('due_date', '')
+                    try:
+                        if raw:
+                            assignment.due_date = datetime.date.fromisoformat(raw)
+                    except ValueError:
+                        pass
+                    assignment.save()
+                    messages.success(request, 'Assignment updated.')
+                return redirect('%s?id=%s&class=%s'
+                                % (request.path, assignment.id, assignment.classroom_id))
             if request.method == 'POST' and request.POST.get('action') == 'grade':
                 sub = Submission.objects.filter(
                     pk=request.POST.get('submission_id'),
@@ -4694,10 +4723,44 @@ def teacher_quizzes(request):
         classroom = classes[0] if classes else None
     subjects = list(Subject.objects.filter(classroom=classroom)) if classroom else []
 
+    # Delete a whole quiz (and its questions/attempts).
+    if request.method == 'POST' and request.POST.get('action') == 'delete':
+        q = Quiz.objects.filter(
+            pk=_pk(request.POST.get('quiz_id')), classroom=classroom).first()
+        if q:
+            q.delete()
+            messages.success(request, 'Quiz deleted.')
+        return redirect('%s?class=%s' % (reverse('teacher_quizzes'),
+                                         classroom.id if classroom else ''))
+
     qid = request.GET.get('id')
     if qid:
         quiz = Quiz.objects.filter(pk=qid, classroom=classroom).first()
         if quiz:
+            if request.method == 'POST' and request.POST.get('action') == 'del_q':
+                Question.objects.filter(
+                    pk=_pk(request.POST.get('question_id')), quiz=quiz).delete()
+                messages.success(request, 'Question removed.')
+                return redirect('%s?id=%s&class=%s'
+                                % (request.path, quiz.id, quiz.classroom_id))
+            if request.method == 'POST' and request.POST.get('action') == 'edit':
+                title = (request.POST.get('title', '') or '').strip()
+                if title:
+                    quiz.title = title
+                    subj = Subject.objects.filter(
+                        pk=_pk(request.POST.get('subject')), classroom=classroom).first()
+                    if subj:
+                        quiz.subject = subj
+                    try:
+                        quiz.time_limit = max(1, int(
+                            request.POST.get('time_limit', quiz.time_limit)
+                            or quiz.time_limit))
+                    except ValueError:
+                        pass
+                    quiz.save()
+                    messages.success(request, 'Quiz updated.')
+                return redirect('%s?id=%s&class=%s'
+                                % (request.path, quiz.id, quiz.classroom_id))
             if request.method == 'POST' and request.POST.get('action') == 'add_q':
                 text = (request.POST.get('text', '') or '').strip()
                 if text:

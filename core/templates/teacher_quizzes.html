@@ -5,6 +5,22 @@
   <a class="btn-ghost btn-auto" href="{% url 'teacher_quizzes' %}?class={{ classroom.id }}" style="margin-bottom:16px;display:inline-flex">&larr; All quizzes</a>
   <div class="welcome"><h1>{{ quiz.title }}</h1><p>{% if quiz.subject %}{{ quiz.subject.name }} &middot; {% endif %}{{ questions|length }} questions &middot; {{ quiz.time_limit }} min</p></div>
 
+  <details class="add-wrap no-print" style="margin-bottom:16px">
+    <summary class="add-btn">Edit quiz</summary>
+    <div class="card card-pad" style="max-width:640px">
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="action" value="edit">
+        <input type="hidden" name="class" value="{{ classroom.id }}">
+        <div class="row-2x">
+          <div class="frow"><label>Title</label><input name="title" value="{{ quiz.title }}"></div>
+          <div class="frow"><label>Subject</label><select name="subject"><option value="">- none -</option>{% for s in subjects %}<option value="{{ s.id }}" {% if quiz.subject_id == s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></div>
+          <div class="frow"><label>Time limit (minutes)</label><input type="number" name="time_limit" value="{{ quiz.time_limit }}"></div>
+        </div>
+        <button class="btn-primary btn-auto" type="submit">Save changes</button>
+      </form>
+    </div>
+  </details>
+
   <div class="card card-pad" style="max-width:640px;margin-bottom:16px">
     <h3 style="margin-bottom:12px">Add a question</h3>
     <form method="post">{% csrf_token %}
@@ -24,9 +40,16 @@
   <div class="card" style="margin-bottom:16px">
     <div class="sec-head"><h3>Questions ({{ questions|length }})</h3></div>
     {% for q in questions %}
-      <div class="qcard" style="border-bottom:1px solid var(--line)">
-        <div class="qtext">{{ forloop.counter }}. {{ q.text }} <span class="pill pill-paid" style="margin-left:6px">Ans: {{ q.correct }}</span></div>
-        <div class="muted" style="font-size:12.5px">A) {{ q.option_a }} &nbsp; B) {{ q.option_b }}{% if q.option_c %} &nbsp; C) {{ q.option_c }}{% endif %}{% if q.option_d %} &nbsp; D) {{ q.option_d }}{% endif %}</div>
+      <div class="qcard" style="border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div>
+          <div class="qtext">{{ forloop.counter }}. {{ q.text }} <span class="pill pill-paid" style="margin-left:6px">Ans: {{ q.correct }}</span></div>
+          <div class="muted" style="font-size:12.5px">A) {{ q.option_a }} &nbsp; B) {{ q.option_b }}{% if q.option_c %} &nbsp; C) {{ q.option_c }}{% endif %}{% if q.option_d %} &nbsp; D) {{ q.option_d }}{% endif %}</div>
+        </div>
+        <form method="post" class="no-print" onsubmit="return confirm('Remove this question?')">{% csrf_token %}
+          <input type="hidden" name="action" value="del_q">
+          <input type="hidden" name="question_id" value="{{ q.id }}">
+          <button class="act-btn ghost" type="submit">Remove</button>
+        </form>
       </div>
     {% empty %}
       <div class="card-pad"><p class="muted">No questions yet. Add the first one above.</p></div>
@@ -74,11 +97,19 @@
   <div class="card">
     <div class="sec-head"><h3>All quizzes</h3></div>
     {% for q in quizzes %}
-      <a class="mat-row" href="{% url 'teacher_quizzes' %}?id={{ q.obj.id }}&class={{ classroom.id }}" style="text-decoration:none">
-        <span class="mat-ic" style="background:#EFEAF8;color:#7A4FB0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="4.5" y="3.5" width="15" height="17" rx="2"/></svg></span>
-        <div class="mat-b"><b>{{ q.obj.title }}</b><span>{% if q.obj.subject %}{{ q.obj.subject.name }} &middot; {% endif %}{{ q.count }} questions</span></div>
-        <span class="pill pill-info">{{ q.attempts }} attempts</span>
-      </a>
+      <div style="display:flex;align-items:center;gap:8px">
+        <a class="mat-row" href="{% url 'teacher_quizzes' %}?id={{ q.obj.id }}&class={{ classroom.id }}" style="text-decoration:none;flex:1">
+          <span class="mat-ic" style="background:#EFEAF8;color:#7A4FB0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="4.5" y="3.5" width="15" height="17" rx="2"/></svg></span>
+          <div class="mat-b"><b>{{ q.obj.title }}</b><span>{% if q.obj.subject %}{{ q.obj.subject.name }} &middot; {% endif %}{{ q.count }} questions</span></div>
+          <span class="pill pill-info">{{ q.attempts }} attempts</span>
+        </a>
+        <form method="post" class="no-print" onsubmit="return confirm('Delete this quiz and all its questions/attempts?')" style="margin-right:12px">{% csrf_token %}
+          <input type="hidden" name="action" value="delete">
+          <input type="hidden" name="quiz_id" value="{{ q.obj.id }}">
+          <input type="hidden" name="class" value="{{ classroom.id }}">
+          <button class="act-btn ghost" type="submit">Delete</button>
+        </form>
+      </div>
     {% endfor %}
   </div>
   {% endif %}
