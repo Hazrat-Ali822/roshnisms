@@ -49,6 +49,29 @@
     <div class="prog-row"><span>Paid</span><b style="color:#0B5F4F">Rs {{ c.paid }}</b></div>
     <div class="prog-row"><span>Balance</span><b style="color:#922A1B">Rs {{ c.balance }}</b></div>
 
+    {% if c.payments.all %}
+    <div style="margin-top:12px;border-top:1px dashed var(--line-strong);padding-top:10px">
+      <div class="muted" style="font-size:12px;margin-bottom:6px">Payments received</div>
+      {% for p in c.payments.all %}
+      <div class="prog-row" style="align-items:center{% if p.status != 'Active' %};opacity:.6{% endif %}">
+        <span>
+          <a class="link" href="{% url 'receipt_view' p.id %}">{{ p.receipt_no|default:"Receipt" }}</a>
+          &middot; {{ p.date|date:"d M Y" }} &middot; {{ p.get_mode_display }}
+          {% if p.status == 'Voided' %}<span class="pill pill-overdue">Voided</span>{% elif p.status == 'Refunded' %}<span class="pill pill-overdue">Refunded</span>{% endif %}
+          {% if p.status != 'Active' and p.reversal_reason %}<span class="muted" style="font-size:11px">&middot; {{ p.reversal_reason }}{% if p.reversed_by %} (by {{ p.reversed_by }}){% endif %}</span>{% endif %}
+        </span>
+        <span style="display:flex;align-items:center;gap:8px">
+          <b {% if p.status != 'Active' %}style="text-decoration:line-through"{% else %}style="color:#0B5F4F"{% endif %}>Rs {{ p.amount }}</b>
+          {% if p.status == 'Active' %}
+          <button type="button" class="act-btn ghost no-print" onclick="reversePayment('{{ p.id }}','void','{{ p.amount }}','{{ p.receipt_no }}')">Void</button>
+          <button type="button" class="act-btn ghost no-print" onclick="reversePayment('{{ p.id }}','refund','{{ p.amount }}','{{ p.receipt_no }}')">Refund</button>
+          {% endif %}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
     {% if c.balance > 0 %}
     <form method="post" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">{% csrf_token %}
       <input type="hidden" name="action" value="collect">
@@ -85,4 +108,25 @@
 {% empty %}
   <div class="card card-pad"><p class="muted">No challans yet. Use the button above to generate this month's challan.</p></div>
 {% endfor %}
+
+<form method="post" id="reverseForm" class="no-print" style="display:none">{% csrf_token %}
+  <input type="hidden" name="action" id="reverseAction">
+  <input type="hidden" name="payment_id" id="reversePaymentId">
+  <input type="hidden" name="reason" id="reverseReason">
+</form>
+<script>
+function reversePayment(id, kind, amount, receipt) {
+  var verb = kind === 'void' ? 'VOID' : 'REFUND';
+  var note = kind === 'void'
+    ? 'Voiding removes this Rs ' + amount + ' payment (receipt ' + receipt + ') as if entered in error. The balance will reopen.'
+    : 'Refunding records that Rs ' + amount + ' (receipt ' + receipt + ') was returned to the parent. The balance will reopen.';
+  var reason = prompt(verb + ' payment?\n\n' + note + '\n\nType a reason (required):', '');
+  if (reason === null) return;                 // cancelled
+  if (!reason.trim()) { alert('A reason is required to ' + kind + ' a payment.'); return; }
+  document.getElementById('reverseAction').value = kind === 'void' ? 'void_payment' : 'refund_payment';
+  document.getElementById('reversePaymentId').value = id;
+  document.getElementById('reverseReason').value = reason.trim();
+  document.getElementById('reverseForm').submit();
+}
+</script>
 {% endblock %}

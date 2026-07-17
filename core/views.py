@@ -552,7 +552,7 @@ def dashboard(request):
     elif role == 'owner':
         today = timezone.localdate()
         collected_month = sum(p.amount for p in FeePayment.objects.filter(
-            date__year=today.year, date__month=today.month))
+            status='Active', date__year=today.year, date__month=today.month))
         expenses_month = sum(e.amount for e in Expense.objects.filter(
             date__year=today.year, date__month=today.month))
         outstanding = 0
@@ -1418,6 +1418,31 @@ def student_fees(request, pk):
             challan.late_fee = amt('late_fee')
             challan.save()
             messages.success(request, 'Late fee updated on %s.' % challan.label)
+        elif action in ('void_payment', 'refund_payment'):
+            # Reverse a recorded payment: 'void' = entered in error, 'refund' =
+            # money returned to the parent. Either way the amount stops counting
+            # and the challan balance reopens. Only an Active payment can be
+            # reversed (no double-reversal); the row is kept for the trail.
+            p = (FeePayment.objects.filter(pk=_pk(request.POST.get('payment_id')),
+                                           student=student, status='Active').first())
+            if p:
+                new_status = 'Voided' if action == 'void_payment' else 'Refunded'
+                p.status = new_status
+                p.reversal_reason = (request.POST.get('reason', '') or '').strip()[:200]
+                p.reversed_by = request.user.get_full_name() or request.user.username
+                p.reversed_on = timezone.localdate()
+                p.save(update_fields=['status', 'reversal_reason', 'reversed_by',
+                                      'reversed_on'])
+                _audit(request, '%s payment' % new_status,
+                       'Rs %d receipt %s for %s (%s)'
+                       % (p.amount, p.receipt_no or '-', student.name,
+                          p.reversal_reason or 'no reason given'))
+                messages.success(
+                    request, 'Payment of Rs %d (receipt %s) marked %s. The balance '
+                    'has reopened.' % (p.amount, p.receipt_no or '-', new_status.lower()))
+            else:
+                messages.error(request, 'That payment could not be reversed '
+                               '(already voided/refunded, or not found).')
         elif action == 'generate':
             _, made = _make_challan(student, today.year, today.month)
             messages.success(
@@ -1627,7 +1652,7 @@ def owner_staff(request):
 def owner_finance(request):
     today = timezone.localdate()
     collected_month = sum(p.amount for p in FeePayment.objects.filter(
-        date__year=today.year, date__month=today.month))
+        status='Active', date__year=today.year, date__month=today.month))
     expenses = list(Expense.objects.all())
     expenses_month = sum(e.amount for e in expenses
                          if e.date.year == today.year and e.date.month == today.month)

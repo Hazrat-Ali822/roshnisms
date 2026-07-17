@@ -446,6 +446,15 @@ class FeePayment(models.Model):
     received_by = models.CharField(max_length=120, blank=True)
     receipt_no = models.CharField(max_length=30, blank=True)
     date = models.DateField(default=datetime.date.today)
+    # A payment can be reversed: 'Voided' (recorded in error, money never truly
+    # taken) or 'Refunded' (money returned to the parent). Either way it stops
+    # counting toward the challan's paid total and toward income — the balance
+    # reopens. Kept as a row (not deleted) so the trail survives.
+    STATUS = [('Active', 'Active'), ('Voided', 'Voided'), ('Refunded', 'Refunded')]
+    status = models.CharField(max_length=10, choices=STATUS, default='Active')
+    reversal_reason = models.CharField(max_length=200, blank=True)
+    reversed_by = models.CharField(max_length=120, blank=True)
+    reversed_on = models.DateField(null=True, blank=True)
 
     class Meta:
         ordering = ['-id']
@@ -453,6 +462,10 @@ class FeePayment(models.Model):
     @property
     def total(self):
         return self.amount + self.late_fee
+
+    @property
+    def is_active(self):
+        return self.status == 'Active'
 
     def __str__(self):
         return f"{self.receipt_no} - {self.student}"
@@ -874,7 +887,8 @@ class FeeChallan(models.Model):
 
     @property
     def paid(self):
-        return sum(p.amount for p in self.payments.all())
+        # Voided / refunded payments don't count — the balance reopens.
+        return sum(p.amount for p in self.payments.all() if p.status == 'Active')
 
     @property
     def balance(self):
