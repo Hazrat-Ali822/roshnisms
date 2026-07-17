@@ -3,7 +3,7 @@
 {% block content %}
 <div class="welcome">
   <h1>Enter Marks</h1>
-  <p>{% if exam %}{{ exam.name }} &mdash; {% endif %}Class {{ classroom|default:"(none)" }}. Pick a subject, enter marks out of 100, then save.</p>
+  <p>{% if exam %}{{ exam.name }} &mdash; {% endif %}Class {{ classroom|default:"(none)" }}. Pick a subject, enter marks out of {{ max_marks }}, then save.</p>
 </div>
 
 <form method="get" class="bar">
@@ -29,35 +29,60 @@
 </form>
 
 {% if rows and subject %}
+<div class="card card-pad no-print" style="margin-bottom:14px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+  <form method="post" style="display:flex;gap:8px;align-items:flex-end;margin:0">{% csrf_token %}
+    <input type="hidden" name="action" value="set_max">
+    <input type="hidden" name="subject" value="{{ subject.id }}"><input type="hidden" name="class" value="{{ classroom.id }}"><input type="hidden" name="exam" value="{{ exam.id }}">
+    <div class="frow" style="margin:0"><label>Paper maximum</label><input type="number" name="max_marks" value="{{ max_marks }}" min="1" max="1000" style="width:110px" {% if locked %}disabled{% endif %}></div>
+    {% if not locked %}<button class="act-btn ghost" type="submit">Set max</button>{% endif %}
+  </form>
+  <form method="post" style="margin:0">{% csrf_token %}
+    <input type="hidden" name="action" value="{% if locked %}unlock{% else %}lock{% endif %}">
+    <input type="hidden" name="subject" value="{{ subject.id }}"><input type="hidden" name="class" value="{{ classroom.id }}"><input type="hidden" name="exam" value="{{ exam.id }}">
+    {% if locked %}
+      <span class="pill pill-overdue">🔒 Locked{% if locked_by %} by {{ locked_by }}{% endif %}</span>
+      {% if is_office %}<button class="act-btn ghost" type="submit">Unlock</button>{% endif %}
+    {% else %}
+      <button class="act-btn" type="submit" onclick="return confirm('Lock these marks? They can then only be changed after the office unlocks them.')">Lock marks (finalise)</button>
+    {% endif %}
+  </form>
+</div>
+
+{% if locked %}
+<div class="card card-pad" style="margin-bottom:14px;background:#FBE7E2;border-color:#F2C9C0;color:#922A1B">These marks are finalised and locked{% if locked_by %} by {{ locked_by }}{% endif %}. {% if is_office %}Unlock above to moderate.{% else %}Ask the office to unlock them if a correction is needed.{% endif %}</div>
+{% endif %}
+
 <form method="post" id="marks-form">
   {% csrf_token %}
+  <input type="hidden" name="action" value="save_marks">
   <input type="hidden" name="subject" value="{{ subject.id }}">
   <input type="hidden" name="class" value="{{ classroom.id }}">
   <input type="hidden" name="exam" value="{{ exam.id }}">
   <input type="hidden" name="known_sig" value="{{ marks_sig }}">
   <div class="card">
     <div class="table-wrap"><table>
-      <thead><tr><th>Student</th><th>Roll</th><th class="ta-c">Marks (out of 100)</th></tr></thead>
+      <thead><tr><th>Student</th><th>Roll</th><th class="ta-c">Marks (out of {{ max_marks }})</th></tr></thead>
       <tbody>
       {% for row in rows %}
         <tr>
           <td>{{ row.0.name }}</td>
           <td>{{ row.0.roll_no }}</td>
-          <td class="ta-c"><input class="mark-input" type="number" min="0" max="100" name="marks_{{ row.0.id }}" value="{{ row.1 }}" placeholder="-" style="transition: var(--transition);"></td>
+          <td class="ta-c"><input class="mark-input" type="number" min="0" max="{{ max_marks }}" name="marks_{{ row.0.id }}" value="{{ row.1 }}" placeholder="-" {% if locked %}readonly{% endif %} style="transition: var(--transition);"></td>
         </tr>
       {% endfor %}
       </tbody>
     </table></div>
   </div>
-  <button class="btn-primary btn-auto" type="submit">Save marks</button>
+  {% if not locked %}<button class="btn-primary btn-auto" type="submit">Save marks</button>{% endif %}
 </form>
 
 <div class="hint-inline" style="display:flex; flex-direction:column; gap:4px;">
   <div>⌨️ <b>Keyboard Navigation:</b> Press <b>Enter</b> or <b>ArrowDown</b> to go to the next student, and <b>ArrowUp</b> to go back.</div>
-  <div>⚠️ <b>Validation:</b> Marks must be between <b>0</b> and <b>100</b>. Invalid marks will lock the save button.</div>
+  <div>⚠️ <b>Validation:</b> Marks must be between <b>0</b> and <b>{{ max_marks }}</b>. Invalid marks will lock the save button.</div>
 </div>
 
 <script>
+var MARK_MAX = {{ max_marks }};
 document.addEventListener("DOMContentLoaded", function() {
   var inputs = document.querySelectorAll('.mark-input');
   var submitBtn = document.querySelector('#marks-form button[type=submit]');
@@ -84,7 +109,7 @@ document.addEventListener("DOMContentLoaded", function() {
     input.addEventListener('input', function() {
       var val = parseFloat(input.value);
       var isInvalid = false;
-      if (input.value !== "" && !isNaN(val) && (val > 100 || val < 0)) {
+      if (input.value !== "" && !isNaN(val) && (val > MARK_MAX || val < 0)) {
         isInvalid = true;
       }
       
@@ -101,14 +126,14 @@ document.addEventListener("DOMContentLoaded", function() {
       // Determine if submission should be disabled
       var hasErrors = Array.from(inputs).some(function(inp) {
         var v = parseFloat(inp.value);
-        return inp.value !== "" && !isNaN(v) && (v > 100 || v < 0);
+        return inp.value !== "" && !isNaN(v) && (v > MARK_MAX || v < 0);
       });
-      
-      if (hasErrors) {
+
+      if (submitBtn && hasErrors) {
         submitBtn.disabled = true;
         submitBtn.style.opacity = '0.5';
         submitBtn.style.cursor = 'not-allowed';
-      } else {
+      } else if (submitBtn) {
         submitBtn.disabled = false;
         submitBtn.style.opacity = '';
         submitBtn.style.cursor = '';

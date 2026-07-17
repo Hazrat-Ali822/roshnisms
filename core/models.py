@@ -495,6 +495,27 @@ class Mark(models.Model):
         return f"{self.student} {self.subject} {self.marks_obtained}"
 
 
+class GradeConfig(models.Model):
+    """Per-(exam, class, subject) gradebook settings: the paper's maximum marks
+    (so a subject out of 75 scores correctly, not forced to /100) and a lock
+    that freezes marks once finalised (moderation). One row per subject paper."""
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='grade_configs')
+    classroom = models.ForeignKey(ClassRoom, on_delete=models.CASCADE,
+                                  related_name='grade_configs')
+    subject = models.CharField(max_length=60)          # matches Subject.name
+    max_marks = models.PositiveIntegerField(default=100)
+    locked = models.BooleanField(default=False)
+    locked_by = models.CharField(max_length=80, blank=True)
+
+    class Meta:
+        unique_together = ('exam', 'classroom', 'subject')
+
+    def __str__(self):
+        return '%s/%s/%s max %d%s' % (self.exam_id, self.classroom_id,
+                                      self.subject, self.max_marks,
+                                      ' (locked)' if self.locked else '')
+
+
 class FeePayment(models.Model):
     MODE_CHOICES = [
         ('Cash', 'Cash'), ('JazzCash', 'JazzCash'), ('Easypaisa', 'Easypaisa'),

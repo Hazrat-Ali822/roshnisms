@@ -29,7 +29,7 @@ from .models import (Announcement, Applicant, Assignment, AttendanceRecord, Audi
                      ConcessionRequest,
                      Complaint, DisciplineRecord,
                      Exam, ExamRoom, ExamSchedule, Expense,
-                     FeeChallan, FeeHead, FeePayment, HostelRoom, InventoryItem, IssuedBook, LeaveRequest,
+                     FeeChallan, FeeHead, FeePayment, GradeConfig, HostelRoom, InventoryItem, IssuedBook, LeaveRequest,
                      LoginAttempt,
                      Mark, Material, Message, OnlinePayment, Payslip,
                      Profile, Question, Quiz, QuizAttempt, School, Seat, SmsMessage, Staff, StaffAttendance,
@@ -745,7 +745,10 @@ def _marks_signature(student_ids, subject, exam):
 @role_required('teacher')
 def marks_entry(request):
     profile = request.user.profile
-    classes = _teacher_classes(profile)
+    # The office (admin/principal) can enter/moderate marks for ANY class and
+    # subject; a teacher is limited to the classes and subjects they teach.
+    office = profile.role in ('admin', 'principal')
+    classes = list(ClassRoom.objects.all()) if office else _teacher_classes(profile)
     cid = request.POST.get('class') or request.GET.get('class')
     classroom = next((c for c in classes if str(c.id) == str(cid)), None) if cid else None
     if classroom is None:
@@ -753,8 +756,11 @@ def marks_entry(request):
     students = list(Student.objects.filter(classroom=classroom)) if classroom else []
     taught = (set(profile.teaching.filter(classroom=classroom)
                   .values_list('subject', flat=True)) if classroom else set())
-    subjects = (list(Subject.objects.filter(classroom=classroom, name__in=taught))
-                if taught else [])
+    if office:
+        subjects = list(Subject.objects.filter(classroom=classroom)) if classroom else []
+    else:
+        subjects = (list(Subject.objects.filter(classroom=classroom, name__in=taught))
+                    if taught else [])
     # Pick which exam to enter marks for (from ?exam=/POST, else the latest).
     exam, exams = _pick_exam(request)
 
@@ -771,7 +777,57 @@ def marks_entry(request):
     if subject is None and subjects:
         subject = subjects[0]
 
-    if request.method == 'POST' and subject and exam and students:
+    # Gradebook config for this subject paper: its max marks and lock state.
+    config = None
+    if subject and exam and classroom:
+        config, _ = GradeConfig.objects.get_or_create(
+            exam=exam, classroom=classroom, subject=subject.name)
+    max_marks = config.max_marks if config else 100
+    locked = config.locked if config else False
+    is_office = profile.role in ('admin', 'principal')
+
+    if request.method == 'POST' and subject and exam and students and config:
+        action = request.POST.get('action', 'save_marks')
+
+        if action == 'set_max':
+            # Change the paper's maximum. Not allowed once locked.
+            if locked:
+                messages.error(request, 'Marks are locked — unlock first to change '
+                               'the maximum.')
+            else:
+                try:
+                    mx = max(1, min(1000, int(request.POST.get('max_marks') or 100)))
+                    config.max_marks = mx
+                    config.save(update_fields=['max_marks'])
+                    messages.success(request, 'Maximum for %s set to %d.'
+                                     % (subject.name, mx))
+                except ValueError:
+                    messages.error(request, 'Enter a valid maximum.')
+            return redirect('%s?class=%s&subject=%s&exam=%s'
+                            % (request.path, classroom.id, subject.id, exam.id))
+
+        if action in ('lock', 'unlock'):
+            # Anyone teaching may lock; only the office may unlock (moderation).
+            if action == 'unlock' and not is_office:
+                messages.error(request, 'Only the office can unlock finalised marks.')
+            else:
+                config.locked = (action == 'lock')
+                config.locked_by = (request.user.get_full_name()
+                                    or request.user.username) if config.locked else ''
+                config.save(update_fields=['locked', 'locked_by'])
+                _audit(request, 'Marks %sed' % action,
+                       '%s / %s / %s' % (subject.name, classroom, exam.name))
+                messages.success(request, 'Marks %sed for %s.'
+                                 % (action, subject.name))
+            return redirect('%s?class=%s&subject=%s&exam=%s'
+                            % (request.path, classroom.id, subject.id, exam.id))
+
+        # Default: save marks.
+        if locked:
+            messages.error(request, 'These marks are locked and cannot be changed. '
+                           'Ask the office to unlock them for moderation.')
+            return redirect('%s?class=%s&subject=%s&exam=%s'
+                            % (request.path, classroom.id, subject.id, exam.id))
         # Concurrency guard: if another teacher changed these same marks while
         # this page was open, don't silently overwrite them. 'known_sig' is a
         # fingerprint of the marks as they were when the page loaded.
@@ -790,12 +846,12 @@ def marks_entry(request):
                     if val == '':
                         continue
                     try:
-                        num = max(0, min(100, int(val)))
+                        num = max(0, min(max_marks, int(val)))
                     except ValueError:
                         continue
                     Mark.objects.update_or_create(
                         student=s, subject=subject, exam=exam,
-                        defaults={'marks_obtained': num, 'total_marks': 100})
+                        defaults={'marks_obtained': num, 'total_marks': max_marks})
             _audit(request, 'Marks saved',
                    '%s / %s / %s' % (subject.name, classroom, exam.name))
             messages.success(request, 'Marks saved for %s (%s, %s).'
@@ -814,7 +870,8 @@ def marks_entry(request):
         'role': profile.role, 'active': 'marks',
         'classroom': classroom, 'classes': classes, 'subjects': subjects,
         'subject': subject, 'exam': exam, 'exams': exams, 'rows': rows,
-        'marks_sig': marks_sig,
+        'marks_sig': marks_sig, 'max_marks': max_marks, 'locked': locked,
+        'locked_by': config.locked_by if config else '', 'is_office': is_office,
     })
 
 
