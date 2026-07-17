@@ -129,6 +129,7 @@
             {% endif %}
           </a>
           <a class="nav-item {% if active == 'expenses' %}active{% endif %}" href="{% url 'expenses' %}">Expenses</a>
+          <a class="nav-item {% if active == 'ledger' %}active{% endif %}" href="{% url 'finance_ledger' %}">Income vs Expense</a>
         {% elif role == 'student' %}
           <a class="nav-item {% if active == 'subjects' %}active{% endif %}" href="{% url 'my_subjects' %}">Subjects &amp; Materials</a>
           <a class="nav-item {% if active == 'attendance' %}active{% endif %}" href="{% url 'my_attendance' %}">Attendance</a>

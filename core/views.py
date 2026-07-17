@@ -1620,6 +1620,62 @@ def expenses(request):
     })
 
 
+@login_required
+@role_required('finance')
+def finance_ledger(request):
+    """Income-vs-Expense (P&L) ledger for one year: fee income (active
+    payments) against expenses (manual entries + payroll from generated
+    payslips), month by month, with a running net surplus/deficit. Payroll is
+    read from Payslip rows — it is NOT double-counted from manual expenses."""
+    today = timezone.localdate()
+    try:
+        year = int(request.GET.get('year') or today.year)
+    except (ValueError, TypeError):
+        year = today.year
+
+    # Income: active fee payments only (voided/refunded excluded).
+    inc_by_month = [0] * 13
+    for m, amount in FeePayment.objects.filter(
+            status='Active', date__year=year).values_list('date__month', 'amount'):
+        inc_by_month[m] += amount
+
+    # Manual expenses, by month and by category.
+    exp_by_month = [0] * 13
+    cat_totals = {}
+    for e in Expense.objects.filter(date__year=year):
+        exp_by_month[e.date.month] += e.amount
+        label = e.get_category_display()
+        cat_totals[label] = cat_totals.get(label, 0) + e.amount
+
+    # Payroll: generated payslips (authoritative salary cost), by month.
+    payroll_by_month = [0] * 13
+    for p in Payslip.objects.filter(year=year):
+        payroll_by_month[p.month] += p.net
+    payroll_total = sum(payroll_by_month)
+    if payroll_total:
+        cat_totals['Payroll (payslips)'] = payroll_total
+
+    rows, running = [], 0
+    for m in range(1, 13):
+        inc = inc_by_month[m]
+        exp = exp_by_month[m] + payroll_by_month[m]
+        net = inc - exp
+        running += net
+        rows.append({'month': FeeChallan.MONTHS[m], 'month_num': m,
+                     'income': inc, 'expense': exp, 'net': net, 'running': running})
+
+    total_income = sum(inc_by_month)
+    total_expense = sum(exp_by_month) + payroll_total
+    cat_rows = sorted(cat_totals.items(), key=lambda kv: kv[1], reverse=True)
+    return render(request, 'finance_ledger.html', {
+        'role': 'finance', 'active': 'ledger', 'year': year, 'rows': rows,
+        'total_income': total_income, 'total_expense': total_expense,
+        'net': total_income - total_expense, 'cat_rows': cat_rows,
+        'years': [today.year - 2, today.year - 1, today.year,
+                  today.year + 1],
+    })
+
+
 # ----------------------- Owner / Director (read-only) -----------------------
 
 @login_required

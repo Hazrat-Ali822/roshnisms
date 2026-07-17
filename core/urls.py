@@ -40,6 +40,7 @@ urlpatterns = [
     path('fees/receipts/', views.receipts, name='receipts'),
     path('fees/defaulters/', views.defaulters, name='defaulters'),
     path('fees/expenses/', views.expenses, name='expenses'),
+    path('fees/ledger/', views.finance_ledger, name='finance_ledger'),
     path('owner/students/', views.owner_students, name='owner_students'),
     path('owner/staff/', views.owner_staff, name='owner_staff'),
     path('owner/finance/', views.owner_finance, name='owner_finance'),
