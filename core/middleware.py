@@ -65,7 +65,12 @@ class TenantDatabaseMiddleware:
 
     def __call__(self, request):
         import sys
+        from django.urls import get_script_prefix, set_script_prefix
         testing = 'test' in sys.argv
+        # Remember the incoming script prefix so we can restore it after the
+        # request — set_script_prefix() is thread-local and would otherwise leak
+        # a tenant's '/sub/' prefix into the next request on this worker thread.
+        old_script_prefix = get_script_prefix()
 
         # Point the 'default' connection back at the MASTER database BEFORE we
         # resolve which school owns this request. Without this, a tenant file
@@ -115,12 +120,24 @@ class TenantDatabaseMiddleware:
                         school = possible_school
                         is_explicit_tenant = True
                         is_path_based = True
-                        # Strip the prefix so Django URLs match normally
+                        # Strip the tenant prefix from PATH_INFO so Django's URL
+                        # resolver matches core.urls normally...
                         new_path = '/' + '/'.join(path_parts[1:])
                         if not new_path.endswith('/') and len(path_parts) > 1:
                             new_path += '/'
                         request.path_info = new_path
-                        request.path = new_path
+                        # ...but set SCRIPT_NAME so every URL Django BUILDS
+                        # (reverse(), {% url %}, the @login_required redirect)
+                        # keeps the /<sub>/ prefix. Without this a path-based
+                        # tenant — the only option on hosts without wildcard
+                        # subdomains, e.g. PythonAnywhere — leaks back to the
+                        # master: /<sub>/ would redirect to /login/ instead of
+                        # /<sub>/login/, and every nav link would drop the tenant.
+                        from django.urls import set_script_prefix
+                        script = '/' + first_seg
+                        request.META['SCRIPT_NAME'] = script
+                        request.path = script + new_path
+                        set_script_prefix(script + '/')
                         
         request.tenant = school
         request.is_explicit_tenant = is_explicit_tenant
@@ -160,7 +177,12 @@ class TenantDatabaseMiddleware:
                 except Exception:
                     pass
 
-        return self.get_response(request)
+        try:
+            return self.get_response(request)
+        finally:
+            # Restore the script prefix so a tenant's '/sub/' prefix never
+            # bleeds into the next request handled by this worker thread.
+            set_script_prefix(old_script_prefix)
 
 
 class TenantRoutingMiddleware:

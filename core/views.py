@@ -5185,6 +5185,12 @@ def saas_school_edit(request, pk):
                     user.email = admin_email or ''
                     if admin_password:
                         user.set_password(admin_password)
+                    # A tenant admin must NEVER be a superuser: the tenant DB is
+                    # copied from master (which has a superuser 'admin'), and if
+                    # the reused row is a superuser the routing middleware bounces
+                    # it off the school portal on every login.
+                    user.is_superuser = False
+                    user.is_staff = False
                     user.save()
                     
                     profile = getattr(user, 'profile', None)
