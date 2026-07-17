@@ -3222,6 +3222,70 @@ def reports(request):
     })
 
 
+# Custom student report builder: pick the columns and filters you want.
+# key -> (column header, value function on the Student).
+_STUDENT_FIELDS = [
+    ('name', 'Name', lambda s: s.name),
+    ('class', 'Class', lambda s: str(s.classroom) if s.classroom else ''),
+    ('roll_no', 'Roll No', lambda s: s.roll_no),
+    ('admission_no', 'Admission No', lambda s: s.admission_no),
+    ('gender', 'Gender', lambda s: s.gender),
+    ('date_of_birth', 'Date of Birth', lambda s: s.date_of_birth or ''),
+    ('blood_group', 'Blood Group', lambda s: s.blood_group),
+    ('guardian_name', 'Guardian', lambda s: s.guardian_name),
+    ('guardian_phone', 'Guardian Phone', lambda s: s.guardian_phone),
+    ('guardian_email', 'Guardian Email', lambda s: s.guardian_email),
+    ('address', 'Address', lambda s: s.address),
+    ('fee_status', 'Fee Status', lambda s: s.fee_status),
+    ('is_hostel', 'Hostel', lambda s: 'Yes' if s.is_hostel else 'No'),
+    ('route', 'Transport Route', lambda s: s.route.name if s.route else ''),
+    ('admission_date', 'Admission Date', lambda s: s.admission_date or ''),
+]
+
+
+@login_required
+@role_required('admin')
+def report_builder(request):
+    """A custom report builder over the student roster: choose exactly which
+    columns to include and filter by class / status, then export as CSV."""
+    fields = _STUDENT_FIELDS
+    field_keys = [k for k, _, _ in fields]
+    selected = request.GET.getlist('col') or ['name', 'class', 'roll_no',
+                                               'guardian_phone', 'fee_status']
+    selected = [k for k in selected if k in field_keys]
+    class_id = _pk(request.GET.get('class'))
+    status = request.GET.get('status', 'active')
+
+    qs = Student.objects.select_related('classroom', 'route')
+    if status == 'active':
+        qs = qs.filter(status='Active', graduated=False)
+    elif status == 'left':
+        qs = qs.filter(status__in=['Left', 'Struck Off'])
+    elif status == 'graduated':
+        qs = qs.filter(Q(status='Graduated') | Q(graduated=True))
+    if class_id:
+        qs = qs.filter(classroom_id=class_id)
+    qs = qs.order_by('classroom__name', 'classroom__section', 'roll_no', 'name')
+
+    if request.GET.get('export') == 'csv' and selected:
+        chosen = [(hdr, fn) for k, hdr, fn in fields if k in selected]
+        header = [hdr for hdr, _ in chosen]
+        rows = [[fn(s) for _, fn in chosen] for s in qs]
+        return _csv_response('custom_students_report.csv', header, rows)
+
+    # Preview (first 50 rows) for the on-screen builder.
+    chosen = [(hdr, fn) for k, hdr, fn in fields if k in selected]
+    preview_header = [hdr for hdr, _ in chosen]
+    preview_rows = [[fn(s) for _, fn in chosen] for s in qs[:50]]
+    return render(request, 'report_builder.html', {
+        'role': 'admin', 'active': 'reports', 'fields': fields,
+        'selected': selected, 'classes': ClassRoom.objects.all(),
+        'class_id': class_id or '', 'status': status,
+        'preview_header': preview_header, 'preview_rows': preview_rows,
+        'total': qs.count(),
+    })
+
+
 # ----------------------- Step 5: more operations -----------------------
 
 @login_required

@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block heading %}Report Builder{% endblock %}
+{% block content %}
+<div class="welcome">
+  <a class="btn-ghost btn-auto no-print" href="{% url 'reports' %}" style="margin-bottom:10px;display:inline-flex">&larr; All reports</a>
+  <h1>Custom Report Builder</h1>
+  <p>Pick the columns and filters you want, preview the result, then export to CSV.</p>
+</div>
+
+<form method="get">
+  <div class="card card-pad" style="margin-bottom:16px">
+    <h3 style="margin:0 0 10px">Columns</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px 14px">
+      {% for key, label, _ in fields %}
+        <label style="font-size:13px;font-weight:500;text-transform:none;letter-spacing:0">
+          <input type="checkbox" name="col" value="{{ key }}" {% if key in selected %}checked{% endif %}> {{ label }}
+        </label>
+      {% endfor %}
+    </div>
+
+    <div class="row-2x" style="margin-top:14px;max-width:520px">
+      <div class="frow"><label>Class</label>
+        <select name="class"><option value="">All classes</option>{% for c in classes %}<option value="{{ c.id }}" {% if class_id|stringformat:'s' == c.id|stringformat:'s' %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+      </div>
+      <div class="frow"><label>Status</label>
+        <select name="status">
+          <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+          <option value="left" {% if status == 'left' %}selected{% endif %}>Left / Struck off</option>
+          <option value="graduated" {% if status == 'graduated' %}selected{% endif %}>Graduated</option>
+          <option value="all" {% if status == 'all' %}selected{% endif %}>All</option>
+        </select>
+      </div>
+    </div>
+    <div class="bar no-print" style="margin-top:12px">
+      <button class="btn-ghost btn-auto" type="submit">Preview</button>
+      <button class="btn-primary btn-auto" type="submit" name="export" value="csv">Export CSV</button>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  <div class="sec-head"><h3>Preview <span class="muted" style="font-weight:600;font-size:12.5px">&middot; {{ total }} row(s){% if total > 50 %}, showing first 50{% endif %}</span></h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr>{% for h in preview_header %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for row in preview_rows %}
+      <tr>{% for cell in row %}<td>{{ cell|default:"—" }}</td>{% endfor %}</tr>
+    {% empty %}
+      <tr><td colspan="{{ preview_header|length|default:1 }}" class="muted" style="text-align:center;padding:18px">{% if preview_header %}No students match these filters.{% else %}Pick at least one column.{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

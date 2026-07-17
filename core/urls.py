@@ -92,6 +92,7 @@ urlpatterns = [
     path('certificates/', views.certificates, name='certificates'),
     path('id-cards/', views.id_cards, name='id_cards'),
     path('reports/', views.reports, name='reports'),
+    path('reports/builder/', views.report_builder, name='report_builder'),
     path('certificates/view/<int:pk>/', views.certificate_view, name='certificate_view'),
     path('calendar/', views.calendar, name='calendar'),
     path('inventory/', views.inventory, name='inventory'),

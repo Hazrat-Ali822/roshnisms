@@ -9,6 +9,12 @@
 <div class="sec-head" style="margin-bottom:10px"><h3>Data exports (CSV)</h3></div>
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px;margin-bottom:26px">
 
+  <div class="card card-pad" style="border-color:var(--accent)">
+    <h3 style="margin:0 0 5px">🛠️ Custom builder</h3>
+    <p class="muted" style="margin:0 0 12px;font-size:13px">Choose your own columns and filters (class, status) and export exactly the student data you need.</p>
+    <a class="act-btn" href="{% url 'report_builder' %}">Open builder</a>
+  </div>
+
   <div class="card card-pad">
     <h3 style="margin:0 0 5px">Students</h3>
     <p class="muted" style="margin:0 0 12px;font-size:13px">Full roster &mdash; name, class, roll, admission no, guardian, phone, fee status, hostel.</p>
