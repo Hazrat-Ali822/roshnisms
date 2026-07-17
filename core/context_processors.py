@@ -144,8 +144,8 @@ def notifications(request):
                 })
 
     elif role == 'finance':
-        # 1. Online payments to confirm
-        payments = OnlinePayment.objects.filter(status='Pending').count()
+        # 1. Online payments to confirm (model stores lowercase 'pending')
+        payments = OnlinePayment.objects.filter(status='pending').count()
         if payments > 0:
             badge_counts['online_payments'] = payments
             alerts.append({
@@ -185,8 +185,13 @@ def notifications(request):
                     'type': 'danger'
                 })
                 
-        # Announcements
-        recent_ann = Announcement.objects.order_by('-id')[:1]
+        # Announcements — only those meant for this audience (never leak a
+        # staff-/admin-only notice to a parent or student).
+        def _for_family(aud):
+            a = (aud or 'all').lower()
+            return 'all' in a or 'parent' in a or 'student' in a
+        recent_ann = [a for a in Announcement.objects.order_by('-id')[:5]
+                      if _for_family(a.audience)][:1]
         for ann in recent_ann:
             alerts.append({
                 'text': f'Announcement: "{ann.title}"',

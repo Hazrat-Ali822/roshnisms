@@ -26,7 +26,7 @@
     <thead><tr><th>Route</th><th>Vehicle</th><th>Driver</th><th>Students</th><th>Monthly fee</th></tr></thead>
     <tbody>
     {% for r in routes %}
-      <tr><td>{{ r.name }}</td><td>{{ r.vehicle }}</td><td>{{ r.driver }}</td><td>{{ r.students }}</td><td>Rs {{ r.fee }}</td></tr>
+      <tr><td>{{ r.name }}</td><td>{{ r.vehicle }}</td><td>{{ r.driver }}</td><td>{{ r.riders.count }}</td><td>Rs {{ r.fee }}</td></tr>
     {% empty %}
       <tr><td colspan="5" class="muted">No routes yet.</td></tr>
     {% endfor %}

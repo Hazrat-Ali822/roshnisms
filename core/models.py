@@ -650,6 +650,7 @@ class Material(models.Model):
     title = models.CharField(max_length=160)
     mat_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='Notes')
     size = models.CharField(max_length=20, blank=True)
+    file = models.FileField(upload_to='materials/', blank=True)
     uploaded_on = models.DateField(default=datetime.date.today)
 
     class Meta:

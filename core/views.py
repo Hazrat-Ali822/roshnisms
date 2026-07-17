@@ -755,6 +755,12 @@ def marks_entry(request):
     subject = None
     if subj_id:
         subject = Subject.objects.filter(id=subj_id, classroom=classroom).first()
+        # A teacher may only enter marks for subjects they actually TEACH in this
+        # class — the dropdown is already limited, but the POST must be checked
+        # too (else a teacher merely linked to the class could write a
+        # colleague's subject). Admins/principals (role bypass) are not limited.
+        if subject and profile.role == 'teacher' and subject.name not in taught:
+            subject = None
     if subject is None and subjects:
         subject = subjects[0]
 
@@ -1227,7 +1233,8 @@ def _record_fee_payment(student, challan, amount, mode, received_by,
         month=challan.label if challan else '',
         amount=amount, mode=mode, received_by=received_by,
         date=timezone.localdate())
-    payment.receipt_no = 'RCPT-26-%04d' % payment.id
+    payment.receipt_no = 'RCPT-%s-%04d' % (
+        str(timezone.localdate().year)[-2:], payment.id)
     payment.save(update_fields=['receipt_no'])
     AuditLog.objects.create(
         user=actor, action='Fee collected',
@@ -1446,7 +1453,10 @@ def receipt_view(request, pk):
     owner = _owns_student(profile, payment.student_id)
     if role not in ('finance', 'admin') and not owner:
         return HttpResponseForbidden('You cannot view this receipt.')
-    return render(request, 'receipt.html', {'role': role, 'active': '', 'p': payment})
+    # Pass `school` so the receipt shows the school's name/campus/crest (the
+    # template reads {{ school.* }}; without this every printed receipt was blank).
+    return render(request, 'receipt.html', {
+        'role': role, 'active': '', 'p': payment, 'school': School.objects.first()})
 
 
 @login_required
@@ -1930,32 +1940,41 @@ def payment_callback(request, gateway):
     else:
         ok, bill = False, ''
 
-    intent = OnlinePayment.objects.filter(ref=bill).first()
-    if not intent:
-        messages.error(request, 'Payment could not be matched. If money was '
-                       'deducted, please contact the office with your reference.')
-        return redirect('my_fees')
-    if intent.status == 'paid':
-        messages.info(request, 'This payment was already recorded.')
-        return redirect('my_fees')
+    # Lock the intent row and re-check its status INSIDE the transaction so a
+    # duplicated gateway callback (common on retries) can never double-record.
+    # Cap the amount to the challan's live balance so an online payment can't
+    # overpay if the office collected cash for the same challan meanwhile.
+    with transaction.atomic():
+        intent = (OnlinePayment.objects.select_for_update()
+                  .filter(ref=bill).select_related('student', 'challan').first())
+        if not intent:
+            messages.error(request, 'Payment could not be matched. If money was '
+                           'deducted, please contact the office with your reference.')
+            return redirect('my_fees')
+        if intent.status == 'paid':
+            messages.info(request, 'This payment was already recorded.')
+            return redirect('my_fees')
 
-    if ok:
-        payment = _record_fee_payment(
-            intent.student, intent.challan, intent.amount,
-            mode=_gateway_mode(gateway),
-            received_by='%s (online)' % dict(OnlinePayment.GATEWAYS).get(gateway, gateway),
-            actor='online', send_alert=True)
-        intent.status = 'paid'
-        intent.payment = payment
-        intent.gateway_ref = data.get('pp_TxnRefNo', '') or intent.gateway_ref
-        intent.save()
-        messages.success(request, 'Payment of Rs %d received. Receipt %s. '
-                         'Thank you.' % (intent.amount, payment.receipt_no))
-    else:
-        intent.status = 'failed'
-        intent.save(update_fields=['status'])
-        messages.error(request, 'The payment did not complete. No money was '
-                       'recorded. Please try again or pay at the office.')
+        if ok:
+            challan = intent.challan
+            pay_amount = (max(0, min(intent.amount, challan.balance))
+                          if challan else intent.amount)
+            payment = _record_fee_payment(
+                intent.student, challan, pay_amount,
+                mode=_gateway_mode(gateway),
+                received_by='%s (online)' % dict(OnlinePayment.GATEWAYS).get(gateway, gateway),
+                actor='online', send_alert=True)
+            intent.status = 'paid'
+            intent.payment = payment
+            intent.gateway_ref = data.get('pp_TxnRefNo', '') or intent.gateway_ref
+            intent.save()
+            messages.success(request, 'Payment of Rs %d received. Receipt %s. '
+                             'Thank you.' % (pay_amount, payment.receipt_no))
+        else:
+            intent.status = 'failed'
+            intent.save(update_fields=['status'])
+            messages.error(request, 'The payment did not complete. No money was '
+                           'recorded. Please try again or pay at the office.')
     return redirect('my_fees')
 
 
@@ -1976,8 +1995,13 @@ def online_payments(request):
                 messages.info(request, 'That payment has already been handled.')
                 return redirect('online_payments')
             if action == 'approve':
+                # Cap to the challan's live balance so verifying a bank transfer
+                # can't overpay if the office already collected cash for it.
+                challan = intent.challan
+                pay_amount = (max(0, min(intent.amount, challan.balance))
+                              if challan else intent.amount)
                 payment = _record_fee_payment(
-                    intent.student, intent.challan, intent.amount,
+                    intent.student, challan, pay_amount,
                     mode=_gateway_mode(intent.gateway),
                     received_by=request.user.get_full_name() or request.user.username,
                     actor=request.user.username)
@@ -1987,7 +2011,7 @@ def online_payments(request):
                 intent.save()
                 messages.success(
                     request, 'Verified. Rs %d recorded for %s. Receipt %s.'
-                    % (intent.amount, intent.student.name, payment.receipt_no))
+                    % (pay_amount, intent.student.name, payment.receipt_no))
             elif action == 'reject':
                 intent.status = 'rejected'
                 intent.verified_by = request.user.username
@@ -2074,10 +2098,9 @@ def auto_convert_applicant_to_student(a):
         
     digits = re.findall(r'\d+', a.class_applied or '')
     classroom = ClassRoom.objects.filter(name=digits[0]).first() if digits else None
-    count = Student.objects.count() + 1
-    
+
     student = Student.objects.create(
-        name=a.name, admission_no='RPS-2026-%04d' % count, classroom=classroom,
+        name=a.name, admission_no=_next_admission_no(), classroom=classroom,
         guardian_name=a.parent_name, guardian_phone=a.phone,
         father_name=a.parent_name, fee_status='Pending',
         admission_type='Fresh', status='Active',
@@ -2209,9 +2232,11 @@ def transport(request):
             messages.success(request, 'Route added: %s.' % name)
         return redirect('transport')
     routes = TransportRoute.objects.all()
+    # Count real riders (Student.route reverse relation), not the stale static
+    # `students` field which was never kept in sync.
     return render(request, 'transport.html', {
         'role': 'admin', 'active': 'transport', 'routes': routes,
-        'total_students': sum(r.students for r in routes),
+        'total_students': sum(r.riders.count() for r in routes),
     })
 
 
@@ -2271,7 +2296,15 @@ def library(request):
                 days_overdue = (today - iss.due_on).days
                 fine_amount = days_overdue * 50
                 
-                student = Student.objects.filter(name__iexact=iss.student_name).first()
+                # Only auto-bill when the free-text borrower name maps to
+                # EXACTLY one student — a namesake (or no match) would otherwise
+                # get billed the wrong fine, which is worse than not auto-billing.
+                _matches = list(Student.objects.filter(name__iexact=iss.student_name)[:2])
+                student = _matches[0] if len(_matches) == 1 else None
+                if not student and fine_amount:
+                    messages.info(request, 'Book was overdue (fine Rs %d), but borrower '
+                                  '"%s" is not a unique student — add the fine manually.'
+                                  % (fine_amount, iss.student_name))
                 if student:
                     challan = FeeChallan.objects.filter(student=student).order_by('-year', '-month').first()
                     if challan and challan.status == 'Unpaid':
@@ -2898,6 +2931,23 @@ def student_edit(request, pk):
     })
 
 
+def _next_admission_no():
+    """Next admission number as RPS-<year>-<seq>, derived from the HIGHEST
+    existing number for the year — NOT Student.objects.count(), which repeats a
+    number after any student is deleted and collides under bulk/concurrent
+    creation (producing duplicate admission numbers)."""
+    import re as _re
+    year = timezone.localdate().year
+    prefix = 'RPS-%d-' % year
+    top = 0
+    for adm in (Student.objects.filter(admission_no__startswith=prefix)
+                .values_list('admission_no', flat=True)):
+        m = _re.search(r'(\d+)$', adm or '')
+        if m:
+            top = max(top, int(m.group(1)))
+    return '%s%04d' % (prefix, top + 1)
+
+
 @login_required
 @role_required('admin')
 def student_add(request):
@@ -2905,10 +2955,9 @@ def student_add(request):
         name = (request.POST.get('name', '') or '').strip()
         if name:
             data = _student_form_data(request)
-            count = Student.objects.count() + 1
             adm_no = (request.POST.get('admission_no', '') or '').strip()
             student = Student.objects.create(
-                name=name, admission_no=adm_no or 'RPS-2026-%04d' % count,
+                name=name, admission_no=adm_no or _next_admission_no(),
                 fee_status='Pending', **data)
             photo = request.FILES.get('photo')
             if photo:
@@ -2999,7 +3048,6 @@ def students_import(request):
         reader, cell = _csv_reader(f)
         created = 0
         errors = []
-        base = Student.objects.count()
         for i, row in enumerate(reader, start=2):   # row 1 is the header
             name = cell(row, 'Name')
             if not name:
@@ -3015,13 +3063,12 @@ def students_import(request):
                     errors.append('Row %d (%s): bad date "%s" — imported without it.'
                                   % (i, name, raw_dob))
             try:
-                base += 1
                 student = Student.objects.create(
                     name=name,
                     classroom=_resolve_classroom(cell(row, 'Class')),
                     roll_no=cell(row, 'Roll No'),
                     admission_no=(cell(row, 'Admission No')
-                                  or 'RPS-2026-%04d' % base),
+                                  or _next_admission_no()),
                     gender=cell(row, 'Gender'), date_of_birth=dob,
                     guardian_name=cell(row, 'Guardian Name'),
                     guardian_phone=cell(row, 'Guardian Phone'),
@@ -3259,6 +3306,13 @@ def school_settings(request):
     # --- Testing tools: load demo data / start fresh (destructive) ---
     data_action = request.POST.get('data_action')
     if request.method == 'POST' and data_action:
+        # These WIPE the whole database. Restrict to the platform owner
+        # (superuser) so an ordinary school/office admin can never nuke a
+        # tenant's data with one click.
+        if not request.user.is_superuser:
+            messages.error(request, 'Only the platform owner can load demo data '
+                           'or reset the system.')
+            return redirect('school_settings')
         from django.core.management import call_command
         if data_action == 'load_demo':
             call_command('seed', '--demo')
@@ -3440,11 +3494,15 @@ def backup_download(request):
     import sqlite3
     import tempfile
 
+    from django.db import connections
     engine = settings.DATABASES['default'].get('ENGINE', '')
     if 'sqlite3' not in engine:
         messages.error(request, 'Backup download is available for SQLite setups.')
         return redirect('school_settings')
-    db_path = str(settings.DATABASES['default']['NAME'])
+    # Use the LIVE connection's database, not settings.DATABASES (which always
+    # points at the master db.sqlite3). Otherwise a tenant admin's backup would
+    # dump the master DB — every school's data. See tenancy-architecture.
+    db_path = str(connections['default'].settings_dict['NAME'])
 
     tmp = tempfile.NamedTemporaryFile(suffix='.sqlite3', delete=False)
     tmp.close()
@@ -3536,11 +3594,14 @@ def restore_db(request):
     import os
     import shutil
 
+    from django.db import connections
     engine = settings.DATABASES['default'].get('ENGINE', '')
     if 'sqlite3' not in engine:
         messages.error(request, 'Restore is available for SQLite setups.')
         return redirect('school_settings')
-    db_path = str(settings.DATABASES['default']['NAME'])
+    # LIVE connection, not settings.DATABASES — so a tenant restores ITS OWN
+    # file, never the master db.sqlite3 (which would destroy every school).
+    db_path = str(connections['default'].settings_dict['NAME'])
     staging = os.path.join(os.path.dirname(db_path), 'restore_staging.sqlite3')
 
     if request.method == 'POST':
@@ -4791,24 +4852,17 @@ def material_download(request, pk):
     if not classroom or material.subject.classroom_id != classroom.id:
         return HttpResponseForbidden('You cannot access this file.')
 
-    lines = [
-        ('Roshni Public School', 22),
-        (material.subject.name, 14),
-        ('', 6),
-        (material.title, 16),
-        ('Type: %s' % material.get_mat_type_display(), 12),
-        ('Class: %s' % material.subject.classroom, 12),
-        ('Uploaded: %s' % material.uploaded_on, 12),
-        ('', 10),
-        ('This is a sample document generated by the system.', 11),
-        ('In the school deployment, this download will be the', 11),
-        ('actual file uploaded by the teacher.', 11),
-    ]
-    pdf = _build_pdf(lines)
-    safe_title = material.title.replace('"', '').replace('\n', ' ')
-    resp = HttpResponse(pdf, content_type='application/pdf')
-    resp['Content-Disposition'] = 'attachment; filename="%s.pdf"' % safe_title
-    return resp
+    # Serve the REAL uploaded file. If the school hasn't uploaded one yet, say so
+    # honestly instead of handing back a fake "sample" PDF pretending to be it.
+    if not material.file:
+        messages.info(request, 'The teacher has not uploaded a file for "%s" yet.'
+                      % material.title)
+        return redirect('my_subjects')
+    try:
+        return FileResponse(material.file.open('rb'), as_attachment=True,
+                            filename=material.file.name.split('/')[-1])
+    except (FileNotFoundError, ValueError):
+        return HttpResponseForbidden('This file is no longer available.')
 
 
 # ---------- Assignment / submission file serving (permission-checked) -------
@@ -5337,35 +5391,15 @@ def run_daily_jobs(school, today):
                 _sync_fee_status(ch.student)
                 print(f"[Automation] Applied Rs {school.late_fee_amount} late fee to {ch}")
                 
-    # 2. Auto-Generate Monthly Challans (Runs on 1st of the month)
+    # 2. Auto-Generate Monthly Challans (Runs on 1st of the month).
+    # Use the SAME _make_challan the office uses, so auto-generated challans
+    # include fee heads / one-time / annual charges (the old inline version
+    # silently dropped them). _make_challan is idempotent (skips if one exists).
     if today.day == 1:
         active_students = Student.objects.filter(graduated=False, status='Active')
         for s in active_students:
-            if not FeeChallan.objects.filter(student=s, year=today.year, month=today.month).exists():
-                tuition = s.custom_fee if s.custom_fee > 0 else (s.classroom.monthly_fee if s.classroom else 0)
-                hostel_fee = school.hostel_fee if s.is_hostel else 0
-                transport_fee = s.route.fee if s.route else 0
-                
-                past_unpaid = FeeChallan.objects.filter(student=s).exclude(year=today.year, month=today.month)
-                arrears = 0
-                for old_ch in past_unpaid:
-                    if old_ch.balance > 0:
-                        arrears += old_ch.balance
-                        old_ch.carried_forward = True
-                        old_ch.save(update_fields=['carried_forward'])
-                
-                due_date = datetime.date(today.year, today.month, 10)
-                
-                FeeChallan.objects.create(
-                    student=s,
-                    year=today.year,
-                    month=today.month,
-                    tuition=tuition,
-                    hostel_fee=hostel_fee,
-                    transport_fee=transport_fee,
-                    arrears=arrears,
-                    due_date=due_date
-                )
+            _challan, created = _make_challan(s, today.year, today.month)
+            if created:
                 _sync_fee_status(s)
                 print(f"[Automation] Generated monthly challan for {s.name}")
 

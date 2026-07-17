@@ -1,65 +1,49 @@
 {% extends 'base.html' %}
-{% block heading %}Users & Roles{% endblock %}
+{% block heading %}Visitors{% endblock %}
 {% block content %}
 <div class="welcome">
-  <h1>Users &amp; Roles</h1>
-  <p>Create accounts and assign roles. The role decides what each person can access &mdash; this is how one system serves the principal, teachers, parents, students and accounts.</p>
+  <h1>Visitors &amp; Gate Pass</h1>
+  <p>Log every visitor, issue a gate pass, and check them out when they leave.</p>
+</div>
+
+<div class="stat-grid">
+  <div class="card stat"><span class="s-label">Currently inside</span><span class="s-val">{{ inside }}</span></div>
+  <div class="card stat"><span class="s-label">Total logged</span><span class="s-val">{{ total }}</span></div>
 </div>
 
 <details class="add-wrap no-print">
-  <summary class="add-btn">Create user</summary>
+  <summary class="add-btn">Issue gate pass</summary>
   <div class="card card-pad" style="max-width:780px">
-  <h3 style="margin-bottom:14px">Create user</h3>
+  <h3 style="margin-bottom:14px">New visitor</h3>
   <form method="post">{% csrf_token %}
-    <input type="hidden" name="action" value="create">
     <div class="row-2x">
-      <div class="frow"><label>Username</label><input name="username" placeholder="e.g. teacher2"></div>
-      <div class="frow"><label>Temporary password</label><input name="password" placeholder="roshni123"></div>
-      <div class="frow"><label>Full name</label><input name="first_name" placeholder="Name"></div>
-      <div class="frow"><label>Role</label><select name="role">{% for val, label in roles %}<option value="{{ val }}">{{ label }}</option>{% endfor %}</select></div>
-      <div class="frow"><label>Class (for Teacher)</label><select name="classroom"><option value="">- none -</option>{% for c in classes %}<option value="{{ c.id }}">{{ c }}</option>{% endfor %}</select></div>
-      <div class="frow"><label>Student (for Parent / Student)</label><select name="student"><option value="">- none -</option>{% for s in students %}<option value="{{ s.id }}">{{ s.name }} ({{ s.classroom }})</option>{% endfor %}</select></div>
+      <div class="frow"><label>Visitor name</label><input name="name" placeholder="e.g. Ali Khan" required></div>
+      <div class="frow"><label>Purpose</label><input name="purpose" placeholder="e.g. Meeting, Admission enquiry"></div>
+      <div class="frow"><label>To meet</label><input name="to_meet" placeholder="e.g. Principal, Accounts"></div>
     </div>
-    <button class="btn-primary btn-auto" type="submit">Create user</button>
+    <button class="btn-primary btn-auto" type="submit">Issue pass</button>
   </form>
-  <p class="hint-inline">If you leave the password blank, it is set to <b>roshni123</b>.</p>
 </div>
 </details>
 
 <div class="card">
-  <div class="sec-head"><h3>All users ({{ users|length }})</h3></div>
+  <div class="sec-head"><h3>Visitor log ({{ total }})</h3></div>
   <div class="table-wrap"><table>
-    <thead><tr><th>Username</th><th>Name</th><th>Linked</th><th>Status</th><th>Role</th><th class="ta-c">Actions</th></tr></thead>
+    <thead><tr><th>Pass</th><th>Name</th><th>Purpose</th><th>To meet</th><th>Time in</th><th>Status</th><th class="ta-c no-print">Action</th></tr></thead>
     <tbody>
-    {% for u in users %}
+    {% for v in visitors %}
       <tr>
-        <td>{{ u.username }}{% if u.is_superuser %} <span class="pill pill-role">superuser</span>{% endif %}</td>
-        <td>{{ u.first_name }}</td>
-        <td class="muted">{% if u.profile.classroom %}Class {{ u.profile.classroom }}{% elif u.profile.student %}{{ u.profile.student.name }}{% else %}-{% endif %}</td>
-        <td>{% if u.is_active %}<span class="pill pill-paid">Active</span>{% else %}<span class="pill pill-overdue">Disabled</span>{% endif %}</td>
-        <td>
-          <form method="post" class="inline-form">{% csrf_token %}
-            <input type="hidden" name="action" value="update_role">
-            <input type="hidden" name="user_id" value="{{ u.id }}">
-            <select name="role" class="mini-select">{% for val, label in roles %}<option value="{{ val }}" {% if u.profile.role == val %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
-            <button class="act-btn ghost" type="submit">Update</button>
-          </form>
-        </td>
-        <td class="ta-c" style="white-space:nowrap">
-          <form method="post" class="inline-form">{% csrf_token %}
-            <input type="hidden" name="action" value="reset_password">
-            <input type="hidden" name="user_id" value="{{ u.id }}">
-            <button class="act-btn ghost" type="submit">Reset pw</button>
-          </form>
-          {% if not u.is_superuser and u.id != request.user.id %}
-          <form method="post" class="inline-form">{% csrf_token %}
-            <input type="hidden" name="action" value="toggle_active">
-            <input type="hidden" name="user_id" value="{{ u.id }}">
-            <button class="act-btn ghost" type="submit">{% if u.is_active %}Disable{% else %}Enable{% endif %}</button>
-          </form>
-          {% endif %}
-        </td>
+        <td>{{ v.pass_no }}</td>
+        <td>{{ v.name }}</td>
+        <td class="muted">{{ v.purpose|default:"-" }}</td>
+        <td class="muted">{{ v.to_meet|default:"-" }}</td>
+        <td class="muted">{{ v.time_in|date:"d M, H:i" }}</td>
+        <td>{% if v.checked_out %}<span class="pill pill-paid">Left</span>{% else %}<span class="pill pill-pending">Inside</span>{% endif %}</td>
+        <td class="ta-c no-print">
+          {% if not v.checked_out %}<a class="act-btn ghost" href="?checkout={{ v.id }}">Check out</a>{% else %}-{% endif %}</td>
       </tr>
+    {% empty %}
+      <tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No visitors logged yet. Issue a gate pass above.</td></tr>
     {% endfor %}
     </tbody>
   </table></div>

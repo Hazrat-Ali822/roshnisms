@@ -293,15 +293,28 @@ class TenantRoutingMiddleware:
             if not is_allowed:
                 return redirect('subscription_expired')
                 
-        # Lazy Cron daily trigger
+        # Lazy Cron daily trigger. CLAIM today atomically (row-locked) BEFORE
+        # running the jobs, so two requests crossing midnight can't both run it
+        # — which would apply late fees twice and SMS every guardian twice.
         if school:
             today = timezone.localdate()
             if not school.last_daily_run or school.last_daily_run < today:
-                from core.views import run_daily_jobs
+                from django.db import transaction as _txn
+                from core.models import School as _School
+                claimed = False
                 try:
-                    run_daily_jobs(school, today)
-                    school.last_daily_run = today
-                    school.save(update_fields=['last_daily_run'])
+                    with _txn.atomic():
+                        locked = (_School.objects.select_for_update()
+                                  .filter(pk=school.pk).first())
+                        if locked and (not locked.last_daily_run
+                                       or locked.last_daily_run < today):
+                            locked.last_daily_run = today
+                            locked.save(update_fields=['last_daily_run'])
+                            school.last_daily_run = today
+                            claimed = True
+                    if claimed:
+                        from core.views import run_daily_jobs
+                        run_daily_jobs(school, today)
                 except Exception as e:
                     print(f"[Automation Error] Failed to run daily jobs: {e}")
                     
