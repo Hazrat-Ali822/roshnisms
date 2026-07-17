@@ -68,6 +68,25 @@
   </div>
   {% endif %}
 </div>
+
+{% if notes %}
+<div class="card" style="margin-top:16px">
+  <div class="sec-head"><h3>Teacher remarks</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Type</th><th>Remark</th><th>Teacher</th></tr></thead>
+    <tbody>
+    {% for n in notes %}
+      <tr>
+        <td>{{ n.date|date:"d M Y" }}</td>
+        <td><span class="pill {% if n.kind == 'Praise' %}pill-paid{% elif n.kind == 'Concern' %}pill-overdue{% else %}pill-info{% endif %}">{{ n.get_kind_display }}</span></td>
+        <td>{{ n.text }}</td>
+        <td class="muted">{{ n.teacher_name|default:"—" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endif %}
 {% else %}
 <div class="card card-pad"><p class="muted">No student linked to this account.</p></div>
 {% endif %}

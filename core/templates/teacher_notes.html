@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block heading %}Behaviour Notes{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Behaviour &amp; Remark Notes</h1>
+  <p>Record praise, a concern or a general remark for a student in your class. Parents and students can see these on their profile. For confidential discipline cases, use the office's Discipline register instead.</p>
+</div>
+
+{% if classes|length > 1 %}
+<form method="get" class="no-print" style="margin-bottom:14px">
+  <div class="frow" style="max-width:280px"><label>Class</label>
+    <select name="class" onchange="this.form.submit()">
+      {% for c in classes %}<option value="{{ c.id }}" {% if classroom.id == c.id %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+  </div>
+</form>
+{% endif %}
+
+{% if classroom %}
+<div class="card card-pad" style="max-width:640px;margin-bottom:16px">
+  <h3 style="margin-bottom:12px">Add a note {% if classroom %}<span class="muted" style="font-weight:600">&middot; {{ classroom }}</span>{% endif %}</h3>
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="action" value="add">
+    <input type="hidden" name="class" value="{{ classroom.id }}">
+    <div class="row-2x">
+      <div class="frow"><label>Student</label>
+        <select name="student" required>
+          <option value="">- pick a student -</option>
+          {% for s in students %}<option value="{{ s.id }}">{{ s.name }}{% if s.roll_no %} (Roll {{ s.roll_no }}){% endif %}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="frow"><label>Type</label>
+        <select name="kind">{% for k, label in kinds %}<option value="{{ k }}">{{ label }}</option>{% endfor %}</select>
+      </div>
+    </div>
+    <div class="frow"><label>Note</label><textarea name="text" rows="2" maxlength="400" placeholder="e.g. Excellent participation in class today" required></textarea></div>
+    <button class="btn-primary btn-auto" type="submit">Save note</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="sec-head"><h3>Recent notes</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Student</th><th>Type</th><th>Note</th><th>By</th><th></th></tr></thead>
+    <tbody>
+    {% for n in notes %}
+      <tr>
+        <td>{{ n.date|date:"d M Y" }}</td>
+        <td><b style="color:var(--ink)">{{ n.student.name }}</b></td>
+        <td><span class="pill {% if n.kind == 'Praise' %}pill-paid{% elif n.kind == 'Concern' %}pill-overdue{% else %}pill-info{% endif %}">{{ n.get_kind_display }}</span></td>
+        <td class="muted">{{ n.text }}</td>
+        <td class="muted">{{ n.teacher_name|default:"—" }}</td>
+        <td class="ta-r">
+          {% if n.teacher_id == my_id %}
+          <form method="post" onsubmit="return confirm('Delete this note?')" style="display:inline">{% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="class" value="{{ classroom.id }}">
+            <input type="hidden" name="note_id" value="{{ n.id }}">
+            <button class="btn-reject btn-auto" type="submit">Delete</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="muted" style="text-align:center;padding:18px">No notes yet for this class.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% else %}
+<div class="card card-pad muted">You are not linked to any class yet. Ask the office to set your home class or assign you subjects.</div>
+{% endif %}
+{% endblock %}

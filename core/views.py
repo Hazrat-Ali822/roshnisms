@@ -33,7 +33,7 @@ from .models import (Announcement, Applicant, Assignment, AttendanceRecord, Audi
                      LoginAttempt,
                      Mark, Material, OnlinePayment, Payslip,
                      Profile, Question, Quiz, QuizAttempt, School, Seat, SmsMessage, Staff, StaffAttendance,
-                     Student, StudentLeave, Subject, Submission, TeachingAssignment,
+                     Student, StudentLeave, StudentNote, Subject, Submission, TeachingAssignment,
                      TimetableSlot, TransportRoute,
                      Visitor, grade_for)
 
@@ -4487,9 +4487,10 @@ def my_profile(request):
             t = timezone.localdate()
             d = child.date_of_birth
             age = t.year - d.year - ((t.month, t.day) < (d.month, d.day))
+    notes = list(child.notes.all()[:20]) if child else []
     return render(request, 'my_profile.html', {
         'role': profile.role, 'active': 'profile', 'child': child,
-        'initials': initials, 'age': age,
+        'initials': initials, 'age': age, 'notes': notes,
     })
 
 
@@ -4903,6 +4904,58 @@ def teacher_timetable(request):
     return render(request, 'teacher_timetable.html', {
         'role': 'teacher', 'active': 'timetable', 'rows': rows,
         'days': days, 'today_name': today_name, 'total': len(my_slots),
+    })
+
+
+@login_required
+@role_required('teacher')
+def teacher_notes(request):
+    """Teacher writes light behaviour/remark notes (praise, concern, general)
+    on students in their own classes. These are shared with the parent/student,
+    unlike the confidential office-only DisciplineRecord."""
+    profile = request.user.profile
+    classes = _teacher_classes(profile)
+    cid = request.POST.get('class') or request.GET.get('class')
+    classroom = next((c for c in classes if str(c.id) == str(cid)), None) if cid else None
+    if classroom is None:
+        classroom = classes[0] if classes else None
+    student_ids = set(
+        Student.objects.filter(classroom=classroom).values_list('id', flat=True)
+    ) if classroom else set()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'add':
+            sid = _pk(request.POST.get('student'))
+            text = (request.POST.get('text', '') or '').strip()
+            kind = request.POST.get('kind', 'Note')
+            valid = {k for k, _ in StudentNote.KINDS}
+            if sid and int(sid) in student_ids and text:
+                StudentNote.objects.create(
+                    student_id=int(sid), text=text[:400],
+                    kind=kind if kind in valid else 'Note', teacher=profile,
+                    teacher_name=profile.user.get_full_name() or profile.user.username)
+                messages.success(request, 'Note saved.')
+            else:
+                messages.error(request, 'Pick a student in your class and write a note.')
+        elif action == 'delete':
+            # A teacher may remove only their own notes.
+            n = StudentNote.objects.filter(
+                pk=_pk(request.POST.get('note_id')), teacher=profile).first()
+            if n:
+                n.delete()
+                messages.success(request, 'Note deleted.')
+        return redirect('%s?class=%s' % (reverse('teacher_notes'),
+                                         classroom.id if classroom else ''))
+
+    students = list(Student.objects.filter(classroom=classroom)) if classroom else []
+    notes = list(StudentNote.objects.filter(student__classroom=classroom)
+                 .select_related('student')[:80]) if classroom else []
+    return render(request, 'teacher_notes.html', {
+        'role': 'teacher', 'active': 'notes', 'classes': classes,
+        'classroom': classroom, 'students': students, 'notes': notes,
+        'kinds': StudentNote.KINDS, 'my_id': profile.id,
+        'today_iso': timezone.localdate().isoformat(),
     })
 
 

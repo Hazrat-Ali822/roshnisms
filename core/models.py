@@ -379,6 +379,30 @@ class StudentLeave(models.Model):
         return (self.to_date - self.from_date).days + 1
 
 
+class StudentNote(models.Model):
+    """A light behaviour/remark note a teacher writes on a student in their
+    class. Unlike the confidential DisciplineRecord (office-only), these are
+    meant to be shared with the parent/student — praise, a concern, or a
+    general remark. Kept simple: no approval workflow."""
+    KINDS = [('Praise', 'Praise'), ('Concern', 'Concern'), ('Note', 'General note')]
+    student = models.ForeignKey(
+        Student, on_delete=models.CASCADE, related_name='notes')
+    kind = models.CharField(max_length=10, choices=KINDS, default='Note')
+    text = models.CharField(max_length=400)
+    teacher = models.ForeignKey(
+        'Profile', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='student_notes')
+    teacher_name = models.CharField(max_length=80, blank=True)
+    date = models.DateField(default=datetime.date.today)
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date', '-id']
+
+    def __str__(self):
+        return '%s: %s (%s)' % (self.student.name, self.kind, self.date)
+
+
 class Mark(models.Model):
     student = models.ForeignKey(
         Student, on_delete=models.CASCADE, related_name='marks')
