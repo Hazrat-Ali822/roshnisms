@@ -14,6 +14,7 @@ urlpatterns = [
     path('complaints/', views.complaints, name='complaints'),
     path('office/complaints/', views.office_complaints, name='office_complaints'),
     path('my-results/', views.my_results, name='my_results'),
+    path('my-progress/', views.my_progress, name='my_progress'),
     path('report-card/<int:pk>/<int:exam_pk>/', views.report_card, name='report_card'),
     path('report-cards/', views.report_cards_bulk, name='report_cards_bulk'),
     path('my-subjects/', views.my_subjects, name='my_subjects'),

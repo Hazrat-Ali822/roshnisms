@@ -2,6 +2,7 @@ import calendar as pycal
 import csv
 import datetime
 import io
+import json
 
 from django.contrib import messages
 from django.conf import settings
@@ -1194,6 +1195,65 @@ def my_results(request):
         'exams': exams,
         'sessions': child_sessions, 'sel_session': sel_session,
         'position': position, 'total_ranked': total_ranked,
+    })
+
+
+@login_required
+@role_required('parent', 'student')
+def my_progress(request):
+    """Performance TREND for the active child across every exam in a session:
+    an overall percentage line plus a subject-by-exam grid, so a family can see
+    whether the child is improving or slipping — not just one exam's result."""
+    profile = request.user.profile
+    child, _kids = _active_child(request)
+
+    sessions = (sorted(set(
+        Exam.objects.filter(mark__student=child).exclude(session='')
+        .values_list('session', flat=True)), reverse=True) if child else [])
+    sel_session = request.GET.get('session')
+    if sel_session not in sessions:
+        cur = _current_session()
+        sel_session = (cur if cur in sessions
+                       else (sessions[0] if sessions else cur))
+
+    # Exams in chronological order (id ascending = the order they were created).
+    exams = (list(Exam.objects.filter(mark__student=child, session=sel_session)
+                  .distinct().order_by('id')) if child else [])
+
+    # Overall % per exam + per-subject % grid.
+    overall = []
+    subj_marks = {}   # subject -> {exam_id: pct}
+    for e in exams:
+        marks = list(Mark.objects.filter(student=child, exam=e)
+                     .select_related('subject'))
+        obtained = sum(m.marks_obtained for m in marks)
+        maximum = sum(m.total_marks for m in marks)
+        pct = round(obtained / maximum * 100) if maximum else 0
+        overall.append({'exam': e.name, 'pct': pct})
+        for m in marks:
+            subj_marks.setdefault(m.subject.name, {})[e.id] = m.percentage
+
+    subject_rows = []
+    for name in sorted(subj_marks):
+        cells = [subj_marks[name].get(e.id) for e in exams]
+        present = [c for c in cells if c is not None]
+        trend = None
+        if len(present) >= 2:
+            trend = present[-1] - present[0]     # last vs first
+        subject_rows.append({'subject': name, 'cells': cells,
+                             'avg': round(sum(present) / len(present)) if present else None,
+                             'trend': trend})
+
+    pcts = [o['pct'] for o in overall]
+    delta = (pcts[-1] - pcts[-2]) if len(pcts) >= 2 else None
+    return render(request, 'my_progress.html', {
+        'role': profile.role, 'active': 'progress', 'child': child,
+        'exams': exams, 'overall': overall, 'subject_rows': subject_rows,
+        'sessions': sessions, 'sel_session': sel_session,
+        'labels_json': json.dumps([o['exam'] for o in overall]),
+        'data_json': json.dumps(pcts),
+        'latest': pcts[-1] if pcts else None,
+        'best': max(pcts) if pcts else None, 'delta': delta,
     })
 
 

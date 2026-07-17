@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block heading %}Progress{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Progress</h1>
+  <p>{% if child %}{{ child.name }}'s performance trend across exams in {{ sel_session }}.{% else %}No student linked to this account.{% endif %}</p>
+</div>
+
+{% if child and sessions %}
+<form method="get" class="bar no-print" style="margin-bottom:16px">
+  <label class="bar-label">Session</label>
+  <select name="session" onchange="this.form.submit()">
+    {% for s in sessions %}<option value="{{ s }}" {% if s == sel_session %}selected{% endif %}>{{ s }}</option>{% endfor %}
+  </select>
+</form>
+{% endif %}
+
+{% if overall %}
+<div class="stat-grid" style="margin-bottom:16px">
+  <div class="card stat"><span class="s-label">Latest overall</span><span class="s-val">{{ latest }}%</span></div>
+  <div class="card stat"><span class="s-label">Best</span><span class="s-val" style="color:#0B5F4F">{{ best }}%</span></div>
+  <div class="card stat"><span class="s-label">Change (last exam)</span><span class="s-val" style="color:{% if delta and delta < 0 %}#922A1B{% else %}#0B5F4F{% endif %}">{% if delta is not None %}{% if delta > 0 %}+{% endif %}{{ delta }}%{% else %}—{% endif %}</span></div>
+  <div class="card stat"><span class="s-label">Exams</span><span class="s-val">{{ exams|length }}</span></div>
+</div>
+
+<div class="card card-pad" style="margin-bottom:16px">
+  <div class="sec-head" style="padding:0 0 10px"><h3>Overall trend</h3></div>
+  <div style="position:relative;height:260px"><canvas id="progressChart"></canvas></div>
+</div>
+
+<div class="card">
+  <div class="sec-head"><h3>Subject by exam</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Subject</th>{% for e in exams %}<th class="ta-r">{{ e.name }}</th>{% endfor %}<th class="ta-r">Avg</th><th class="ta-r">Trend</th></tr></thead>
+    <tbody>
+    {% for r in subject_rows %}
+      <tr>
+        <td><b style="color:var(--ink)">{{ r.subject }}</b></td>
+        {% for c in r.cells %}<td class="ta-r num">{% if c is not None %}{{ c }}%{% else %}<span class="muted">—</span>{% endif %}</td>{% endfor %}
+        <td class="ta-r num">{% if r.avg is not None %}{{ r.avg }}%{% else %}—{% endif %}</td>
+        <td class="ta-r num">{% if r.trend is not None %}<span style="color:{% if r.trend < 0 %}#922A1B{% elif r.trend > 0 %}#0B5F4F{% else %}#6B7686{% endif %}">{% if r.trend > 0 %}▲ +{{ r.trend }}{% elif r.trend < 0 %}▼ {{ r.trend }}{% else %}—{% endif %}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var el = document.getElementById('progressChart');
+  if (!el || typeof Chart === 'undefined') return;
+  new Chart(el, {
+    type: 'line',
+    data: {
+      labels: {{ labels_json|safe }},
+      datasets: [{
+        label: 'Overall %',
+        data: {{ data_json|safe }},
+        borderColor: '#0E7C66',
+        backgroundColor: 'rgba(14,124,102,.12)',
+        fill: true, tension: .3, pointRadius: 4, pointBackgroundColor: '#0E7C66'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, max: 100, ticks: { callback: function(v){return v+'%';} } } },
+      plugins: { legend: { display: false } }
+    }
+  });
+});
+</script>
+{% elif child %}
+<div class="card card-pad muted">No exam results yet for {{ child.name }}. Once marks are published they will appear here as a trend.</div>
+{% endif %}
+{% endblock %}
