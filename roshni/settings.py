@@ -1,16 +1,11 @@
 import os
-import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# When packaged as a single .exe (PyInstaller), bundled code lives in a
-# read-only temp folder — so all WRITABLE data (database, secret key, uploads,
-# static, backups) must sit next to the .exe instead. DATA_DIR is that folder.
-if getattr(sys, 'frozen', False):
-    DATA_DIR = Path(sys.executable).resolve().parent
-else:
-    DATA_DIR = BASE_DIR
+# All writable data (database, secret key, uploads, static, backups) lives in
+# the project base directory.
+DATA_DIR = BASE_DIR
 
 # --- Security (configurable via environment; safe to keep defaults on a
 #     trusted school LAN, MUST be set before any public/online deployment) ---
