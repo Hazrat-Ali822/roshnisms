@@ -56,7 +56,7 @@ def notifications(request):
     badge_counts = {}
     
     # Import inside functions to avoid circular imports
-    from .models import Applicant, LeaveRequest, ConcessionRequest, OnlinePayment, InventoryItem, Submission, Announcement, Student, School, Message
+    from .models import Applicant, LeaveRequest, ConcessionRequest, OnlinePayment, InventoryItem, Submission, Announcement, Student, School, Message, Complaint
     from django.utils import timezone
     today = timezone.localdate()
     
@@ -100,7 +100,16 @@ def notifications(request):
                 'url_name': 'inventory',
                 'type': 'warning'
             })
-            
+        # 3. Open complaints from families
+        open_complaints = Complaint.objects.exclude(status='Resolved').count()
+        if open_complaints > 0:
+            badge_counts['office_complaints'] = open_complaints
+            alerts.append({
+                'text': f'{open_complaints} complaint(s) awaiting a response.',
+                'url_name': 'office_complaints',
+                'type': 'warning'
+            })
+
     elif role == 'principal':
         # 1. Leaves Awaiting Approval
         leaves = LeaveRequest.objects.filter(status='Pending').count()

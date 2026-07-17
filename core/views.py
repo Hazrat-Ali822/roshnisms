@@ -27,7 +27,7 @@ from . import payments
 from .models import (Announcement, Applicant, Assignment, AttendanceRecord, AuditLog,
                      Book, CalendarEvent, Certificate, ChallanLine, ClassRoom,
                      ConcessionRequest,
-                     DisciplineRecord,
+                     Complaint, DisciplineRecord,
                      Exam, ExamRoom, ExamSchedule, Expense,
                      FeeChallan, FeeHead, FeePayment, HostelRoom, InventoryItem, IssuedBook, LeaveRequest,
                      LoginAttempt,
@@ -927,6 +927,79 @@ def parent_messages(request):
     return render(request, 'parent_messages.html', {
         'role': profile.role, 'active': 'messages', 'child': child,
         'thread': thread, 'my_id': profile.id,
+    })
+
+
+@login_required
+@role_required('parent', 'student')
+def complaints(request):
+    """Family side: raise a complaint/feedback ticket and track its status."""
+    profile = request.user.profile
+    child, _kids = _active_child(request)
+    if request.method == 'POST':
+        subject = (request.POST.get('subject', '') or '').strip()
+        body = (request.POST.get('body', '') or '').strip()
+        category = request.POST.get('category', 'Other')
+        valid = {c for c, _ in Complaint.CATEGORIES}
+        if subject and body:
+            Complaint.objects.create(
+                student=child, raised_by=profile,
+                raised_by_name=request.user.get_full_name() or request.user.username,
+                category=category if category in valid else 'Other',
+                subject=subject[:140], body=body[:4000])
+            messages.success(request, 'Your complaint has been submitted. The '
+                             'office will respond here.')
+        else:
+            messages.error(request, 'Please give a subject and describe the issue.')
+        return redirect('complaints')
+
+    mine = list(Complaint.objects.filter(raised_by=profile))
+    return render(request, 'complaints.html', {
+        'role': profile.role, 'active': 'complaints', 'child': child,
+        'complaints': mine, 'categories': Complaint.CATEGORIES,
+    })
+
+
+@login_required
+@role_required('admin', 'principal')
+def office_complaints(request):
+    """Office side: respond to complaints and move them through Open -> In
+    Progress -> Resolved."""
+    if request.method == 'POST':
+        c = Complaint.objects.filter(pk=_pk(request.POST.get('complaint_id'))).first()
+        if c:
+            status = request.POST.get('status', c.status)
+            valid = {s for s, _ in Complaint.STATUS}
+            if status in valid:
+                c.status = status
+            resp = (request.POST.get('response', '') or '').strip()
+            if resp:
+                c.response = resp[:4000]
+            c.handled_by = request.user.get_full_name() or request.user.username
+            c.save(update_fields=['status', 'response', 'handled_by', 'updated'])
+            _audit(request, 'Complaint %s' % c.status,
+                   '%s (%s)' % (c.subject, c.raised_by_name or '-'))
+            messages.success(request, 'Complaint updated (%s).' % c.status)
+        return redirect('office_complaints')
+
+    tab = request.GET.get('tab', 'open')
+    qs = Complaint.objects.select_related('student', 'student__classroom')
+    if tab == 'resolved':
+        qs = qs.filter(status='Resolved')
+    elif tab == 'all':
+        pass
+    else:
+        tab = 'open'
+        qs = qs.exclude(status='Resolved')
+    counts = {
+        'open': Complaint.objects.exclude(status='Resolved').count(),
+        'resolved': Complaint.objects.filter(status='Resolved').count(),
+        'all': Complaint.objects.count(),
+    }
+    role = request.user.profile.role
+    return render(request, 'office_complaints.html', {
+        'role': role, 'active': 'complaints', 'complaints': list(qs), 'tab': tab,
+        'counts': counts, 'statuses': Complaint.STATUS,
     })
 
 

@@ -96,6 +96,10 @@
             {% endif %}
           </a>
           <a class="nav-item {% if active == 'visitors' %}active{% endif %}" href="{% url 'visitors' %}">Visitors</a>
+          <a class="nav-item {% if active == 'complaints' %}active{% endif %}" href="{% url 'office_complaints' %}">
+            Complaints
+            {% if badge_counts.office_complaints %}<span class="badge-pending">{{ badge_counts.office_complaints }}</span>{% endif %}
+          </a>
           <a class="nav-item {% if active == 'users' %}active{% endif %}" href="{% url 'users_list' %}">Users &amp; Roles</a>
           <a class="nav-item {% if active == 'audit' %}active{% endif %}" href="{% url 'audit_log' %}">Audit Log</a>
           <a class="nav-item {% if active == 'settings' %}active{% endif %}" href="{% url 'school_settings' %}">School Settings</a>
@@ -147,6 +151,7 @@
             Messages
             {% if badge_counts.parent_messages %}<span class="badge-pending">{{ badge_counts.parent_messages }}</span>{% endif %}
           </a>
+          <a class="nav-item {% if active == 'complaints' %}active{% endif %}" href="{% url 'complaints' %}">Complaints</a>
           <a class="nav-item {% if active == 'profile' %}active{% endif %}" href="{% url 'my_profile' %}">Profile</a>
         {% elif role == 'parent' %}
           <a class="nav-item {% if active == 'subjects' %}active{% endif %}" href="{% url 'my_subjects' %}">Subjects &amp; Materials</a>
@@ -161,6 +166,7 @@
             Messages
             {% if badge_counts.parent_messages %}<span class="badge-pending">{{ badge_counts.parent_messages }}</span>{% endif %}
           </a>
+          <a class="nav-item {% if active == 'complaints' %}active{% endif %}" href="{% url 'complaints' %}">Complaints</a>
           <a class="nav-item {% if active == 'profile' %}active{% endif %}" href="{% url 'my_profile' %}">Profile</a>
         {% elif role == 'owner' %}
           <a class="nav-item {% if active == 'students' %}active{% endif %}" href="{% url 'owner_students' %}">Students</a>

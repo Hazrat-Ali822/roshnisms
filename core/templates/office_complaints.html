@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block heading %}Complaints{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Complaints</h1>
+  <p>Feedback and complaints from parents and students. Respond and move each through to Resolved.</p>
+</div>
+
+<div class="bar no-print" style="margin-bottom:16px">
+  <a class="act-btn {% if tab == 'open' %}{% else %}ghost{% endif %}" href="?tab=open">Open ({{ counts.open }})</a>
+  <a class="act-btn {% if tab == 'resolved' %}{% else %}ghost{% endif %}" href="?tab=resolved">Resolved ({{ counts.resolved }})</a>
+  <a class="act-btn {% if tab == 'all' %}{% else %}ghost{% endif %}" href="?tab=all">All ({{ counts.all }})</a>
+</div>
+
+{% for c in complaints %}
+  <div class="card card-pad" style="margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+      <div>
+        <b style="color:var(--ink);font-size:15px">{{ c.subject }}</b>
+        <span class="pill pill-info" style="margin-left:6px">{{ c.get_category_display }}</span>
+        {% if c.status == 'Resolved' %}<span class="pill pill-paid">Resolved</span>{% elif c.status == 'In Progress' %}<span class="pill pill-info">In Progress</span>{% else %}<span class="pill pill-pending">Open</span>{% endif %}
+      </div>
+      <span class="muted" style="font-size:12px">{{ c.created|date:"d M Y, H:i" }}</span>
+    </div>
+    <div class="muted" style="font-size:12.5px;margin-bottom:8px">
+      From {{ c.raised_by_name|default:"—" }}{% if c.student %} &middot; about {{ c.student.name }} ({{ c.student.classroom }}){% endif %}
+    </div>
+    <p style="white-space:pre-wrap;margin-bottom:10px">{{ c.body }}</p>
+    {% if c.response %}<div class="card" style="background:var(--surface-2,#F1F5F9);padding:10px 12px;margin-bottom:10px"><b style="font-size:12px">Office response</b><div style="font-size:13px">{{ c.response }}</div>{% if c.handled_by %}<div class="muted" style="font-size:11px;margin-top:3px">— {{ c.handled_by }}</div>{% endif %}</div>{% endif %}
+
+    <form method="post" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">{% csrf_token %}
+      <input type="hidden" name="complaint_id" value="{{ c.id }}">
+      <div class="frow" style="margin:0;flex:1;min-width:240px"><label>Response</label><input name="response" value="{{ c.response }}" placeholder="Reply to the family"></div>
+      <div class="frow" style="margin:0"><label>Status</label><select name="status">{% for v, l in statuses %}<option value="{{ v }}" {% if c.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      <button class="btn-primary btn-auto" type="submit">Save</button>
+    </form>
+  </div>
+{% empty %}
+  <div class="card card-pad"><p class="muted" style="text-align:center;padding:16px">No complaints in this view.</p></div>
+{% endfor %}
+{% endblock %}

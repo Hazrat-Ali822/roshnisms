@@ -436,6 +436,39 @@ class Message(models.Model):
         return '%s -> %s: %.30s' % (self.sender_name, self.student.name, self.body)
 
 
+class Complaint(models.Model):
+    """A complaint / feedback a parent or student raises to the office. Routed
+    to admin + principal, who respond and move it Open -> In Progress ->
+    Resolved. Kept separate from the teacher message thread (which is a
+    conversation) — a complaint is a tracked ticket."""
+    CATEGORIES = [('Academic', 'Academic'), ('Fee', 'Fee / Finance'),
+                  ('Transport', 'Transport'), ('Facility', 'Facility'),
+                  ('Staff', 'Staff conduct'), ('Other', 'Other')]
+    STATUS = [('Open', 'Open'), ('In Progress', 'In Progress'),
+              ('Resolved', 'Resolved')]
+    student = models.ForeignKey(
+        Student, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='complaints')
+    raised_by = models.ForeignKey(
+        'Profile', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='complaints')
+    raised_by_name = models.CharField(max_length=80, blank=True)
+    category = models.CharField(max_length=20, choices=CATEGORIES, default='Other')
+    subject = models.CharField(max_length=140)
+    body = models.TextField()
+    status = models.CharField(max_length=12, choices=STATUS, default='Open')
+    response = models.TextField(blank=True)
+    handled_by = models.CharField(max_length=80, blank=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created']
+
+    def __str__(self):
+        return '%s (%s) - %s' % (self.subject, self.category, self.status)
+
+
 class Mark(models.Model):
     student = models.ForeignKey(
         Student, on_delete=models.CASCADE, related_name='marks')
