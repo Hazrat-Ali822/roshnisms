@@ -33,7 +33,8 @@ from .models import (Announcement, Applicant, Assignment, AttendanceRecord, Audi
                      LoginAttempt,
                      Mark, Material, OnlinePayment, Payslip,
                      Profile, Question, Quiz, QuizAttempt, School, Seat, SmsMessage, Staff, StaffAttendance,
-                     Student, Subject, Submission, TeachingAssignment, TimetableSlot, TransportRoute,
+                     Student, StudentLeave, Subject, Submission, TeachingAssignment,
+                     TimetableSlot, TransportRoute,
                      Visitor, grade_for)
 
 
@@ -866,7 +867,36 @@ def my_attendance(request):
         'cells': cells, 'present': present, 'absent': absent, 'leave': leave,
         'total': total, 'pct': pct,
         'month_name': today.strftime('%B'), 'year': year,
+        'leaves': list(child.leaves.all()[:8]) if child else [],
+        'today_iso': today.isoformat(),
     })
+
+
+@login_required
+@role_required('parent', 'student')
+def apply_leave(request):
+    """Parent/student submits a leave request for the active child; it goes to
+    the office/principal approvals queue."""
+    child, _kids = _active_child(request)
+    if request.method == 'POST' and child:
+        try:
+            fd = datetime.date.fromisoformat(request.POST.get('from_date', ''))
+            td = datetime.date.fromisoformat(request.POST.get('to_date', ''))
+        except (ValueError, TypeError):
+            messages.error(request, 'Please pick valid from and to dates.')
+            return redirect('my_attendance')
+        reason = (request.POST.get('reason', '') or '').strip()
+        if td < fd:
+            messages.error(request, 'The "to" date cannot be before the "from" date.')
+        elif not reason:
+            messages.error(request, 'Please give a reason for the leave.')
+        else:
+            StudentLeave.objects.create(
+                student=child, from_date=fd, to_date=td, reason=reason[:300],
+                applied_by=request.user.get_full_name() or request.user.username)
+            messages.success(request, 'Leave request submitted. You will see the '
+                             'status here once the office decides.')
+    return redirect('my_attendance')
 
 
 def _report_card_data(student, exam, pass_mark, ranking):
@@ -1773,6 +1803,30 @@ def principal_approvals(request):
                 lv.decided_by = decider
                 lv.save(update_fields=['status', 'decided_by'])
                 messages.success(request, 'Leave rejected for %s.' % lv.staff.name)
+
+        elif action in ('approve_student_leave', 'reject_student_leave'):
+            slv = (StudentLeave.objects.filter(pk=request.POST.get('leave_id'),
+                                               status='Pending')
+                   .select_related('student').first())
+            if slv and action == 'approve_student_leave':
+                slv.status = 'Approved'
+                slv.decided_by = decider
+                slv.save(update_fields=['status', 'decided_by'])
+                # Mark the student on 'Leave' across the whole approved range.
+                d = slv.from_date
+                while d <= slv.to_date:
+                    AttendanceRecord.objects.update_or_create(
+                        student=slv.student, date=d,
+                        defaults={'status': 'L', 'session': _current_session()})
+                    d += datetime.timedelta(days=1)
+                messages.success(request, 'Leave approved for %s (%d day%s).'
+                                 % (slv.student.name, slv.days,
+                                    '' if slv.days == 1 else 's'))
+            elif slv:
+                slv.status = 'Rejected'
+                slv.decided_by = decider
+                slv.save(update_fields=['status', 'decided_by'])
+                messages.success(request, 'Leave rejected for %s.' % slv.student.name)
         return redirect('principal_approvals')
 
     pending_admissions = list(Applicant.objects.filter(stage='Offer'))
@@ -1781,6 +1835,9 @@ def principal_approvals(request):
         .select_related('challan', 'challan__student', 'challan__student__classroom'))
     pending_leaves = list(
         LeaveRequest.objects.filter(status='Pending').select_related('staff'))
+    pending_student_leaves = list(
+        StudentLeave.objects.filter(status='Pending')
+        .select_related('student', 'student__classroom'))
     recent_decisions = list(
         ConcessionRequest.objects.exclude(status='Pending')
         .select_related('challan', 'challan__student')[:8])
@@ -1789,9 +1846,10 @@ def principal_approvals(request):
         'pending_admissions': pending_admissions,
         'pending_concessions': pending_concessions,
         'pending_leaves': pending_leaves,
+        'pending_student_leaves': pending_student_leaves,
         'recent_decisions': recent_decisions,
         'pending_total': (len(pending_admissions) + len(pending_concessions)
-                          + len(pending_leaves)),
+                          + len(pending_leaves) + len(pending_student_leaves)),
     })
 
 

@@ -66,6 +66,27 @@
   </div>
 </div>
 
+<div class="card">
+  <div class="sec-head"><h3>Student leave awaiting approval ({{ pending_student_leaves|length }})</h3></div>
+  <div style="padding:8px">
+    {% for l in pending_student_leaves %}
+      <div class="appr-row">
+        <div class="appr-info">
+          <b>{{ l.student.name }} <span class="muted" style="font-weight:600">&middot; {{ l.student.classroom }}</span></b>
+          <span>{{ l.from_date|date:"d M" }} &rarr; {{ l.to_date|date:"d M Y" }} ({{ l.days }} day{{ l.days|pluralize }}){% if l.reason %} &middot; {{ l.reason }}{% endif %}{% if l.applied_by %} &middot; filed by {{ l.applied_by }}{% endif %}</span>
+        </div>
+        <form method="post" class="appr-actions">{% csrf_token %}
+          <input type="hidden" name="leave_id" value="{{ l.id }}">
+          <button class="btn-primary btn-auto" name="action" value="approve_student_leave" type="submit">Approve</button>
+          <button class="btn-reject" name="action" value="reject_student_leave" type="submit">Reject</button>
+        </form>
+      </div>
+    {% empty %}
+      <div class="dempty">No student leave requests pending. Parents/students apply from My Attendance &rarr; Apply for leave; requests appear here (approving marks the student on Leave for those days).</div>
+    {% endfor %}
+  </div>
+</div>
+
 {% if recent_decisions %}
 <div class="card">
   <div class="sec-head"><h3>Recent decisions</h3></div>

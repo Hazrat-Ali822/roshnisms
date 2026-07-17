@@ -353,6 +353,32 @@ class AttendanceRecord(models.Model):
         return f"{self.student} {self.date} {self.status}"
 
 
+class StudentLeave(models.Model):
+    """A leave request for a student, submitted by the parent/student and
+    approved by the office/principal (mirrors the staff LeaveRequest flow)."""
+    STATUS = [('Pending', 'Pending'), ('Approved', 'Approved'),
+              ('Rejected', 'Rejected')]
+    student = models.ForeignKey(
+        Student, on_delete=models.CASCADE, related_name='leaves')
+    from_date = models.DateField()
+    to_date = models.DateField()
+    reason = models.CharField(max_length=300)
+    status = models.CharField(max_length=10, choices=STATUS, default='Pending')
+    applied_by = models.CharField(max_length=80, blank=True)
+    decided_by = models.CharField(max_length=80, blank=True)
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created']
+
+    def __str__(self):
+        return f"{self.student} {self.from_date}→{self.to_date} ({self.status})"
+
+    @property
+    def days(self):
+        return (self.to_date - self.from_date).days + 1
+
+
 class Mark(models.Model):
     student = models.ForeignKey(
         Student, on_delete=models.CASCADE, related_name='marks')
