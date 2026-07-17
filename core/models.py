@@ -597,12 +597,24 @@ class Applicant(models.Model):
         ('Offer', 'Offer'), ('Enrolled', 'Enrolled'),
         ('Rejected', 'Rejected'),
     ]
+    SOURCES = [('Office', 'Office'), ('Online', 'Online')]
     name = models.CharField(max_length=120)
     class_applied = models.CharField(max_length=40, blank=True)
     parent_name = models.CharField(max_length=120, blank=True)
     phone = models.CharField(max_length=20, blank=True)
     stage = models.CharField(max_length=20, choices=STAGE_CHOICES, default='Enquiry')
     converted = models.BooleanField(default=False)  # a Student record was created
+    # Extra details captured by the public online admission form.
+    source = models.CharField(max_length=10, choices=SOURCES, default='Office')
+    email = models.EmailField(blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
+    gender = models.CharField(max_length=10, blank=True)
+    address = models.CharField(max_length=255, blank=True)
+    previous_school = models.CharField(max_length=140, blank=True)
+    message = models.TextField(blank=True)
+    photo = models.FileField(upload_to='admissions/', blank=True, null=True)
+    document = models.FileField(upload_to='admissions/', blank=True, null=True)
+    ref = models.CharField(max_length=20, blank=True)   # public tracking reference
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:

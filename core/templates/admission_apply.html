@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admission Application &middot; {{ school.name|default:"School" }}</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+  <style>
+    :root{--ink:#15294D;--accent:{{ school.accent_color|default:"#0E7C66" }};--line:#E3E8EF}
+    body{background:#F4F7FB;margin:0;font-family:system-ui,Segoe UI,Roboto,sans-serif;color:var(--ink)}
+    .wrap{max-width:720px;margin:0 auto;padding:24px 16px 60px}
+    .head{display:flex;align-items:center;gap:12px;margin:8px 0 20px}
+    .crest{width:48px;height:48px;border-radius:12px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px}
+    .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:0 1px 3px rgba(20,41,77,.06)}
+    .frow{margin-bottom:13px;display:flex;flex-direction:column}
+    .frow label{font-size:12.5px;font-weight:600;margin-bottom:4px}
+    .frow input,.frow select,.frow textarea{padding:9px 11px;border:1px solid var(--line);border-radius:9px;font-size:14px;font-family:inherit}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+    .btn{background:var(--accent);color:#fff;border:0;padding:11px 20px;border-radius:9px;font-weight:700;font-size:14px;cursor:pointer}
+    .hp{position:absolute;left:-9999px}
+    .msg{background:#FBE7E2;border:1px solid #F2C9C0;color:#922A1B;padding:9px 12px;border-radius:9px;margin-bottom:10px;font-size:13px}
+    .ok{text-align:center;padding:20px}
+    .ok .ref{font-size:22px;font-weight:800;letter-spacing:1px;margin:10px 0;color:var(--accent)}
+    @media(max-width:560px){.row2{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="crest">{{ school.name|slice:":1"|default:"S" }}</div>
+    <div><b style="font-size:18px">{{ school.name|default:"Our School" }}</b><br><span style="color:#5B6B85;font-size:13px">Online Admission Application</span></div>
+  </div>
+
+  {% if done %}
+    <div class="card ok">
+      <svg viewBox="0 0 24 24" width="46" height="46" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <h2>Application received!</h2>
+      {% if ref %}<p>Your reference number is</p><div class="ref">{{ ref }}</div>{% endif %}
+      <p style="color:#5B6B85">The school office will review your application and contact you on the number you provided. Please keep your reference number safe.</p>
+    </div>
+  {% else %}
+    <form method="post" enctype="multipart/form-data" class="card">{% csrf_token %}
+      {% if messages %}{% for m in messages %}<div class="msg">{{ m }}</div>{% endfor %}{% endif %}
+      <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off">
+
+      <h3 style="margin:0 0 14px">Student details</h3>
+      <div class="row2">
+        <div class="frow"><label>Student full name *</label><input name="name" value="{{ form.name }}" required></div>
+        <div class="frow"><label>Class applying for</label><input name="class_applied" value="{{ form.class_applied }}" placeholder="e.g. 5"></div>
+        <div class="frow"><label>Date of birth</label><input type="date" name="date_of_birth" value="{{ form.date_of_birth }}"></div>
+        <div class="frow"><label>Gender</label><select name="gender"><option value="">—</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+      </div>
+      <div class="frow"><label>Previous school (if any)</label><input name="previous_school" value="{{ form.previous_school }}"></div>
+
+      <h3 style="margin:18px 0 14px">Parent / guardian</h3>
+      <div class="row2">
+        <div class="frow"><label>Parent/guardian name *</label><input name="parent_name" value="{{ form.parent_name }}" required></div>
+        <div class="frow"><label>Contact phone *</label><input name="phone" value="{{ form.phone }}" required></div>
+        <div class="frow"><label>Email</label><input type="email" name="email" value="{{ form.email }}"></div>
+      </div>
+      <div class="frow"><label>Home address</label><input name="address" value="{{ form.address }}"></div>
+
+      <h3 style="margin:18px 0 14px">Documents (optional)</h3>
+      <div class="row2">
+        <div class="frow"><label>Student photo</label><input type="file" name="photo" accept="image/*"></div>
+        <div class="frow"><label>Document (birth certificate / result)</label><input type="file" name="document"></div>
+      </div>
+      <div class="frow"><label>Anything else you'd like to tell us</label><textarea name="message" rows="3">{{ form.message }}</textarea></div>
+
+      <button class="btn" type="submit">Submit application</button>
+    </form>
+  {% endif %}
+</div>
+</body>
+</html>

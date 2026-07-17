@@ -2371,6 +2371,66 @@ def payment_proof(request, pk):
 ADMISSION_STAGES = ['Enquiry', 'Test', 'Offer', 'Enrolled']
 
 
+def admission_apply(request):
+    """PUBLIC online admission form (no login). A prospective parent submits an
+    application which lands in the office's admissions pipeline at the Enquiry
+    stage, tagged as an online application, with optional photo + document."""
+    school = School.objects.first()
+    if request.method == 'POST':
+        # Honeypot: real users never fill a hidden 'website' field.
+        if (request.POST.get('website', '') or '').strip():
+            return render(request, 'admission_apply.html',
+                          {'school': school, 'done': True, 'ref': ''})
+        name = (request.POST.get('name', '') or '').strip()
+        parent_name = (request.POST.get('parent_name', '') or '').strip()
+        phone = (request.POST.get('phone', '') or '').strip()
+        errors = []
+        if not name:
+            errors.append('Student name is required.')
+        if not parent_name:
+            errors.append('Parent/guardian name is required.')
+        if not phone:
+            errors.append('A contact phone number is required.')
+
+        photo = request.FILES.get('photo')
+        document = request.FILES.get('document')
+        for f, kinds in ((photo, IMAGE_EXTS), (document, DOC_EXTS)):
+            err = _upload_error(f, kinds)
+            if err:
+                errors.append(err)
+
+        dob = None
+        raw_dob = (request.POST.get('date_of_birth', '') or '').strip()
+        if raw_dob:
+            try:
+                dob = datetime.date.fromisoformat(raw_dob)
+            except ValueError:
+                errors.append('Date of birth is not a valid date.')
+
+        if errors:
+            for e in errors:
+                messages.error(request, e)
+            return render(request, 'admission_apply.html', {
+                'school': school, 'form': request.POST})
+
+        a = Applicant.objects.create(
+            name=name[:120], parent_name=parent_name[:120], phone=phone[:20],
+            class_applied=(request.POST.get('class_applied', '') or '').strip()[:40],
+            email=(request.POST.get('email', '') or '').strip()[:254],
+            gender=(request.POST.get('gender', '') or '').strip()[:10],
+            address=(request.POST.get('address', '') or '').strip()[:255],
+            previous_school=(request.POST.get('previous_school', '') or '').strip()[:140],
+            message=(request.POST.get('message', '') or '').strip()[:2000],
+            date_of_birth=dob, photo=photo, document=document,
+            source='Online', stage='Enquiry')
+        a.ref = 'APP-%s-%04d' % (str(timezone.localdate().year)[-2:], a.id)
+        a.save(update_fields=['ref'])
+        return render(request, 'admission_apply.html',
+                      {'school': school, 'done': True, 'ref': a.ref})
+
+    return render(request, 'admission_apply.html', {'school': school})
+
+
 @login_required
 @role_required('admin')
 def admissions(request):
@@ -2407,6 +2467,17 @@ def admissions(request):
         'enquiry_count': counts['Enquiry'], 'test_count': counts['Test'],
         'offer_count': counts['Offer'], 'enrolled_count': counts['Enrolled'],
     })
+
+
+@login_required
+@role_required('admin')
+def applicant_document(request, pk, kind):
+    """Serve an online applicant's uploaded photo or document to the office."""
+    a = get_object_or_404(Applicant, pk=pk)
+    f = a.photo if kind == 'photo' else a.document
+    if not f:
+        raise Http404('No file uploaded.')
+    return FileResponse(f.open('rb'))
 
 
 def auto_convert_applicant_to_student(a):

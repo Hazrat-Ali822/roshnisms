@@ -23,18 +23,28 @@
 </div>
 </details>
 <div class="card">
-  <div class="sec-head"><h3>Applicants</h3></div>
+  <div class="sec-head"><h3>Applicants</h3><a class="link" href="{% url 'admission_apply' %}" target="_blank">Public application form &rarr;</a></div>
   <div class="table-wrap"><table>
-    <thead><tr><th>Applicant</th><th>Class</th><th>Parent</th><th>Phone</th><th>Stage</th><th class="ta-c">Action</th></tr></thead>
+    <thead><tr><th>Applicant</th><th>Class</th><th>Parent</th><th>Phone</th><th>Source</th><th>Stage</th><th class="ta-c">Action</th></tr></thead>
     <tbody>
     {% for a in applicants %}
       <tr>
-        <td>{{ a.name }}</td><td>{{ a.class_applied }}</td><td>{{ a.parent_name }}</td><td>{{ a.phone }}</td>
+        <td><b style="color:var(--ink)">{{ a.name }}</b>{% if a.ref %}<div class="muted" style="font-size:11px">{{ a.ref }}</div>{% endif %}</td>
+        <td>{{ a.class_applied }}</td><td>{{ a.parent_name }}</td><td>{{ a.phone }}</td>
+        <td>{% if a.source == 'Online' %}<span class="pill pill-info">Online</span>{% else %}<span class="muted">Office</span>{% endif %}
+          {% if a.photo %} <a class="link" href="{% url 'applicant_document' a.id 'photo' %}" target="_blank" style="font-size:11px">Photo</a>{% endif %}
+          {% if a.document %} <a class="link" href="{% url 'applicant_document' a.id 'document' %}" target="_blank" style="font-size:11px">Doc</a>{% endif %}
+        </td>
         <td><span class="pill stage-{{ a.stage|lower }}">{{ a.stage }}</span></td>
         <td class="ta-c">{% if a.stage == 'Enrolled' %}{% if a.converted %}<span class="pill pill-paid">Student &check;</span>{% else %}<a class="act-btn" href="{% url 'applicant_convert' a.id %}">Create student</a>{% endif %}{% else %}<a class="act-btn" href="?advance={{ a.id }}">Advance &rarr;</a>{% endif %}</td>
       </tr>
+      {% if a.source == 'Online' and a.message or a.email or a.previous_school or a.address %}
+      <tr><td colspan="7" class="muted" style="font-size:11.5px;padding-top:0">
+        {% if a.email %}✉ {{ a.email }} &nbsp;{% endif %}{% if a.date_of_birth %}🎂 {{ a.date_of_birth }} &nbsp;{% endif %}{% if a.gender %}{{ a.gender }} &nbsp;{% endif %}{% if a.previous_school %}&middot; Prev: {{ a.previous_school }} &nbsp;{% endif %}{% if a.address %}&middot; {{ a.address }}{% endif %}{% if a.message %}<div>“{{ a.message }}”</div>{% endif %}
+      </td></tr>
+      {% endif %}
     {% empty %}
-      <tr><td colspan="6" class="muted">No applicants yet.</td></tr>
+      <tr><td colspan="7" class="muted">No applicants yet.</td></tr>
     {% endfor %}
     </tbody>
   </table></div>
