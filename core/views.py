@@ -4961,6 +4961,70 @@ def teacher_notes(request):
 
 @login_required
 @role_required('teacher')
+def teacher_analytics(request):
+    """Read-only performance analytics for a teacher's own class + exam:
+    subject-wise average / pass rate / top+low score, and a ranked student
+    list. All numbers come from existing Mark rows — no new data entry."""
+    profile = request.user.profile
+    classes = _teacher_classes(profile)
+    cid = request.GET.get('class')
+    classroom = next((c for c in classes if str(c.id) == str(cid)), None) if cid else None
+    if classroom is None:
+        classroom = classes[0] if classes else None
+    exam, exams = _pick_exam(request)
+    school = School.objects.first()
+    pass_mark = school.pass_mark if school else 40
+    taught = (set(profile.teaching.filter(classroom=classroom)
+                  .values_list('subject', flat=True)) if classroom else set())
+
+    students = list(Student.objects.filter(classroom=classroom)) if classroom else []
+    subj_rows, student_rows = [], []
+    class_avg = class_pass = None
+    if classroom and exam and students:
+        sids = [s.id for s in students]
+        marks = list(Mark.objects.filter(student_id__in=sids, exam=exam)
+                     .select_related('subject', 'student'))
+        # Subject-wise summary.
+        by_subj = {}
+        for m in marks:
+            by_subj.setdefault(m.subject, []).append(m)
+        for subj in sorted(by_subj, key=lambda s: s.name):
+            pcts = [m.percentage for m in by_subj[subj]]
+            subj_rows.append({
+                'subject': subj, 'n': len(pcts), 'mine': subj.name in taught,
+                'avg': round(sum(pcts) / len(pcts)),
+                'pass_pct': round(sum(1 for p in pcts if p >= pass_mark) / len(pcts) * 100),
+                'top': round(max(pcts)), 'low': round(min(pcts)),
+            })
+        # Per-student totals, ranked.
+        agg = {}
+        for m in marks:
+            o, t = agg.get(m.student_id, (0, 0))
+            agg[m.student_id] = (o + m.marks_obtained, t + m.total_marks)
+        for s in students:
+            o, t = agg.get(s.id, (0, 0))
+            if t:
+                student_rows.append({'student': s, 'pct': round(o / t * 100),
+                                     'obtained': o, 'total': t})
+        student_rows.sort(key=lambda r: r['pct'], reverse=True)
+        for i, r in enumerate(student_rows, 1):
+            r['rank'] = i
+        cls_pcts = [r['pct'] for r in student_rows]
+        if cls_pcts:
+            class_avg = round(sum(cls_pcts) / len(cls_pcts))
+            class_pass = round(sum(1 for p in cls_pcts if p >= pass_mark)
+                               / len(cls_pcts) * 100)
+    return render(request, 'teacher_analytics.html', {
+        'role': 'teacher', 'active': 'analytics', 'classes': classes,
+        'classroom': classroom, 'exam': exam, 'exams': exams,
+        'subj_rows': subj_rows, 'student_rows': student_rows,
+        'class_avg': class_avg, 'class_pass': class_pass, 'pass_mark': pass_mark,
+        'graded': len(student_rows), 'total_students': len(students),
+    })
+
+
+@login_required
+@role_required('teacher')
 def my_hr(request):
     """The teacher's own HR view: personal attendance summary, payslips and
     self-service leave requests. Works only if an admin has linked their login

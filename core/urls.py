@@ -27,6 +27,7 @@ urlpatterns = [
     path('teacher/assignments/', views.teacher_assignments, name='teacher_assignments'),
     path('teacher/quizzes/', views.teacher_quizzes, name='teacher_quizzes'),
     path('teacher/notes/', views.teacher_notes, name='teacher_notes'),
+    path('teacher/analytics/', views.teacher_analytics, name='teacher_analytics'),
     path('teacher/timetable/', views.teacher_timetable, name='teacher_timetable'),
     path('teacher/my-hr/', views.my_hr, name='my_hr'),
     path('assignment/<int:pk>/file/', views.assignment_file, name='assignment_file'),
