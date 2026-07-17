@@ -4,6 +4,9 @@
 <div class="welcome no-print"><h1>Fees</h1><p>{% if child %}{{ child.name }} &middot; Class {{ child.classroom }} &middot; month-wise fee details.{% else %}No student linked to this account.{% endif %}</p></div>
 
 {% if child %}
+<div class="bar no-print" style="margin-bottom:16px">
+  <a class="btn-ghost btn-auto" href="{% url 'fee_card' child.id %}">Annual fee card</a>
+</div>
 <div class="stat-grid" style="margin-bottom:16px">
   <div class="card stat"><span class="s-label">Total payable</span><span class="s-val">Rs {{ total_payable }}</span></div>
   <div class="card stat"><span class="s-label">Total paid</span><span class="s-val" style="color:#0B5F4F">Rs {{ total_paid }}</span></div>

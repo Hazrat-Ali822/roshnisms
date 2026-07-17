@@ -1552,6 +1552,49 @@ def receipt_view(request, pk):
 
 
 @login_required
+def fee_card(request, pk):
+    """A printable annual fee statement for one student: every month's challan
+    with billed / paid / balance, plus year totals. Finance/admin see any
+    student; a parent/student sees only their own."""
+    student = get_object_or_404(Student.objects.select_related('classroom'), pk=pk)
+    profile = getattr(request.user, 'profile', None)
+    role = profile.role if profile else None
+    if role not in ('finance', 'admin') and not _owns_student(profile, student.id):
+        return HttpResponseForbidden('You cannot view this fee card.')
+
+    today = timezone.localdate()
+    try:
+        year = int(request.GET.get('year') or today.year)
+    except (ValueError, TypeError):
+        year = today.year
+
+    challans = {c.month: c for c in student.challans.filter(year=year)
+                .prefetch_related('payments', 'lines')}
+    rows = []
+    tot_billed = tot_paid = tot_bal = 0
+    for m in range(1, 13):
+        c = challans.get(m)
+        # "Billed" is the month's OWN net charge — gross minus the arrears rolled
+        # in from earlier months minus concessions. Summing net_payable instead
+        # would double-count each unpaid month (it reappears as next month's
+        # arrears), so the card counts only what each month freshly charges.
+        billed = max(c.gross - c.arrears - c.deductions, 0) if c else 0
+        paid = c.paid if c else 0
+        bal = max(billed - paid, 0)
+        tot_billed += billed
+        tot_paid += paid
+        tot_bal += bal
+        rows.append({'month': FeeChallan.MONTHS[m], 'challan': c,
+                     'billed': billed, 'paid': paid, 'balance': bal})
+    return render(request, 'fee_card.html', {
+        'role': role, 'active': 'fees', 'student': student, 'year': year,
+        'rows': rows, 'tot_billed': tot_billed, 'tot_paid': tot_paid,
+        'tot_bal': tot_bal, 'school': School.objects.first(),
+        'years': [today.year - 2, today.year - 1, today.year, today.year + 1],
+    })
+
+
+@login_required
 @role_required('finance')
 def receipts(request):
     payments = FeePayment.objects.select_related('student').all()

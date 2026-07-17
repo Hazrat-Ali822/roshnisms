@@ -36,6 +36,7 @@ urlpatterns = [
     path('fees/collection/', views.fee_collection, name='fee_collection'),
     path('fees/student/<int:pk>/', views.student_fees, name='student_fees'),
     path('fees/receipt/<int:pk>/', views.receipt_view, name='receipt_view'),
+    path('fees/card/<int:pk>/', views.fee_card, name='fee_card'),
     path('fees/challans/print/', views.challans_bulk, name='challans_bulk'),
     path('fees/receipts/', views.receipts, name='receipts'),
     path('fees/defaulters/', views.defaulters, name='defaulters'),

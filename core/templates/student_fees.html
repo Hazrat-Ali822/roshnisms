@@ -15,6 +15,7 @@
     <input type="hidden" name="action" value="generate">
     <button class="btn-ghost btn-auto" type="submit">+ Generate this month's challan</button>
   </form>
+  <a class="btn-ghost btn-auto" href="{% url 'fee_card' student.id %}">Annual fee card</a>
 </div>
 
 {% if pending_reqs %}
