@@ -69,6 +69,22 @@
   {% endif %}
 </div>
 
+{% if can_edit %}
+<div class="card no-print" style="margin-top:16px">
+  <details class="add-wrap" style="padding:14px 16px">
+    <summary class="add-btn">Update contact details</summary>
+    <form method="post" style="max-width:560px;margin-top:12px">{% csrf_token %}
+      <input type="hidden" name="action" value="update_contact">
+      <div class="frow"><label>Guardian name</label><input name="guardian_name" value="{{ child.guardian_name }}" maxlength="120"></div>
+      <div class="frow"><label>Guardian phone</label><input name="guardian_phone" value="{{ child.guardian_phone }}" maxlength="20"></div>
+      <div class="frow"><label>Address</label><textarea name="address" rows="2" maxlength="255">{{ child.address }}</textarea></div>
+      <button class="btn-primary btn-auto" type="submit">Save contact details</button>
+      <p class="muted" style="font-size:11.5px;margin-top:8px">Only contact details can be changed here. For name, class or admission corrections, please contact the office.</p>
+    </form>
+  </details>
+</div>
+{% endif %}
+
 {% if notes %}
 <div class="card" style="margin-top:16px">
   <div class="sec-head"><h3>Teacher remarks</h3></div>

@@ -4746,6 +4746,23 @@ def my_timetable(request):
 def my_profile(request):
     profile = request.user.profile
     child, _kids = _active_child(request)
+
+    # A parent may self-service the child's CONTACT details (guardian name,
+    # phone, address). Academic/identity fields stay office-only. Students can
+    # view but not edit these.
+    if (request.method == 'POST' and child and profile.role == 'parent'
+            and request.POST.get('action') == 'update_contact'):
+        child.guardian_name = (request.POST.get('guardian_name', '')
+                               or child.guardian_name).strip()[:120]
+        child.guardian_phone = (request.POST.get('guardian_phone', '')
+                                or '').strip()[:20]
+        child.address = (request.POST.get('address', '') or '').strip()[:255]
+        child.save(update_fields=['guardian_name', 'guardian_phone', 'address'])
+        _audit(request, 'Contact details updated',
+               '%s (by parent)' % child.name)
+        messages.success(request, 'Contact details updated.')
+        return redirect('my_profile')
+
     initials = '?'
     age = None
     if child:
@@ -4759,6 +4776,7 @@ def my_profile(request):
     return render(request, 'my_profile.html', {
         'role': profile.role, 'active': 'profile', 'child': child,
         'initials': initials, 'age': age, 'notes': notes,
+        'can_edit': profile.role == 'parent',
     })
 
 
