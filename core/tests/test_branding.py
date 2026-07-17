@@ -22,16 +22,22 @@ class BrandingTests(TestCase):
         self.assertEqual(s.accent_color, '#1F6F3B')
 
     def test_colours_and_name_applied_app_wide(self):
+        # Branding only shows in an explicit tenant context (a school's own
+        # subdomain) — never on the bare SaaS/main host. Resolve the tenant via
+        # its subdomain so the branding context processor kicks in.
         School.objects.filter(pk=self.w.school.pk).update(
-            name='Green Valley School', accent_color='#1F6F3B')
-        html = self.c.get('/').content.decode()
+            name='Green Valley School', accent_color='#1F6F3B',
+            subdomain='greenvalley')
+        html = self.c.get('/', HTTP_HOST='greenvalley.example.com').content.decode()
         self.assertIn('#1F6F3B', html)                 # colour injected
         self.assertIn('Green Valley School', html)     # brand name in sidebar
         self.assertNotIn('Roshni School</b>', html)    # no hardcoded name
 
     def test_login_page_is_branded(self):
-        School.objects.filter(pk=self.w.school.pk).update(name='Green Valley School')
-        html = Client().get('/login/').content.decode()
+        School.objects.filter(pk=self.w.school.pk).update(
+            name='Green Valley School', subdomain='greenvalley')
+        html = Client().get(
+            '/login/', HTTP_HOST='greenvalley.example.com').content.decode()
         self.assertIn('Green Valley School', html)
         self.assertNotIn('roshni123', html)            # demo hint removed
 

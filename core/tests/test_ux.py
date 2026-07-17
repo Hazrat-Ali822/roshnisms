@@ -79,9 +79,12 @@ class PaginationTests(TestCase):
 
 class BrandingTests(TestCase):
     def test_login_page_shows_school_name(self):
+        # Branding is tenant-scoped: reached via the school's own subdomain,
+        # not the bare main/SaaS host (which stays neutral "Roshni SMS").
         School.objects.create(name='Roshni Model School',
-                              primary_color='#123456')
-        html = Client().get('/login/').content.decode()
+                              primary_color='#123456', subdomain='roshnimodel')
+        html = Client().get(
+            '/login/', HTTP_HOST='roshnimodel.example.com').content.decode()
         self.assertIn('Roshni Model School', html)
         self.assertIn('#123456', html)
 
