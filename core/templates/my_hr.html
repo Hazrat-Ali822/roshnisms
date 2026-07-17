@@ -50,5 +50,38 @@
     </tbody>
   </table></div>
 </div>
+
+<div class="card">
+  <div class="sec-head"><h3>My Leave</h3></div>
+  <details class="add-wrap no-print" style="padding:0 16px 12px">
+    <summary class="add-btn">Apply for leave</summary>
+    <div class="card card-pad" style="max-width:620px;margin-top:10px">
+      <form method="post" action="{% url 'my_hr' %}">{% csrf_token %}
+        <div class="row-2x">
+          <div class="frow"><label>From date</label><input type="date" name="from_date" value="{{ today_iso }}" required></div>
+          <div class="frow"><label>To date</label><input type="date" name="to_date" value="{{ today_iso }}" required></div>
+        </div>
+        <div class="frow"><label>Reason</label><textarea name="reason" rows="2" placeholder="e.g. Medical, personal" required></textarea></div>
+        <button class="btn-primary btn-auto" type="submit">Submit request</button>
+      </form>
+    </div>
+  </details>
+  <div class="table-wrap"><table>
+    <thead><tr><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for lv in leaves %}
+      <tr>
+        <td>{{ lv.from_date|date:"d M Y" }}</td>
+        <td>{{ lv.to_date|date:"d M Y" }}</td>
+        <td>{{ lv.days }}</td>
+        <td class="muted">{{ lv.reason }}</td>
+        <td>{% if lv.status == 'Approved' %}<span class="pill pill-paid">Approved</span>{% elif lv.status == 'Rejected' %}<span class="pill pill-overdue">Rejected</span>{% else %}<span class="pill pill-pending">Pending</span>{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="muted" style="text-align:center;padding:18px">No leave requests yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
 {% endif %}
 {% endblock %}

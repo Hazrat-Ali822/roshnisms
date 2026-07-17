@@ -4909,10 +4909,32 @@ def teacher_timetable(request):
 @login_required
 @role_required('teacher')
 def my_hr(request):
-    """The teacher's own HR view: personal attendance summary and payslips.
-    Works only if an admin has linked their login to a Staff record."""
+    """The teacher's own HR view: personal attendance summary, payslips and
+    self-service leave requests. Works only if an admin has linked their login
+    to a Staff record."""
     staff = getattr(request.user, 'staff_record', None)
-    att, payslips = [], []
+
+    if request.method == 'POST' and staff:
+        try:
+            fd = datetime.date.fromisoformat(request.POST.get('from_date', ''))
+            td = datetime.date.fromisoformat(request.POST.get('to_date', ''))
+        except (ValueError, TypeError):
+            messages.error(request, 'Please pick valid from and to dates.')
+            return redirect('my_hr')
+        reason = (request.POST.get('reason', '') or '').strip()
+        if td < fd:
+            messages.error(request, 'The "to" date cannot be before the "from" date.')
+        elif not reason:
+            messages.error(request, 'Please give a reason for the leave.')
+        else:
+            LeaveRequest.objects.create(
+                staff=staff, from_date=fd, to_date=td, reason=reason[:200],
+                applied_by=request.user.get_full_name() or request.user.username)
+            messages.success(request, 'Leave request submitted. The Principal will '
+                             'see it in the approvals queue.')
+        return redirect('my_hr')
+
+    att, payslips, leaves = [], [], []
     summary = {'P': 0, 'A': 0, 'L': 0, 'H': 0}
     if staff:
         att = list(staff.attendance.all()[:60])
@@ -4920,10 +4942,12 @@ def my_hr(request):
             if a.status in summary:
                 summary[a.status] += 1
         payslips = list(staff.payslips.all())
+        leaves = list(staff.leaves.all()[:20])
     marked = summary['P'] + summary['A'] + summary['L'] + summary['H']
     return render(request, 'my_hr.html', {
         'role': 'teacher', 'active': 'myhr', 'staff': staff, 'att': att,
         'summary': summary, 'payslips': payslips, 'marked': marked,
+        'leaves': leaves, 'today_iso': timezone.localdate().isoformat(),
         'att_pct': round(summary['P'] / marked * 100) if marked else 0,
     })
 
