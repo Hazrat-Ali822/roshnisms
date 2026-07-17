@@ -51,6 +51,7 @@
           <a class="nav-item {% if active == 'discipline' %}active{% endif %}" href="{% url 'discipline' %}">Discipline</a>
           <a class="nav-item {% if active == 'staff' or active == 'staff_attendance' or active == 'leave' %}active{% endif %}" href="{% url 'staff_list' %}">Staff</a>
           <a class="nav-item {% if active == 'payroll' %}active{% endif %}" href="{% url 'payroll' %}">Payroll</a>
+          <a class="nav-item {% if active == 'appraisal' %}active{% endif %}" href="{% url 'staff_appraisal' %}">Appraisals</a>
           <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'fee_collection' %}">Fee Collection</a>
           <a class="nav-item {% if active == 'online_payments' %}active{% endif %}" href="{% url 'online_payments' %}">
             Online Payments

@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block heading %}Staff Appraisals{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Staff Appraisals</h1>
+  <p>Record periodic performance reviews and track each staff member's rating over time.</p>
+</div>
+
+<details class="add-wrap no-print" style="margin-bottom:16px">
+  <summary class="add-btn">Record an appraisal</summary>
+  <div class="card card-pad" style="max-width:640px;margin-top:10px">
+    <form method="post">{% csrf_token %}
+      <div class="row-2x">
+        <div class="frow"><label>Staff member</label>
+          <select name="staff_id" required><option value="">- pick -</option>{% for s in staff %}<option value="{{ s.id }}">{{ s.name }}{% if s.designation %} ({{ s.designation }}){% endif %}</option>{% endfor %}</select>
+        </div>
+        <div class="frow"><label>Review period</label><input name="period" placeholder="e.g. 2025-26 or Term 1" required></div>
+        <div class="frow"><label>Overall rating</label>
+          <select name="rating">{% for v, l in ratings %}<option value="{{ v }}" {% if v == 3 %}selected{% endif %}>{{ v }} - {{ l }}</option>{% endfor %}</select>
+        </div>
+      </div>
+      <div class="frow"><label>Strengths</label><textarea name="strengths" rows="2"></textarea></div>
+      <div class="frow"><label>Areas to improve</label><textarea name="improvements" rows="2"></textarea></div>
+      <button class="btn-primary btn-auto" type="submit">Save appraisal</button>
+    </form>
+  </div>
+</details>
+
+<div class="card" style="margin-bottom:16px">
+  <div class="sec-head"><h3>Staff overview</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Staff</th><th>Designation</th><th class="ta-c">Reviews</th><th class="ta-c">Avg rating</th><th>Latest</th></tr></thead>
+    <tbody>
+    {% for r in summary %}
+      <tr>
+        <td><b style="color:var(--ink)">{{ r.staff.name }}</b></td>
+        <td class="muted">{{ r.staff.designation|default:"—" }}</td>
+        <td class="ta-c num">{{ r.count }}</td>
+        <td class="ta-c num">{% if r.avg %}{{ r.avg }}/5{% else %}—{% endif %}</td>
+        <td>{% if r.latest %}<span class="pill {% if r.latest.rating >= 4 %}pill-paid{% elif r.latest.rating == 3 %}pill-info{% else %}pill-overdue{% endif %}">{{ r.latest.rating_label }}</span> <span class="muted">{{ r.latest.period }}</span>{% else %}<span class="muted">No reviews yet</span>{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="muted" style="text-align:center;padding:16px">No active staff.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+<div class="card">
+  <div class="sec-head"><h3>All appraisals</h3></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Staff</th><th>Period</th><th>Rating</th><th>Strengths</th><th>Improve</th><th>Reviewer</th></tr></thead>
+    <tbody>
+    {% for a in appraisals %}
+      <tr>
+        <td>{{ a.created|date:"d M Y" }}</td>
+        <td><b style="color:var(--ink)">{{ a.staff.name }}</b></td>
+        <td>{{ a.period }}</td>
+        <td><span class="pill {% if a.rating >= 4 %}pill-paid{% elif a.rating == 3 %}pill-info{% else %}pill-overdue{% endif %}">{{ a.rating }} - {{ a.rating_label }}</span></td>
+        <td class="muted">{{ a.strengths|truncatechars:60|default:"—" }}</td>
+        <td class="muted">{{ a.improvements|truncatechars:60|default:"—" }}</td>
+        <td class="muted">{{ a.reviewer|default:"—" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="muted" style="text-align:center;padding:16px">No appraisals recorded yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

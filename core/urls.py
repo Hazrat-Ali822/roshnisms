@@ -84,6 +84,7 @@ urlpatterns = [
     path('staff/payroll/', views.payroll, name='payroll'),
     path('staff/payslip/<int:pk>/', views.payslip_pdf, name='payslip_pdf'),
     path('staff/leave/', views.staff_leave, name='staff_leave'),
+    path('staff/appraisal/', views.staff_appraisal, name='staff_appraisal'),
     path('exams/datesheet/', views.exam_datesheet, name='exam_datesheet'),
     path('exams/rooms/', views.exam_rooms, name='exam_rooms'),
     path('exams/seating/', views.exam_seating, name='exam_seating'),

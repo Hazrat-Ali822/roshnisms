@@ -28,7 +28,7 @@ from . import payments
 from .models import (Announcement, Applicant, Assignment, AttendanceRecord, AuditLog,
                      Book, CalendarEvent, Certificate, ChallanLine, ClassRoom,
                      ConcessionRequest,
-                     Complaint, DisciplineRecord,
+                     Appraisal, Complaint, DisciplineRecord,
                      Exam, ExamRoom, ExamSchedule, Expense,
                      FeeChallan, FeeHead, FeePayment, GradeConfig, HostelRoom, InventoryItem, IssuedBook, LeaveRequest,
                      LoginAttempt,
@@ -4371,6 +4371,46 @@ def staff_leave(request):
         'role': 'admin', 'active': 'leave',
         'staff': Staff.objects.filter(active=True),
         'leaves': LeaveRequest.objects.select_related('staff').all(),
+    })
+
+
+@login_required
+@role_required('admin', 'principal')
+def staff_appraisal(request):
+    """Record and review periodic staff performance appraisals."""
+    if request.method == 'POST':
+        s = Staff.objects.filter(pk=_pk(request.POST.get('staff_id'))).first()
+        period = (request.POST.get('period', '') or '').strip()
+        try:
+            rating = int(request.POST.get('rating') or 3)
+        except ValueError:
+            rating = 3
+        rating = max(1, min(5, rating))
+        if s and period:
+            Appraisal.objects.create(
+                staff=s, period=period[:40], rating=rating,
+                strengths=(request.POST.get('strengths', '') or '').strip()[:2000],
+                improvements=(request.POST.get('improvements', '') or '').strip()[:2000],
+                reviewer=request.user.get_full_name() or request.user.username)
+            _audit(request, 'Appraisal recorded', '%s (%s)' % (s.name, period))
+            messages.success(request, 'Appraisal saved for %s.' % s.name)
+        else:
+            messages.error(request, 'Pick a staff member and a review period.')
+        return redirect('staff_appraisal')
+
+    appraisals = list(Appraisal.objects.select_related('staff'))
+    # Latest appraisal + average rating per staff member.
+    summary = []
+    for s in Staff.objects.filter(active=True):
+        aps = [a for a in appraisals if a.staff_id == s.id]
+        latest = aps[0] if aps else None
+        avg = round(sum(a.rating for a in aps) / len(aps), 1) if aps else None
+        summary.append({'staff': s, 'latest': latest, 'avg': avg, 'count': len(aps)})
+    role = request.user.profile.role
+    return render(request, 'staff_appraisal.html', {
+        'role': role, 'active': 'appraisal',
+        'staff': Staff.objects.filter(active=True), 'summary': summary,
+        'appraisals': appraisals, 'ratings': Appraisal.RATINGS,
     })
 
 

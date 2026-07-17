@@ -1131,6 +1131,32 @@ class Payslip(models.Model):
         return '%s - %s' % (self.staff.name, self.label)
 
 
+class Appraisal(models.Model):
+    """A periodic performance appraisal the office records for a staff member:
+    an overall rating plus notes on strengths and areas to improve."""
+    RATINGS = [(5, 'Outstanding'), (4, 'Exceeds expectations'),
+               (3, 'Meets expectations'), (2, 'Needs improvement'),
+               (1, 'Unsatisfactory')]
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE,
+                              related_name='appraisals')
+    period = models.CharField(max_length=40)          # e.g. "2025-26" or "Term 1"
+    rating = models.PositiveSmallIntegerField(choices=RATINGS, default=3)
+    strengths = models.TextField(blank=True)
+    improvements = models.TextField(blank=True)
+    reviewer = models.CharField(max_length=80, blank=True)
+    created = models.DateField(default=datetime.date.today)
+
+    class Meta:
+        ordering = ['-created', '-id']
+
+    @property
+    def rating_label(self):
+        return dict(self.RATINGS).get(self.rating, '')
+
+    def __str__(self):
+        return '%s - %s (%d)' % (self.staff.name, self.period, self.rating)
+
+
 class ExamRoom(models.Model):
     name = models.CharField(max_length=40)
     capacity = models.PositiveIntegerField(default=30)
