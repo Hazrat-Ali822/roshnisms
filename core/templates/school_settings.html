@@ -16,6 +16,8 @@
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
       <div class="frow"><label>Monthly hostel fee (Rs)</label><input type="number" name="hostel_fee" min="0" value="{{ school.hostel_fee }}"></div>
       <div class="frow"><label>Auto late fee (Rs)</label><input type="number" name="late_fee_amount" min="0" value="{{ school.late_fee_amount }}"></div>
+      <div class="frow"><label>Late fee escalation per week (Rs)</label><input type="number" name="late_fee_per_week" min="0" value="{{ school.late_fee_per_week }}"><p class="muted" style="font-size:12px;margin-top:5px">Added for every full week a challan stays overdue. 0 = flat fee.</p></div>
+      <div class="frow"><label>Late fee ceiling (Rs)</label><input type="number" name="late_fee_max" min="0" value="{{ school.late_fee_max }}"><p class="muted" style="font-size:12px;margin-top:5px">Maximum total late fee. 0 = no cap.</p></div>
     </div>
     <div class="frow" style="max-width:280px"><label>Default password for new logins</label><input name="default_password" value="{{ school.default_password }}"><p class="muted" style="font-size:12px;margin-top:5px">New student/parent/staff logins get this password; each person changes it after signing in.</p></div>
     <h3 style="margin:18px 0 12px;font-size:15px">Branding</h3>

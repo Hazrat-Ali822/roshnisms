@@ -9,11 +9,11 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from core.models import FeeChallan, School, Student
-from core.views import _sync_fee_status
+from core.views import _refresh_late_fee, _sync_fee_status
 
 
 class Command(BaseCommand):
-    help = 'Daily: auto late fee on overdue challans + refresh fee statuses.'
+    help = 'Daily: auto/escalating late fee on overdue challans + refresh statuses.'
 
     def handle(self, *args, **options):
         today = timezone.localdate()
@@ -23,9 +23,7 @@ class Command(BaseCommand):
         applied = 0
         if late:
             for ch in FeeChallan.objects.filter(carried_forward=False):
-                if ch.balance > 0 and ch.due_date < today and ch.late_fee == 0:
-                    ch.late_fee = late
-                    ch.save(update_fields=['late_fee'])
+                if _refresh_late_fee(school, ch, today):
                     applied += 1
 
         synced = 0

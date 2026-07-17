@@ -39,8 +39,12 @@ class School(models.Model):
     pass_mark = models.PositiveIntegerField(default=40)
     hostel_fee = models.PositiveIntegerField(default=8000)
     # Automation: late fee auto-applied to an overdue unpaid challan by the
-    # daily job. 0 = do not apply late fees automatically.
-    late_fee_amount = models.PositiveIntegerField(default=0)
+    # daily job. 0 = do not apply late fees automatically. The fee escalates by
+    # `late_fee_per_week` for every full week a challan stays overdue, capped at
+    # `late_fee_max` (0 = no cap).
+    late_fee_amount = models.PositiveIntegerField(default=0)      # base, week 0
+    late_fee_per_week = models.PositiveIntegerField(default=0)    # added per week overdue
+    late_fee_max = models.PositiveIntegerField(default=0)         # ceiling, 0 = none
     # Branding — each school makes the system look like their own.
     logo = models.FileField(upload_to='school/', blank=True, null=True)
     primary_color = models.CharField(max_length=7, default='#15294D')   # headers/sidebar
@@ -855,6 +859,9 @@ class FeeChallan(models.Model):
     scholarship = models.PositiveIntegerField(default=0)
     scholarship_name = models.CharField(max_length=120, blank=True)
     late_fee = models.PositiveIntegerField(default=0)
+    # Set when finance edits the late fee by hand — the daily escalation then
+    # leaves this challan alone (no auto-override of a manual figure/waiver).
+    late_fee_locked = models.BooleanField(default=False)
     due_date = models.DateField(default=datetime.date.today)
     created = models.DateField(auto_now_add=True)
 

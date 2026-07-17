@@ -1260,6 +1260,33 @@ def _sync_fee_status(student):
     student.save(update_fields=['fee_status'])
 
 
+def _escalating_late_fee(school, challan, today):
+    """Expected late fee for an overdue, unpaid challan: a base amount plus a
+    per-week escalation, capped. Returns 0 when late fees are off, the challan
+    is settled, or it isn't overdue yet."""
+    base = school.late_fee_amount if school else 0
+    if not base or challan.balance <= 0 or challan.due_date >= today:
+        return 0
+    weeks = (today - challan.due_date).days // 7
+    fee = base + (school.late_fee_per_week or 0) * weeks
+    cap = school.late_fee_max or 0
+    return min(fee, cap) if cap else fee
+
+
+def _refresh_late_fee(school, challan, today):
+    """Bump an overdue challan's late fee toward its escalating value. Never
+    lowers an existing fee, and skips challans finance has locked by hand.
+    Returns True if it changed the challan."""
+    if challan.late_fee_locked or challan.carried_forward:
+        return False
+    expected = _escalating_late_fee(school, challan, today)
+    if expected > challan.late_fee:
+        challan.late_fee = expected
+        challan.save(update_fields=['late_fee'])
+        return True
+    return False
+
+
 def _record_fee_payment(student, challan, amount, mode, received_by,
                         actor='system', send_alert=True):
     """Create a FeePayment (with receipt number), write the audit trail, notify
@@ -1416,8 +1443,11 @@ def student_fees(request, pk):
                 messages.error(request, 'Enter a scholarship amount greater than zero.')
         elif action == 'late_fee' and challan:
             challan.late_fee = amt('late_fee')
-            challan.save()
-            messages.success(request, 'Late fee updated on %s.' % challan.label)
+            # A hand-set late fee is locked so the daily escalation won't move it.
+            challan.late_fee_locked = True
+            challan.save(update_fields=['late_fee', 'late_fee_locked'])
+            messages.success(request, 'Late fee updated on %s (auto-escalation off '
+                             'for this challan).' % challan.label)
         elif action in ('void_payment', 'refund_payment'):
             # Reverse a recorded payment: 'void' = entered in error, 'refund' =
             # money returned to the parent. Either way the amount stops counting
@@ -3595,6 +3625,16 @@ def school_settings(request):
                 request.POST.get('late_fee_amount') or school.late_fee_amount))
         except ValueError:
             pass
+        try:
+            school.late_fee_per_week = max(0, int(
+                request.POST.get('late_fee_per_week') or school.late_fee_per_week))
+        except ValueError:
+            pass
+        try:
+            school.late_fee_max = max(0, int(
+                request.POST.get('late_fee_max') or school.late_fee_max))
+        except ValueError:
+            pass
 
         def _color(field, current):
             v = (request.POST.get(field, '') or '').strip()
@@ -5731,15 +5771,13 @@ def run_daily_jobs(school, today):
     from .sms import notify
     import datetime
     
-    # 1. Auto-Apply Late Fees
+    # 1. Auto-Apply / escalate Late Fees on overdue, unpaid, unlocked challans.
     if school.late_fee_amount > 0:
-        overdue_challans = FeeChallan.objects.filter(due_date__lt=today, late_fee=0)
-        for ch in overdue_challans:
-            if ch.balance > 0:
-                ch.late_fee = school.late_fee_amount
-                ch.save(update_fields=['late_fee'])
+        for ch in FeeChallan.objects.filter(due_date__lt=today,
+                                            carried_forward=False):
+            if _refresh_late_fee(school, ch, today):
                 _sync_fee_status(ch.student)
-                print(f"[Automation] Applied Rs {school.late_fee_amount} late fee to {ch}")
+                print(f"[Automation] Late fee now Rs {ch.late_fee} on {ch}")
                 
     # 2. Auto-Generate Monthly Challans (Runs on 1st of the month).
     # Use the SAME _make_challan the office uses, so auto-generated challans
