@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block heading %}Messages{% endblock %}
+{% block content %}
+<div class="welcome"><h1>Messages</h1>
+  <p>{% if child %}Talk to {{ child.name }}'s teachers. Messages are seen by the class teachers.{% else %}No student linked to this account.{% endif %}</p>
+</div>
+
+{% if child %}
+<div class="card" style="max-width:760px">
+  <div class="msg-thread" style="padding:14px 16px;max-height:460px;overflow-y:auto;display:flex;flex-direction:column;gap:10px">
+    {% for m in thread %}
+      <div style="align-self:{% if m.sender_id == my_id %}flex-end{% else %}flex-start{% endif %};max-width:78%">
+        <div style="background:{% if m.sender_id == my_id %}var(--accent);color:#fff{% else %}var(--surface-2, #F1F5F9);color:var(--ink){% endif %};padding:9px 12px;border-radius:12px;font-size:13.5px;white-space:pre-wrap">{{ m.body }}</div>
+        <div class="muted" style="font-size:10.5px;margin-top:3px;text-align:{% if m.sender_id == my_id %}right{% else %}left{% endif %}">
+          {% if m.from_family %}You{% else %}{{ m.sender_name|default:"Teacher" }}{% endif %} &middot; {{ m.created|date:"d M, H:i" }}
+        </div>
+      </div>
+    {% empty %}
+      <div class="dempty" style="text-align:center;padding:24px">No messages yet. Start the conversation below.</div>
+    {% endfor %}
+  </div>
+  <form method="post" style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line)">{% csrf_token %}
+    <input name="body" placeholder="Write a message…" required style="flex:1" autocomplete="off">
+    <button class="btn-primary btn-auto" type="submit">Send</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

@@ -407,6 +407,35 @@ class StudentNote(models.Model):
         return '%s: %s (%s)' % (self.student.name, self.kind, self.date)
 
 
+class Message(models.Model):
+    """One message in a per-student thread between the family (parent/student)
+    and the child's teachers. A simple shared conversation scoped to the
+    student — no 1:1 routing — so any teacher of the child's class and the
+    parent can follow it. Unread is tracked per side for the nav badges."""
+    student = models.ForeignKey(
+        Student, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(
+        'Profile', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='sent_messages')
+    sender_name = models.CharField(max_length=80, blank=True)
+    sender_role = models.CharField(max_length=20, blank=True)   # parent/student/teacher
+    body = models.TextField()
+    created = models.DateTimeField(auto_now_add=True)
+    # Unread flags: the side that DIDN'T send starts unread.
+    seen_by_family = models.BooleanField(default=False)   # parent/student has read
+    seen_by_staff = models.BooleanField(default=False)    # a teacher has read
+
+    class Meta:
+        ordering = ['created', 'id']
+
+    @property
+    def from_family(self):
+        return self.sender_role in ('parent', 'student')
+
+    def __str__(self):
+        return '%s -> %s: %.30s' % (self.sender_name, self.student.name, self.body)
+
+
 class Mark(models.Model):
     student = models.ForeignKey(
         Student, on_delete=models.CASCADE, related_name='marks')

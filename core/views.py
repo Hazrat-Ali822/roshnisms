@@ -31,7 +31,7 @@ from .models import (Announcement, Applicant, Assignment, AttendanceRecord, Audi
                      Exam, ExamRoom, ExamSchedule, Expense,
                      FeeChallan, FeeHead, FeePayment, HostelRoom, InventoryItem, IssuedBook, LeaveRequest,
                      LoginAttempt,
-                     Mark, Material, OnlinePayment, Payslip,
+                     Mark, Material, Message, OnlinePayment, Payslip,
                      Profile, Question, Quiz, QuizAttempt, School, Seat, SmsMessage, Staff, StaffAttendance,
                      Student, StudentLeave, StudentNote, Subject, Submission, TeachingAssignment,
                      TimetableSlot, TransportRoute,
@@ -897,6 +897,37 @@ def apply_leave(request):
             messages.success(request, 'Leave request submitted. You will see the '
                              'status here once the office decides.')
     return redirect('my_attendance')
+
+
+@login_required
+@role_required('parent', 'student')
+def parent_messages(request):
+    """The family side of the parent<->teacher thread for the active child.
+    Sending posts to the shared per-student conversation; opening it marks the
+    teachers' replies as read."""
+    child, kids = _active_child(request)
+    profile = request.user.profile
+    if request.method == 'POST' and child:
+        body = (request.POST.get('body', '') or '').strip()
+        if body:
+            Message.objects.create(
+                student=child, sender=profile, sender_role=profile.role,
+                sender_name=request.user.get_full_name() or request.user.username,
+                body=body[:2000], seen_by_family=True, seen_by_staff=False)
+        else:
+            messages.error(request, 'Type a message first.')
+        return redirect('parent_messages')
+
+    thread = []
+    if child:
+        thread = list(child.messages.select_related('sender'))
+        # Opening the thread clears the family's unread teacher replies.
+        (child.messages.filter(seen_by_family=False)
+         .update(seen_by_family=True))
+    return render(request, 'parent_messages.html', {
+        'role': profile.role, 'active': 'messages', 'child': child,
+        'thread': thread, 'my_id': profile.id,
+    })
 
 
 def _report_card_data(student, exam, pass_mark, ranking):
@@ -5120,6 +5151,60 @@ def teacher_notes(request):
         'classroom': classroom, 'students': students, 'notes': notes,
         'kinds': StudentNote.KINDS, 'my_id': profile.id,
         'today_iso': timezone.localdate().isoformat(),
+    })
+
+
+@login_required
+@role_required('teacher')
+def teacher_messages(request):
+    """The teacher side of parent<->teacher threads. Lists students in the
+    teacher's classes with unread counts; opening one shows the conversation
+    and lets the teacher reply. Replies are limited to the teacher's own
+    students (a teacher can't message a class they don't take)."""
+    profile = request.user.profile
+    classes = _teacher_classes(profile)
+    class_ids = [c.id for c in classes]
+    student_qs = Student.objects.filter(classroom_id__in=class_ids,
+                                        graduated=False).select_related('classroom')
+    sid = _pk(request.GET.get('student') or request.POST.get('student'))
+    student = student_qs.filter(pk=sid).first() if sid else None
+
+    if request.method == 'POST' and student:
+        body = (request.POST.get('body', '') or '').strip()
+        if body:
+            Message.objects.create(
+                student=student, sender=profile, sender_role='teacher',
+                sender_name=request.user.get_full_name() or request.user.username,
+                body=body[:2000], seen_by_staff=True, seen_by_family=False)
+        else:
+            messages.error(request, 'Type a message first.')
+        return redirect('%s?student=%s' % (reverse('teacher_messages'), student.id))
+
+    thread = []
+    if student:
+        thread = list(student.messages.select_related('sender'))
+        (student.messages.filter(seen_by_staff=False).update(seen_by_staff=True))
+
+    # Sidebar list: students who have a thread, newest activity first, plus the
+    # unread count per student. Students with no messages are still reachable
+    # via the "start a conversation" picker.
+    unread = {}
+    for m in Message.objects.filter(student__in=student_qs, seen_by_staff=False):
+        unread[m.student_id] = unread.get(m.student_id, 0) + 1
+    with_msgs = (student_qs.filter(messages__isnull=False).distinct()
+                 .order_by('-messages__created'))
+    convo_students = []
+    seen_ids = set()
+    for s in with_msgs:
+        if s.id in seen_ids:
+            continue
+        seen_ids.add(s.id)
+        convo_students.append({'student': s, 'unread': unread.get(s.id, 0)})
+    return render(request, 'teacher_messages.html', {
+        'role': 'teacher', 'active': 'messages', 'classes': classes,
+        'all_students': student_qs.order_by('classroom__name', 'roll_no'),
+        'convo_students': convo_students, 'student': student, 'thread': thread,
+        'my_id': profile.id,
     })
 
 

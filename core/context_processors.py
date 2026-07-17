@@ -56,7 +56,7 @@ def notifications(request):
     badge_counts = {}
     
     # Import inside functions to avoid circular imports
-    from .models import Applicant, LeaveRequest, ConcessionRequest, OnlinePayment, InventoryItem, Submission, Announcement, Student, School
+    from .models import Applicant, LeaveRequest, ConcessionRequest, OnlinePayment, InventoryItem, Submission, Announcement, Student, School, Message
     from django.utils import timezone
     today = timezone.localdate()
     
@@ -142,6 +142,20 @@ def notifications(request):
                     'url_name': 'teacher_assignments',
                     'type': 'warning'
                 })
+        # 2. Unread parent messages across the teacher's classes.
+        class_ids = list(profile.teaching.values_list('classroom_id', flat=True))
+        if profile.classroom_id:
+            class_ids.append(profile.classroom_id)
+        if class_ids:
+            unread_msgs = Message.objects.filter(
+                student__classroom_id__in=class_ids, seen_by_staff=False).count()
+            if unread_msgs > 0:
+                badge_counts['teacher_messages'] = unread_msgs
+                alerts.append({
+                    'text': f'{unread_msgs} new message(s) from parents.',
+                    'url_name': 'teacher_messages',
+                    'type': 'info'
+                })
 
     elif role == 'finance':
         # 1. Online payments to confirm (model stores lowercase 'pending')
@@ -183,6 +197,16 @@ def notifications(request):
                     'text': 'Your fee voucher is overdue. Please pay as soon as possible.',
                     'url_name': 'my_fees',
                     'type': 'danger'
+                })
+            # Unread teacher replies for the active child.
+            unread_msgs = Message.objects.filter(
+                student=student, seen_by_family=False).count()
+            if unread_msgs > 0:
+                badge_counts['parent_messages'] = unread_msgs
+                alerts.append({
+                    'text': f'{unread_msgs} new message(s) from the school.',
+                    'url_name': 'parent_messages',
+                    'type': 'info'
                 })
                 
         # Announcements — only those meant for this audience (never leak a

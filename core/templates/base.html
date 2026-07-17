@@ -111,6 +111,10 @@
           <a class="nav-item {% if active == 'quizzes' %}active{% endif %}" href="{% url 'teacher_quizzes' %}">Quizzes</a>
           <a class="nav-item {% if active == 'notes' %}active{% endif %}" href="{% url 'teacher_notes' %}">Behaviour Notes</a>
           <a class="nav-item {% if active == 'analytics' %}active{% endif %}" href="{% url 'teacher_analytics' %}">Class Analytics</a>
+          <a class="nav-item {% if active == 'messages' %}active{% endif %}" href="{% url 'teacher_messages' %}">
+            Messages
+            {% if badge_counts.teacher_messages %}<span class="badge-pending">{{ badge_counts.teacher_messages }}</span>{% endif %}
+          </a>
           <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'teacher_timetable' %}">My Timetable</a>
           <a class="nav-item {% if active == 'myhr' %}active{% endif %}" href="{% url 'my_hr' %}">My Pay &amp; Attendance</a>
         {% elif role == 'finance' %}
@@ -139,6 +143,10 @@
           <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'my_timetable' %}">Timetable</a>
           <a class="nav-item {% if active == 'datesheet' %}active{% endif %}" href="{% url 'my_datesheet' %}">Datesheet</a>
           <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'my_fees' %}">Fees</a>
+          <a class="nav-item {% if active == 'messages' %}active{% endif %}" href="{% url 'parent_messages' %}">
+            Messages
+            {% if badge_counts.parent_messages %}<span class="badge-pending">{{ badge_counts.parent_messages }}</span>{% endif %}
+          </a>
           <a class="nav-item {% if active == 'profile' %}active{% endif %}" href="{% url 'my_profile' %}">Profile</a>
         {% elif role == 'parent' %}
           <a class="nav-item {% if active == 'subjects' %}active{% endif %}" href="{% url 'my_subjects' %}">Subjects &amp; Materials</a>
@@ -149,6 +157,10 @@
           <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'my_timetable' %}">Timetable</a>
           <a class="nav-item {% if active == 'datesheet' %}active{% endif %}" href="{% url 'my_datesheet' %}">Datesheet</a>
           <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'my_fees' %}">Fees</a>
+          <a class="nav-item {% if active == 'messages' %}active{% endif %}" href="{% url 'parent_messages' %}">
+            Messages
+            {% if badge_counts.parent_messages %}<span class="badge-pending">{{ badge_counts.parent_messages }}</span>{% endif %}
+          </a>
           <a class="nav-item {% if active == 'profile' %}active{% endif %}" href="{% url 'my_profile' %}">Profile</a>
         {% elif role == 'owner' %}
           <a class="nav-item {% if active == 'students' %}active{% endif %}" href="{% url 'owner_students' %}">Students</a>
