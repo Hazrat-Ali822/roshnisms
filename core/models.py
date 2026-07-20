@@ -615,6 +615,19 @@ class OnlinePayment(models.Model):
         return '%s %s Rs%d (%s)' % (self.gateway, self.ref, self.amount, self.status)
 
 
+class PaymentSource(models.Model):
+    """Where an expense's money came from — a cash box or bank account. Lets a
+    school track spending per fund and reconcile against each account."""
+    name = models.CharField(max_length=80)
+    note = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
 class Expense(models.Model):
     CATEGORY_CHOICES = [
         ('Utilities', 'Utilities'), ('Salaries', 'Salaries'),
@@ -625,6 +638,8 @@ class Expense(models.Model):
     amount = models.PositiveIntegerField(default=0)
     date = models.DateField(default=datetime.date.today)
     note = models.CharField(max_length=200, blank=True)
+    source = models.ForeignKey('PaymentSource', on_delete=models.SET_NULL,
+                               null=True, blank=True, related_name='expenses')
 
     class Meta:
         ordering = ['-id']

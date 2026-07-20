@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block heading %}Sessional Attendance{% endblock %}
+{% block content %}
+<div class="welcome no-print"><h1>Sessional Attendance</h1><p>Term-wise attendance summary for a class across the whole academic session.</p></div>
+
+<form method="get" class="bar no-print">
+  <span class="bar-label">Class</span>
+  <select name="class" onchange="this.form.submit()">
+    {% for c in classes %}<option value="{{ c.id }}" {% if classroom and c.id == classroom.id %}selected{% endif %}>{{ c }}</option>{% endfor %}
+  </select>
+  <span class="bar-label">Session</span>
+  <select name="session" onchange="this.form.submit()">
+    {% for s in sessions %}<option value="{{ s }}" {% if s == session %}selected{% endif %}>{{ s }}</option>{% endfor %}
+  </select>
+  {% if rows %}
+  <a class="act-btn ghost" href="?class={{ classroom.id }}&session={{ session }}&export=csv" style="text-decoration:none">Export CSV</a>
+  <button class="act-btn ghost" type="button" onclick="window.print()">Print</button>
+  {% endif %}
+</form>
+
+<div class="card">
+  <div class="sec-head">
+    <h3>{{ classroom }} &middot; {{ session }}</h3>
+    {% if low_count %}<span class="pill pill-overdue">{{ low_count }} below {{ threshold }}%</span>{% endif %}
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Roll</th><th>Student</th><th class="ta-r">Present</th><th class="ta-r">Absent</th><th class="ta-r">Late</th><th class="ta-r">Marked</th><th class="ta-r">%</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr {% if r.low %}style="background:#FBEEEA"{% endif %}>
+        <td class="num">{{ r.s.roll_no }}</td>
+        <td><b style="color:var(--ink)">{{ r.s.name }}</b></td>
+        <td class="ta-r num">{{ r.p }}</td>
+        <td class="ta-r num">{{ r.a }}</td>
+        <td class="ta-r num">{{ r.l }}</td>
+        <td class="ta-r num">{{ r.marked }}</td>
+        <td class="ta-r num">{% if r.pct is None %}&mdash;{% else %}<b {% if r.low %}style="color:#922A1B"{% endif %}>{{ r.pct }}%</b>{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="dempty">No attendance recorded for this class in {{ session }}.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

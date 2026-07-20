@@ -18,8 +18,35 @@
       </select>
     </div>
     <div class="frow"><label>Amount (Rs)</label><input type="number" name="amount" min="0" value="0"></div>
+    <div class="frow"><label>Paid from (source)</label>
+      <select name="source">
+        <option value="">— Unassigned —</option>
+        {% for s in sources %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+      </select>
+    </div>
     <button class="btn-primary btn-auto" type="submit">Add expense</button>
   </form>
+</div>
+
+<div class="card card-pad" style="max-width:560px">
+  <h3 style="margin-bottom:6px">Payment sources</h3>
+  <p class="muted" style="font-size:13px;margin:0 0 14px">Cash boxes or bank accounts money is paid from. Track spending per fund.</p>
+  <form method="post" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add_source">
+    <div class="frow" style="margin-bottom:0;flex:1;min-width:180px"><label>New source</label><input name="name" placeholder="e.g. Main Bank — Meezan"></div>
+    <button class="act-btn" type="submit">Add source</button>
+  </form>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Source</th><th class="ta-r">Spent</th></tr></thead>
+    <tbody>
+    {% for row in source_totals %}
+      <tr><td><b style="color:var(--ink)">{{ row.source.name }}</b></td><td class="ta-r num">Rs {{ row.total }}</td></tr>
+    {% endfor %}
+    {% if unassigned %}<tr><td class="muted">Unassigned</td><td class="ta-r num">Rs {{ unassigned }}</td></tr>{% endif %}
+    {% if not source_totals and not unassigned %}<tr><td colspan="2" class="muted">No sources yet.</td></tr>{% endif %}
+    </tbody>
+  </table></div>
 </div>
 <div class="card">
   <div class="sec-head" style="display:flex; justify-content:space-between; align-items:center;">
@@ -27,12 +54,12 @@
     <button type="button" class="act-btn ghost no-print" onclick="exportTableToCSV('#expenses-table', 'expenses_list.csv')" style="font-size:12.5px; padding:6px 12px; height:auto; min-height:0;">Export to Excel</button>
   </div>
   <div class="table-wrap"><table id="expenses-table">
-    <thead><tr><th>Title</th><th>Category</th><th>Amount</th><th>Date</th></tr></thead>
+    <thead><tr><th>Title</th><th>Category</th><th>Source</th><th>Amount</th><th>Date</th></tr></thead>
     <tbody>
     {% for e in items %}
-      <tr><td>{{ e.title }}</td><td>{{ e.category }}</td><td>Rs {{ e.amount }}</td><td>{{ e.date|date:"d M Y" }}</td></tr>
+      <tr><td>{{ e.title }}</td><td>{{ e.category }}</td><td>{{ e.source.name|default:"&mdash;" }}</td><td>Rs {{ e.amount }}</td><td>{{ e.date|date:"d M Y" }}</td></tr>
     {% empty %}
-      <tr><td colspan="4" class="muted">No expenses recorded.</td></tr>
+      <tr><td colspan="5" class="muted">No expenses recorded.</td></tr>
     {% endfor %}
     </tbody>
   </table></div>

@@ -737,6 +737,70 @@ def attendance_register(request):
     })
 
 
+@login_required
+@role_required('admin', 'principal', 'teacher')
+def attendance_sessional(request):
+    """Sessional (term-wise) attendance summary: each student's present/absent/
+    late totals and overall % across a whole academic session for one class —
+    the consolidated figure inspections and report cards use. Exportable."""
+    profile = request.user.profile
+    if profile.role == 'teacher':
+        classes = _teacher_classes(profile)
+    else:
+        classes = list(ClassRoom.objects.all())
+    sel = request.GET.get('class')
+    classroom = next((c for c in classes if str(c.id) == str(sel)), None)
+    if classroom is None and classes:
+        classroom = classes[0]
+
+    sessions = sorted({s for s in AttendanceRecord.objects.exclude(session='')
+                       .values_list('session', flat=True).distinct()},
+                      reverse=True)
+    cur = _current_session()
+    if cur not in sessions:
+        sessions.insert(0, cur)
+    session = request.GET.get('session') or cur
+
+    students = (list(Student.objects.filter(classroom=classroom, graduated=False)
+                     .order_by('roll_no', 'name')) if classroom else [])
+    rows = []
+    if students:
+        agg = {}
+        for sid, st in (AttendanceRecord.objects.filter(
+                student__in=students, session=session)
+                .values_list('student_id', 'status')):
+            d = agg.setdefault(sid, {'p': 0, 'a': 0, 'l': 0})
+            if st == 'P':
+                d['p'] += 1
+            elif st == 'A':
+                d['a'] += 1
+            elif st == 'L':
+                d['l'] += 1
+        for s in students:
+            d = agg.get(s.id, {'p': 0, 'a': 0, 'l': 0})
+            marked = d['p'] + d['a'] + d['l']
+            pct = round(d['p'] / marked * 100) if marked else None
+            rows.append({'s': s, 'p': d['p'], 'a': d['a'], 'l': d['l'],
+                         'marked': marked, 'pct': pct,
+                         'low': pct is not None and pct < LOW_ATTENDANCE_PCT})
+
+    if request.GET.get('export') == 'csv':
+        header = ['Roll', 'Student', 'Present', 'Absent', 'Late', 'Marked',
+                  'Percent']
+        data = [[r['s'].roll_no, r['s'].name, r['p'], r['a'], r['l'],
+                 r['marked'], '' if r['pct'] is None else r['pct']]
+                for r in rows]
+        return _csv_response('attendance_sessional_%s.csv' % session,
+                             header, data)
+
+    return render(request, 'attendance_sessional.html', {
+        'role': profile.role, 'active': 'sessional', 'classes': classes,
+        'classroom': classroom, 'rows': rows, 'sessions': sessions,
+        'session': session, 'threshold': LOW_ATTENDANCE_PCT,
+        'low_count': sum(1 for r in rows if r['low']),
+    })
+
+
 def _marks_signature(student_ids, subject, exam):
     """A small fingerprint of a class's marks for one subject+exam, used to
     detect concurrent edits by two teachers before overwriting."""
@@ -1968,7 +2032,17 @@ def defaulters(request):
 @login_required
 @role_required('finance')
 def expenses(request):
+    from .models import PaymentSource
     if request.method == 'POST':
+        action = request.POST.get('action', '')
+        if action == 'add_source':
+            name = (request.POST.get('name', '') or '').strip()
+            if name:
+                PaymentSource.objects.get_or_create(
+                    name=name,
+                    defaults={'note': (request.POST.get('note', '') or '').strip()})
+                messages.success(request, 'Payment source added: %s.' % name)
+            return redirect('expenses')
         title = (request.POST.get('title', '') or '').strip()
         if title:
             try:
@@ -1976,15 +2050,29 @@ def expenses(request):
             except ValueError:
                 amount = 0
             category = request.POST.get('category', 'Other')
+            source = PaymentSource.objects.filter(
+                pk=_pk(request.POST.get('source'))).first()
             Expense.objects.create(title=title, category=category,
-                                   amount=amount, date=timezone.localdate())
+                                   amount=amount, date=timezone.localdate(),
+                                   source=source)
             messages.success(request, 'Expense recorded: %s.' % title)
         return redirect('expenses')
 
-    items = Expense.objects.all()
+    items = Expense.objects.select_related('source').all()
     total = sum(e.amount for e in items)
+    sources = list(PaymentSource.objects.all())
+    # Spending per source (plus anything left unassigned).
+    by_source = {s.id: {'source': s, 'total': 0} for s in sources}
+    unassigned = 0
+    for e in items:
+        if e.source_id and e.source_id in by_source:
+            by_source[e.source_id]['total'] += e.amount
+        else:
+            unassigned += e.amount
     return render(request, 'expenses.html', {
         'role': 'finance', 'active': 'expenses', 'items': items, 'total': total,
+        'sources': sources, 'source_totals': list(by_source.values()),
+        'unassigned': unassigned,
     })
 
 

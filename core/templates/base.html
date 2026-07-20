@@ -51,6 +51,7 @@
           <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'timetable_manage' %}">Timetable</a>
           <a class="nav-item {% if active == 'discipline' %}active{% endif %}" href="{% url 'discipline' %}">Discipline</a>
           <a class="nav-item {% if active == 'absent' %}active{% endif %}" href="{% url 'absent_list' %}">Daily Absent List</a>
+          <a class="nav-item {% if active == 'sessional' %}active{% endif %}" href="{% url 'attendance_sessional' %}">Sessional Attendance</a>
           <a class="nav-item {% if active == 'staff' or active == 'staff_attendance' or active == 'leave' %}active{% endif %}" href="{% url 'staff_list' %}">Staff</a>
           <a class="nav-item {% if active == 'payroll' %}active{% endif %}" href="{% url 'payroll' %}">Payroll</a>
           <a class="nav-item {% if active == 'appraisal' %}active{% endif %}" href="{% url 'staff_appraisal' %}">Appraisals</a>
