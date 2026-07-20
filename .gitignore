@@ -12,6 +12,13 @@ __pycache__/
 # Django local database
 db.sqlite3
 
+# Per-install secrets — MUST NEVER be committed. Each install generates its own;
+# back these up alongside the database (losing them logs users out / needs
+# gateway+SMS secrets re-entered, but nothing else breaks).
+.secret_key
+.field_key
+.env
+
 # Media and Static folders
 staticfiles/
 media/
