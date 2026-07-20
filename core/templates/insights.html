@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block heading %}Insights{% endblock %}
+{% block content %}
+<div class="welcome no-print">
+  <h1>Insights &#10024;</h1>
+  <p>Early-warning signals from your own school data &mdash; who needs attention, where fees are stuck, and which subjects are struggling. Session {{ session }}.</p>
+</div>
+
+<div class="stat-grid">
+  <div class="card stat">
+    <div class="s-ic" style="background:#FDE8E8;color:#C0392B"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg></div>
+    <span class="s-label">Students at risk</span><span class="s-val">{{ at_risk_count }}</span>
+  </div>
+  <div class="card stat">
+    <div class="s-ic" style="background:#F6EEDD;color:#B07D17"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+    <span class="s-label">Fee-risk students</span><span class="s-val">{{ fee_count }}</span>
+  </div>
+  <div class="card stat">
+    <div class="s-ic" style="background:#EFEAF8;color:#7A4FB0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M8 16l3-4 3 2 4-6"/></svg></div>
+    <span class="s-label">Weak subjects</span><span class="s-val">{{ weak|length }}</span>
+  </div>
+  <div class="card stat">
+    <div class="s-ic" style="background:#E6EEF8;color:#2C5FA8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5"/></svg></div>
+    <span class="s-label">Active students</span><span class="s-val">{{ total_students }}</span>
+  </div>
+</div>
+
+<p class="muted no-print" style="margin:6px 2px 14px">
+  These signals are computed with simple rules on this school's data &mdash; no internet or external service is used, so they work the same offline. Rules: attendance below {{ low_attendance_pct }}%, a result drop of 10%+ between the last two exams, or a failing result.
+</p>
+
+<!-- At-risk students -->
+<div class="card">
+  <div class="sec-head">
+    <h3>Students needing attention</h3>
+    <span class="pill {% if at_risk_count %}pill-overdue{% else %}pill-paid{% endif %}">{{ at_risk_count }} flagged</span>
+    {% if at_risk %}<a class="act-btn ghost no-print" href="?export=csv" style="text-decoration:none">Export CSV</a>{% endif %}
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Class</th><th>Roll</th><th>Student</th><th>Attendance</th><th>Result</th><th>Why flagged</th></tr></thead>
+    <tbody>
+    {% for r in at_risk %}
+      <tr>
+        <td><b style="color:var(--ink)">{{ r.student.classroom }}</b></td>
+        <td class="num">{{ r.student.roll_no|default:"&mdash;" }}</td>
+        <td>{{ r.student.name }}</td>
+        <td class="num">{% if r.attendance is None %}&mdash;{% else %}{{ r.attendance }}%{% endif %}</td>
+        <td class="num">{% if r.result is None %}&mdash;{% else %}{{ r.result }}%{% endif %}</td>
+        <td>
+          {% for reason in r.reasons %}
+            <span class="pill pill-overdue" style="margin:1px 2px;display:inline-block">{{ reason }}</span>
+          {% endfor %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="dempty">No students are flagged right now. Great going! &#127881;</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+<div class="dash-2col">
+  <!-- Fee risk -->
+  <div class="card">
+    <div class="sec-head">
+      <h3>Fee at risk</h3>
+      <span class="pill {% if fee_count %}pill-overdue{% else %}pill-paid{% endif %}">Rs {{ fee_total }}</span>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Student</th><th>Class</th><th>Outstanding</th></tr></thead>
+      <tbody>
+      {% for r in fee_rows %}
+        <tr>
+          <td>{{ r.student.name }}</td>
+          <td>{{ r.student.classroom }}</td>
+          <td class="num"><b style="color:var(--danger,#c0392b)">Rs {{ r.balance }}</b></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="3" class="dempty">No outstanding balances. &#128077;</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% if fee_count > 30 %}<p class="muted" style="margin:8px 12px">Showing top 30 of {{ fee_count }}.</p>{% endif %}
+  </div>
+
+  <!-- Weak subjects -->
+  <div class="card">
+    <div class="sec-head">
+      <h3>Weak subjects</h3>
+      {% if latest_exam %}<span class="pill">{{ latest_exam.name }}</span>{% endif %}
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Subject</th><th>Class average</th></tr></thead>
+      <tbody>
+      {% for w in weak %}
+        <tr>
+          <td>{{ w.subject }}</td>
+          <td class="num"><b style="color:var(--danger,#c0392b)">{{ w.avg }}%</b></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="2" class="dempty">{% if latest_exam %}No weak subjects &mdash; every subject is above 50%.{% else %}No exam data yet.{% endif %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</div>
+{% endblock %}

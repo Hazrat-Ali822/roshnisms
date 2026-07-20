@@ -842,6 +842,126 @@ def absent_list(request):
     })
 
 
+# --- Insights thresholds (tunable rules — no external AI/API involved) ---
+INSIGHTS_DROP_PTS = 10      # exam-over-exam % drop that flags a student
+INSIGHTS_WEAK_PCT = 50      # a subject's class average below this = weak
+INSIGHTS_FAIL_PCT = 33      # a result below this = failing
+
+
+def _insights_pct_by_student(exam):
+    """{student_id: overall percentage} for one exam, summed across subjects."""
+    agg = {}
+    if not exam:
+        return agg
+    for sid, ob, tot in Mark.objects.filter(exam=exam).values_list(
+            'student_id', 'marks_obtained', 'total_marks'):
+        d = agg.setdefault(sid, [0, 0])
+        d[0] += ob
+        d[1] += tot
+    return {sid: round(o / t * 100) for sid, (o, t) in agg.items() if t}
+
+
+@login_required
+@role_required('admin', 'principal')
+def insights(request):
+    """Rule-based 'Insights' — at-risk students, fee risk and weak subjects,
+    computed entirely from the school's own data with simple rules/statistics.
+    No external AI, API, or internet, so it behaves identically in the offline
+    .exe and the online SaaS. Office-only (admin/principal)."""
+    session = _current_session()
+
+    students = list(Student.objects.filter(graduated=False).select_related('classroom'))
+    sids = [s.id for s in students]
+    id_to_student = {s.id: s for s in students}
+
+    # --- Attendance % this session, per student ---
+    att = {}
+    for sid, status in (AttendanceRecord.objects.filter(
+            student_id__in=sids, session=session)
+            .values_list('student_id', 'status')):
+        d = att.setdefault(sid, {'p': 0, 'm': 0})
+        d['m'] += 1
+        if status == 'P':
+            d['p'] += 1
+
+    # --- Marks trend: the two most recent exams (newest first by -id) ---
+    exams = list(Exam.objects.filter(session=session)[:2])
+    if len(exams) < 2:                      # new/untagged session: fall back
+        exams = list(Exam.objects.all()[:2])
+    latest = exams[0] if exams else None
+    prev = exams[1] if len(exams) > 1 else None
+    latest_pct = _insights_pct_by_student(latest)
+    prev_pct = _insights_pct_by_student(prev)
+
+    # --- At-risk students: attendance drop, result drop, or failing ---
+    at_risk = []
+    for s in students:
+        reasons = []
+        d = att.get(s.id)
+        apct = round(d['p'] / d['m'] * 100) if d and d['m'] else None
+        if apct is not None and apct < LOW_ATTENDANCE_PCT:
+            reasons.append('Attendance %d%%' % apct)
+        lp = latest_pct.get(s.id)
+        pp = prev_pct.get(s.id)
+        drop = None
+        if lp is not None and pp is not None and (pp - lp) >= INSIGHTS_DROP_PTS:
+            drop = pp - lp
+            reasons.append('Result down %d%% (%d%%→%d%%)' % (drop, pp, lp))
+        if lp is not None and lp < INSIGHTS_FAIL_PCT:
+            reasons.append('Failing (%d%%)' % lp)
+        if reasons:
+            at_risk.append({
+                'student': s, 'attendance': apct, 'result': lp, 'drop': drop,
+                'reasons': reasons,
+                # severity: number of flags first, then lower attendance
+                'score': len(reasons) * 1000 + (100 - (apct if apct is not None else 100)),
+            })
+    at_risk.sort(key=lambda r: r['score'], reverse=True)
+
+    # --- Fee risk: students with an outstanding challan balance ---
+    bal_by_student = {}
+    for c in FeeChallan.objects.all():
+        if c.student_id and c.balance > 0:
+            bal_by_student[c.student_id] = bal_by_student.get(c.student_id, 0) + c.balance
+    fee_rows = [{'student': id_to_student[sid], 'balance': bal}
+                for sid, bal in bal_by_student.items() if sid in id_to_student]
+    fee_rows.sort(key=lambda r: r['balance'], reverse=True)
+    fee_total = sum(r['balance'] for r in fee_rows)
+
+    # --- Weak subjects: class average per subject in the latest exam ---
+    weak = []
+    if latest:
+        subj = {}
+        for name, ob, tot in Mark.objects.filter(exam=latest).values_list(
+                'subject__name', 'marks_obtained', 'total_marks'):
+            d = subj.setdefault(name, [0, 0])
+            d[0] += ob
+            d[1] += tot
+        for name, (o, t) in subj.items():
+            avg = round(o / t * 100) if t else 0
+            if avg < INSIGHTS_WEAK_PCT:
+                weak.append({'subject': name, 'avg': avg})
+        weak.sort(key=lambda r: r['avg'])
+
+    if request.GET.get('export') == 'csv':
+        header = ['Class', 'Roll', 'Student', 'Attendance %', 'Result %', 'Flags']
+        data = [[str(r['student'].classroom or ''), r['student'].roll_no,
+                 r['student'].name,
+                 '' if r['attendance'] is None else r['attendance'],
+                 '' if r['result'] is None else r['result'],
+                 '; '.join(r['reasons'])] for r in at_risk]
+        return _csv_response('at_risk_%s.csv' % session, header, data)
+
+    return render(request, 'insights.html', {
+        'role': request.user.profile.role, 'active': 'insights',
+        'session': session, 'latest_exam': latest, 'prev_exam': prev,
+        'at_risk': at_risk[:60], 'at_risk_count': len(at_risk),
+        'fee_rows': fee_rows[:30], 'fee_count': len(fee_rows), 'fee_total': fee_total,
+        'weak': weak, 'total_students': len(students),
+        'low_attendance_pct': LOW_ATTENDANCE_PCT,
+    })
+
+
 @login_required
 @role_required('teacher')
 def marks_entry(request):

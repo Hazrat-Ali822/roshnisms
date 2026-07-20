@@ -9,6 +9,7 @@ urlpatterns = [
     path('attendance/register/', views.attendance_register, name='attendance_register'),
     path('attendance/absent/', views.absent_list, name='absent_list'),
     path('attendance/sessional/', views.attendance_sessional, name='attendance_sessional'),
+    path('insights/', views.insights, name='insights'),
     path('marks/', views.marks_entry, name='marks_entry'),
     path('my-attendance/', views.my_attendance, name='my_attendance'),
     path('my-leave/', views.apply_leave, name='apply_leave'),
