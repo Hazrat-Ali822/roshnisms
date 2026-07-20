@@ -19,6 +19,8 @@
       <p>This is to certify that <b>{{ cert.student.name }}</b> of class <b>{{ cert.student.classroom }}</b> (Admission No. {{ cert.student.admission_no }}) has been a student of good moral character and conduct during the period of study at this institution. We wish him/her success in all future endeavours.</p>
     {% elif cert.cert_type == 'Bonafide' %}
       <p>This is to certify that <b>{{ cert.student.name }}</b>, son/daughter of <b>{{ cert.student.guardian_name }}</b>, is a bonafide student of class <b>{{ cert.student.classroom }}</b> (Admission No. {{ cert.student.admission_no }}) for the session 2025-26. This certificate is issued on request for official purposes.</p>
+    {% elif cert.cert_type == 'Birth' %}
+      <p>This is to certify, according to the school's admission records, that <b>{{ cert.student.name }}</b>, son/daughter of <b>{{ cert.student.father_name|default:cert.student.guardian_name }}</b> (Admission No. {{ cert.student.admission_no }}, class {{ cert.student.classroom }}), was born on <b>{{ cert.student.date_of_birth|date:"d F Y"|default:"__________" }}</b>{% if cert.student.gender %}, gender <b>{{ cert.student.gender }}</b>{% endif %}.{% if cert.student.address %} Resident of {{ cert.student.address }}.{% endif %} This certificate is issued on request for official purposes.</p>
     {% else %}
       <p>This is to certify that <b>{{ cert.student.name }}</b> of class <b>{{ cert.student.classroom }}</b> (Admission No. {{ cert.student.admission_no }}) has paid all tuition and other fees up to date for the session 2025-26. No dues are pending against the student.</p>
     {% endif %}

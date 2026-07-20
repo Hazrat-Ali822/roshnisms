@@ -756,6 +756,7 @@ class Certificate(models.Model):
         ('Leaving', 'Leaving Certificate'),
         ('Character', 'Character Certificate'),
         ('Bonafide', 'Bonafide Certificate'),
+        ('Birth', 'Date of Birth Certificate'),
         ('Fee', 'Fee Certificate'),
     ]
     student = models.ForeignKey(
