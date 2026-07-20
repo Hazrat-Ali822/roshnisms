@@ -749,6 +749,33 @@ def _marks_signature(student_ids, subject, exam):
 
 
 @login_required
+@role_required('admin', 'principal')
+def absent_list(request):
+    """Daily Absent Student List: every student marked absent on a given date,
+    grouped by class — the register Accounts/office run each morning. Exportable."""
+    raw = request.GET.get('date')
+    try:
+        date = datetime.date.fromisoformat(raw) if raw else timezone.localdate()
+    except (ValueError, TypeError):
+        date = timezone.localdate()
+    rows = list(
+        AttendanceRecord.objects.filter(date=date, status='A')
+        .select_related('student', 'student__classroom')
+        .order_by('student__classroom__name', 'student__classroom__section',
+                  'student__name'))
+    if request.GET.get('export') == 'csv':
+        header = ['Class', 'Roll', 'Student', 'Guardian', 'Phone']
+        data = [[str(r.student.classroom or ''), r.student.roll_no,
+                 r.student.name, r.student.guardian_name,
+                 r.student.guardian_phone] for r in rows]
+        return _csv_response('absent_%s.csv' % date.isoformat(), header, data)
+    return render(request, 'absent_list.html', {
+        'role': request.user.profile.role, 'active': 'absent',
+        'date': date.isoformat(), 'rows': rows, 'count': len(rows),
+    })
+
+
+@login_required
 @role_required('teacher')
 def marks_entry(request):
     profile = request.user.profile
