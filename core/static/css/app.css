@@ -1156,5 +1156,39 @@ html,body{max-width:100%;overflow-x:clip}
 .theme-fab .ic-sun{display:none}.theme-fab .ic-moon{display:block}
 [data-theme="dark"] .theme-fab .ic-sun{display:block}[data-theme="dark"] .theme-fab .ic-moon{display:none}
 
+/* ===================================================================
+   PREMIUM LOGIN  —  split-screen (brand hero + sign-in card)
+   =================================================================== */
+.login-split{display:grid;grid-template-columns:1.08fr .92fr;min-height:100vh}
+.login-hero{position:relative;overflow:hidden;padding:56px 52px;color:#fff;
+  background:linear-gradient(155deg,var(--ink) 0%,#0b1830 58%,#081123 100%);
+  display:flex;flex-direction:column;justify-content:space-between;gap:32px}
+.login-hero::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(620px 320px at 82% -12%,color-mix(in srgb,var(--accent) 42%,transparent),transparent 70%),
+            radial-gradient(520px 340px at -12% 112%,color-mix(in srgb,var(--accent) 24%,transparent),transparent 72%)}
+.login-hero > *{position:relative;z-index:1}
+.lh-brand{display:flex;align-items:center;gap:14px}
+.lh-crest{width:54px;height:54px;border-radius:15px;overflow:hidden;flex:0 0 54px;
+  background:linear-gradient(135deg,var(--accent),var(--accent-d));display:grid;place-items:center;
+  color:#fff;font-weight:800;font-size:24px;font-family:'Spectral',serif;box-shadow:0 10px 26px rgba(0,0,0,.4)}
+.lh-crest img{width:100%;height:100%;object-fit:cover}
+.lh-brand b{font-size:19px;font-weight:700;font-family:'Spectral',serif;line-height:1.1;color:#fff}
+.lh-brand span{display:block;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-top:4px}
+.lh-body{max-width:430px}
+.lh-body h1{font-size:34px;line-height:1.16;font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:14px}
+.lh-body p{color:rgba(255,255,255,.72);font-size:15px;line-height:1.6;margin:0}
+.lh-feats{display:flex;flex-direction:column;gap:14px;margin-top:28px}
+.lh-feat{display:flex;align-items:center;gap:13px;color:rgba(255,255,255,.86);font-size:14px;font-weight:500}
+.lh-feat .fi{width:34px;height:34px;border-radius:10px;flex:0 0 34px;display:grid;place-items:center;
+  background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.15);color:#fff}
+.lh-feat .fi svg{width:17px;height:17px}
+.lh-foot{font-size:12px;color:rgba(255,255,255,.5)}
+.login-main{display:grid;place-items:center;padding:40px 24px;background:var(--paper)}
+.login-main .login-card{box-shadow:var(--shadow-lg)}
+@media(max-width:900px){
+  .login-split{grid-template-columns:1fr}
+  .login-hero{display:none}
+}
+
 /* Smooth the theme switch. */
 body,.card,.topbar,.stat,th,td,.frow input,.frow select{transition:background-color .25s ease,border-color .25s ease,color .25s ease}
