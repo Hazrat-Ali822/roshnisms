@@ -149,6 +149,9 @@ class Student(models.Model):
     guardian_phone = models.CharField(max_length=20, blank=True)
     guardian_email = models.EmailField(blank=True)   # for email alerts
     fee_status = models.CharField(max_length=10, choices=FEE_CHOICES, default='Pending')
+    # Advance / credit held for this student (money received ahead of a challan).
+    # Held as a deposit; recognised as fee income only when applied to a challan.
+    credit_balance = models.PositiveIntegerField(default=0)
     custom_fee = models.PositiveIntegerField(default=0)  # 0 = use class monthly_fee
     is_hostel = models.BooleanField(default=False)
     photo = models.FileField(upload_to='students/', blank=True, null=True)
@@ -524,7 +527,8 @@ class GradeConfig(models.Model):
 class FeePayment(models.Model):
     MODE_CHOICES = [
         ('Cash', 'Cash'), ('JazzCash', 'JazzCash'), ('Easypaisa', 'Easypaisa'),
-        ('Bank', 'Bank Transfer'), ('Card', 'Card'),
+        ('Bank', 'Bank Transfer'), ('Card', 'Card'), ('Cheque', 'Cheque'),
+        ('Credit', 'Credit balance'),
     ]
     student = models.ForeignKey(
         Student, on_delete=models.CASCADE, related_name='payments')

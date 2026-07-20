@@ -7,7 +7,17 @@
 <div class="stat-grid" style="margin-bottom:16px">
   <div class="card stat"><span class="s-label">Outstanding</span><span class="s-val" style="color:{% if outstanding %}#922A1B{% else %}#0B5F4F{% endif %}">Rs {{ outstanding }}</span></div>
   <div class="card stat"><span class="s-label">Total paid</span><span class="s-val" style="color:#0B5F4F">Rs {{ total_paid }}</span></div>
+  <div class="card stat"><span class="s-label">Credit balance</span><span class="s-val" style="color:{% if credit_balance %}#0B5F4F{% else %}var(--ink){% endif %}">Rs {{ credit_balance }}</span></div>
   <div class="card stat"><span class="s-label">Challans</span><span class="s-val">{{ challans|length }}</span></div>
+</div>
+
+<div class="card card-pad no-print" style="margin-bottom:16px">
+  <div class="muted" style="font-size:12px;margin-bottom:8px"><b>Advance / credit</b> &mdash; take a deposit now; apply it to any challan later.</div>
+  <form method="post" class="inline-form">{% csrf_token %}
+    <input type="hidden" name="action" value="add_advance">
+    <input name="amount" type="number" min="1" class="mini-select" style="width:120px" placeholder="Rs" required>
+    <button class="act-btn ghost" type="submit">Add advance</button>
+  </form>
 </div>
 
 <div class="bar no-print" style="margin-bottom:16px">
@@ -82,6 +92,13 @@
       <div class="frow" style="margin:0"><label>Mode</label><select name="mode" style="width:140px">{% for v, l in modes %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></div>
       <button class="btn-primary btn-auto" type="submit">Collect payment</button>
     </form>
+    {% if credit_balance %}
+    <form method="post" style="margin-top:8px">{% csrf_token %}
+      <input type="hidden" name="action" value="apply_credit">
+      <input type="hidden" name="challan_id" value="{{ c.id }}">
+      <button class="act-btn ghost" type="submit">Apply credit (Rs {{ credit_balance }} available)</button>
+    </form>
+    {% endif %}
     <p class="muted" style="font-size:11.5px;margin:6px 0 0">For a partial (half now, half later) payment, enter a smaller amount.</p>
     {% endif %}
 

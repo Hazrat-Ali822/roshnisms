@@ -1704,6 +1704,41 @@ def student_fees(request, pk):
             else:
                 messages.error(request, 'That payment could not be reversed '
                                '(already voided/refunded, or not found).')
+        elif action == 'add_advance':
+            # Money received ahead of a challan is HELD as credit (a deposit),
+            # not counted as income until it is applied to a fee.
+            amount = amt('amount')
+            if amount > 0:
+                student.credit_balance = (student.credit_balance or 0) + amount
+                student.save(update_fields=['credit_balance'])
+                _audit(request, 'Advance received',
+                       'Rs %d for %s (credit now Rs %d)'
+                       % (amount, student.name, student.credit_balance))
+                messages.success(request, 'Advance of Rs %d added. Credit balance '
+                                 'is now Rs %d.' % (amount, student.credit_balance))
+            else:
+                messages.error(request, 'Enter an advance amount greater than zero.')
+        elif action == 'apply_credit' and challan:
+            # Settle (part of) a challan from the held credit. Recognised as fee
+            # income now (a receipt is issued) and the credit is drawn down.
+            with transaction.atomic():
+                stu = Student.objects.select_for_update().get(pk=student.id)
+                fresh = FeeChallan.objects.select_for_update().get(pk=challan.id)
+                use = min(stu.credit_balance or 0, fresh.balance)
+                if use <= 0:
+                    messages.error(request, 'No credit available, or nothing due '
+                                   'on this challan.')
+                else:
+                    _record_fee_payment(
+                        stu, fresh, use, mode='Credit',
+                        received_by=request.user.get_full_name() or request.user.username,
+                        actor=request.user.username, send_alert=False)
+                    stu.credit_balance = (stu.credit_balance or 0) - use
+                    stu.save(update_fields=['credit_balance'])
+                    messages.success(request, 'Rs %d of credit applied to %s. '
+                                     'Credit left: Rs %d.'
+                                     % (use, fresh.label, stu.credit_balance))
+                    student = stu
         elif action == 'generate':
             _, made = _make_challan(student, today.year, today.month)
             messages.success(
@@ -1722,7 +1757,9 @@ def student_fees(request, pk):
             challan__student=student, status='Pending').select_related('challan')),
         'outstanding': sum(c.balance for c in challans),
         'total_paid': sum(c.paid for c in challans),
-        'modes': FeePayment.MODE_CHOICES,
+        # 'Credit' is applied via its own button, not chosen as a collect mode.
+        'modes': [(v, l) for v, l in FeePayment.MODE_CHOICES if v != 'Credit'],
+        'credit_balance': student.credit_balance or 0,
     })
 
 
