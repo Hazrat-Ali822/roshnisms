@@ -90,6 +90,7 @@ urlpatterns = [
     path('exams/datesheet/', views.exam_datesheet, name='exam_datesheet'),
     path('exams/rooms/', views.exam_rooms, name='exam_rooms'),
     path('exams/seating/', views.exam_seating, name='exam_seating'),
+    path('exams/roll-slips/', views.roll_slips, name='roll_slips'),
     path('promotion/', views.promotion, name='promotion'),
     path('certificates/', views.certificates, name='certificates'),
     path('id-cards/', views.id_cards, name='id_cards'),

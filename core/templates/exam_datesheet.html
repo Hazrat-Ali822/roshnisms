@@ -7,6 +7,7 @@
   <a class="act-btn" href="{% url 'exam_datesheet' %}{% if exam %}?exam={{ exam.id }}{% endif %}" style="text-decoration:none">Datesheet</a>
   <a class="act-btn ghost" href="{% url 'exam_rooms' %}" style="text-decoration:none">Rooms</a>
   <a class="act-btn ghost" href="{% url 'exam_seating' %}{% if exam %}?exam={{ exam.id }}{% endif %}" style="text-decoration:none">Seating</a>
+  <a class="act-btn ghost" href="{% url 'roll_slips' %}{% if exam %}?exam={{ exam.id }}{% endif %}" style="text-decoration:none">Roll-number slips</a>
 </div>
 
 <div class="card card-pad" style="margin-bottom:16px">

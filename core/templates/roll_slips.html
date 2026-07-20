@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block heading %}Roll-Number Slips{% endblock %}
+{% block content %}
+<div class="welcome no-print"><h1>Roll-Number Slips</h1><p>Printable admit cards — one per student, with the datesheet{% if exam %} and seat, if seating is generated{% endif %}.</p></div>
+
+<form method="get" class="bar no-print">
+  <span class="bar-label">Session</span>
+  <select name="session" onchange="this.form.submit()">
+    {% for s in sessions %}<option value="{{ s }}" {% if s == session %}selected{% endif %}>{{ s }}</option>{% endfor %}
+  </select>
+  <span class="bar-label">Exam</span>
+  <select name="exam" onchange="this.form.submit()">
+    {% for e in exams %}<option value="{{ e.id }}" {% if exam and e.id == exam.id %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
+  </select>
+  <span class="bar-label">Class</span>
+  <select name="class" onchange="this.form.submit()">
+    <option value="">All classes</option>
+    {% for c in classes %}<option value="{{ c.id }}" {% if sel_class and c.id == sel_class.id %}selected{% endif %}>{{ c }}</option>{% endfor %}
+  </select>
+  {% if slips %}<button class="act-btn" type="button" onclick="window.print()">Print all</button>{% endif %}
+</form>
+
+{% if not exam %}
+  <div class="card card-pad"><p class="muted">No exam found for this session. Create one under Exams first.</p></div>
+{% elif not slips %}
+  <div class="card card-pad"><p class="muted">No datesheet yet for <b>{{ exam.name }}</b>. Add exam papers under Exams → Datesheet, then come back.</p></div>
+{% else %}
+  {% for sl in slips %}
+  <div class="rc-page">
+    <div class="card doc" style="max-width:640px;margin:0 auto 18px">
+      <div class="doc-head">
+        <div class="doc-crest">{% if school.logo %}<img src="{% url 'school_logo' %}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:13px">{% else %}{{ school.name|slice:":1"|upper }}{% endif %}</div>
+        <h2>{{ school.name }}</h2>
+        <div class="doc-sub">Roll-Number Slip &middot; {{ exam.name }}{% if exam.session %} &middot; {{ exam.session }}{% endif %}</div>
+      </div>
+      <div class="info-grid">
+        <div class="ig"><span>Student</span><b>{{ sl.student.name }}</b></div>
+        <div class="ig"><span>Roll No</span><b>{{ sl.student.roll_no|default:"&mdash;" }}</b></div>
+        <div class="ig"><span>Class</span><b>{{ sl.student.classroom }}</b></div>
+        <div class="ig"><span>Admission No</span><b>{{ sl.student.admission_no|default:"&mdash;" }}</b></div>
+        <div class="ig"><span>Guardian</span><b>{{ sl.student.guardian_name|default:"&mdash;" }}</b></div>
+        {% if sl.seat %}<div class="ig"><span>Seat</span><b>{{ sl.seat.room.name }} &middot; #{{ sl.seat.seat_no }}</b></div>{% endif %}
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Date</th><th>Paper / Subject</th><th>Time</th></tr></thead>
+        <tbody>
+        {% for p in sl.papers %}
+          <tr><td class="num">{{ p.date }}</td><td><b style="color:var(--ink)">{{ p.subject }}</b></td><td>{{ p.time|default:"&mdash;" }}</td></tr>
+        {% empty %}
+          <tr><td colspan="3" class="dempty">No papers scheduled.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+      <div class="doc-sign" style="padding:22px 30px">
+        <div>Student signature</div>
+        <div>Controller of Examinations</div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+{% endif %}
+{% endblock %}

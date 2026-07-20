@@ -4642,6 +4642,46 @@ def _pick_exam(request):
 
 @login_required
 @role_required('admin')
+def roll_slips(request):
+    """Printable roll-number slips (admit cards) for an exam: one per student
+    with their datesheet and, if seating was generated, their room + seat."""
+    from .models import Seat
+    exam, exams = _pick_exam(request)
+    school = School.objects.first()
+    classes = list(ClassRoom.objects.all())
+    cid = request.GET.get('class')
+    sel_class = (next((c for c in classes if str(c.id) == str(cid)), None)
+                 if cid else None)
+
+    slips = []
+    if exam:
+        sched = list(ExamSchedule.objects.filter(exam=exam)
+                     .select_related('classroom').order_by('date', 'time'))
+        by_class = {}
+        for row in sched:
+            by_class.setdefault(row.classroom_id, []).append(row)
+        seats = {s.student_id: s for s in
+                 Seat.objects.filter(exam=exam).select_related('room')}
+        target = [sel_class] if sel_class else [c for c in classes
+                                                if c.id in by_class]
+        for c in target:
+            if not c:
+                continue
+            papers = by_class.get(c.id, [])
+            for st in (Student.objects.filter(classroom=c, graduated=False)
+                       .order_by('roll_no', 'name')):
+                slips.append({'student': st, 'papers': papers,
+                              'seat': seats.get(st.id)})
+    return render(request, 'roll_slips.html', {
+        'role': 'admin', 'active': 'exams', 'school': school,
+        'exam': exam, 'exams': exams, 'classes': classes,
+        'sel_class': sel_class, 'slips': slips,
+        'session': _current_session(), 'sessions': _exam_sessions(),
+    })
+
+
+@login_required
+@role_required('admin')
 def exam_datesheet(request):
     exam, exams = _pick_exam(request)
     if request.method == 'POST':
