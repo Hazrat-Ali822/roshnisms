@@ -6043,7 +6043,8 @@ def saas_school_add(request):
         admin_username = request.POST.get('admin_username')
         admin_email = request.POST.get('admin_email')
         admin_password = request.POST.get('admin_password')
-        
+
+        from core.crypto import hash_password
         if name and subdomain:
             school = School.objects.create(
                 name=name,
@@ -6053,7 +6054,8 @@ def saas_school_add(request):
                 subscription_active=True,
                 admin_username=admin_username or '',
                 admin_email=admin_email or '',
-                admin_password=admin_password or '',
+                # Store a password HASH, never plaintext.
+                admin_password=hash_password(admin_password),
                 subscription_rate=int(rate)
             )
             
@@ -6088,12 +6090,14 @@ def saas_school_edit(request, pk):
         admin_username = request.POST.get('admin_username')
         admin_email = request.POST.get('admin_email')
         admin_password = request.POST.get('admin_password')
-        
+
+        from core.crypto import hash_password, apply_stored_password
         school.admin_username = admin_username or ''
         school.admin_email = admin_email or ''
         if admin_password:
-            school.admin_password = admin_password
-            
+            # Store a password HASH, never plaintext.
+            school.admin_password = hash_password(admin_password)
+
         school.save()
         
         if admin_username:
@@ -6140,8 +6144,8 @@ def saas_school_edit(request, pk):
                     tenant_school.subscription_active = school.subscription_active
                     tenant_school.admin_username = school.admin_username
                     tenant_school.admin_email = school.admin_email
-                    if admin_password:
-                        tenant_school.admin_password = admin_password
+                    # Keep the tenant copy in sync with the master's stored HASH.
+                    tenant_school.admin_password = school.admin_password
                     tenant_school.subscription_rate = school.subscription_rate
                     tenant_school.save()
                 
@@ -6177,12 +6181,18 @@ def saas_school_edit(request, pk):
                         )
                 else:
                     if not User.objects.filter(username=admin_username).exists():
-                        user = User.objects.create_user(
+                        user = User(
                             username=admin_username,
                             email=admin_email or '',
-                            password=admin_password or 'school123',
                             first_name=school.name
                         )
+                        # Use the plaintext just entered; otherwise fall back to
+                        # the school's stored password HASH (never plaintext).
+                        if admin_password:
+                            user.set_password(admin_password)
+                        else:
+                            apply_stored_password(user, school.admin_password)
+                        user.save()
                         Profile.objects.create(
                             user=user,
                             role='admin',

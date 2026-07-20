@@ -32,6 +32,7 @@ def build_clean_tenant_db(school, *, force=False):
     from django.core.management import call_command
     from django.db import connections
     from django.contrib.auth.models import User
+    from core.crypto import apply_stored_password
     from core.models import Profile, School as TenantSchool
 
     subdomain = school.subdomain or 'default'
@@ -61,9 +62,13 @@ def build_clean_tenant_db(school, *, force=False):
             admin_password=school.admin_password or '',
             subscription_rate=school.subscription_rate or 5000)
         if school.admin_username and school.admin_password:
-            user = User.objects.create_user(
-                username=school.admin_username, email=school.admin_email or '',
-                password=school.admin_password, first_name=school.name)
+            # school.admin_password is a stored password HASH — assign it
+            # directly (apply_stored_password) so the rebuilt admin can log in
+            # with the original password; never re-hash it via create_user.
+            user = User(username=school.admin_username,
+                        email=school.admin_email or '', first_name=school.name)
+            apply_stored_password(user, school.admin_password)
+            user.save()
             Profile.objects.create(user=user, role='admin', school=ts,
                                    must_change_password=False)
     finally:

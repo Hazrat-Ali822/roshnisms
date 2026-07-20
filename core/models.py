@@ -3,6 +3,8 @@ import datetime
 from django.contrib.auth.models import User
 from django.db import models
 
+from core.crypto import EncryptedCharField
+
 
 def grade_for(percentage):
     """Convert a percentage into a letter grade (school's grading scheme)."""
@@ -29,7 +31,9 @@ class School(models.Model):
     campus = models.CharField(max_length=120, default='Main Campus, Lahore')
     session = models.CharField(max_length=20, default='2025-26')
     
-    # SaaS administrator credentials
+    # SaaS administrator credentials. admin_password holds a Django password
+    # HASH (never plaintext); it exists only so a wiped/rebuilt tenant database
+    # can recreate this school's admin login. See core.crypto.apply_stored_password.
     admin_username = models.CharField(max_length=60, blank=True)
     admin_email = models.CharField(max_length=120, blank=True)
     admin_password = models.CharField(max_length=128, blank=True)
@@ -69,7 +73,7 @@ class School(models.Model):
     sms_http_url = models.CharField(max_length=300, blank=True)     # use {to} and {text}
     sms_http_method = models.CharField(max_length=4, default='GET')
     sms_twilio_sid = models.CharField(max_length=80, blank=True)
-    sms_twilio_token = models.CharField(max_length=80, blank=True)
+    sms_twilio_token = EncryptedCharField(max_length=255, blank=True)  # encrypted at rest
     sms_twilio_from = models.CharField(max_length=30, blank=True)
     notify_absent = models.BooleanField(default=True)
     notify_payment = models.BooleanField(default=True)
@@ -88,7 +92,7 @@ class School(models.Model):
     whatsapp_provider = models.CharField(max_length=10, default='twilio',
                                          choices=WA_PROVIDERS)
     whatsapp_from = models.CharField(max_length=30, blank=True)   # twilio WA sender
-    whatsapp_token = models.CharField(max_length=255, blank=True)  # meta access token
+    whatsapp_token = EncryptedCharField(max_length=512, blank=True)  # meta access token, encrypted at rest
     whatsapp_phone_id = models.CharField(max_length=40, blank=True)  # meta phone id
 
     # --- Online fee payments (configurable from the Settings page) ---
@@ -108,11 +112,11 @@ class School(models.Model):
     pay_bank_instructions = models.CharField(max_length=250, blank=True)
     # JazzCash merchant credentials (needed only for a public HTTPS deployment).
     pay_jazzcash_merchant = models.CharField(max_length=40, blank=True)
-    pay_jazzcash_password = models.CharField(max_length=60, blank=True)
-    pay_jazzcash_salt = models.CharField(max_length=80, blank=True)   # integrity salt
+    pay_jazzcash_password = EncryptedCharField(max_length=255, blank=True)  # encrypted at rest
+    pay_jazzcash_salt = EncryptedCharField(max_length=255, blank=True)   # integrity salt, encrypted at rest
     # Easypaisa merchant credentials.
     pay_easypaisa_store = models.CharField(max_length=40, blank=True)
-    pay_easypaisa_hash = models.CharField(max_length=120, blank=True)
+    pay_easypaisa_hash = EncryptedCharField(max_length=300, blank=True)   # encrypted at rest
 
     def __str__(self):
         return self.name

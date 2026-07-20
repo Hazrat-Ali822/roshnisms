@@ -141,3 +141,95 @@ class EmailOrUsernameBackendTests(TestCase):
         user_space = self.backend.authenticate(None, username='   ', password='pass1')
         self.assertIsNone(user_space)
 
+
+# =====================================================================
+# Priority 0 — at-rest credential protection (field encryption + hashing)
+# =====================================================================
+from django.contrib.auth.hashers import identify_hasher   # noqa: E402
+from django.db import connection                            # noqa: E402
+
+from core.crypto import (encrypt, decrypt, hash_password, is_hashed,   # noqa: E402
+                         apply_stored_password)
+from core.models import School                              # noqa: E402
+
+
+class FieldEncryptionTests(TestCase):
+    def test_encrypt_roundtrip_and_tolerance(self):
+        token = encrypt('super-secret')
+        self.assertNotEqual(token, 'super-secret')
+        self.assertTrue(token.startswith('enc::'))
+        self.assertEqual(decrypt(token), 'super-secret')
+        # Legacy plaintext (no prefix) passes through untouched.
+        self.assertEqual(decrypt('legacy-plain'), 'legacy-plain')
+        # Empty stays empty.
+        self.assertEqual(encrypt(''), '')
+        self.assertEqual(decrypt(''), '')
+
+    def test_secret_field_stored_encrypted_read_plaintext(self):
+        s = School.objects.create(
+            name='Enc School', subdomain='encschool',
+            pay_jazzcash_password='jc-pass-123', pay_jazzcash_salt='salt-xyz',
+            whatsapp_token='wa-token-abc', sms_twilio_token='tw-token-999')
+        # Read back via the ORM → decrypted plaintext (what payments/sms use).
+        got = School.objects.get(pk=s.pk)
+        self.assertEqual(got.pay_jazzcash_password, 'jc-pass-123')
+        self.assertEqual(got.pay_jazzcash_salt, 'salt-xyz')
+        self.assertEqual(got.whatsapp_token, 'wa-token-abc')
+        self.assertEqual(got.sms_twilio_token, 'tw-token-999')
+        # The raw database column must NOT contain the plaintext.
+        with connection.cursor() as cur:
+            cur.execute(
+                'SELECT pay_jazzcash_password, whatsapp_token '
+                'FROM core_school WHERE id=%s', [s.pk])
+            raw_jc, raw_wa = cur.fetchone()
+        self.assertNotIn('jc-pass-123', raw_jc or '')
+        self.assertTrue((raw_jc or '').startswith('enc::'))
+        self.assertNotIn('wa-token-abc', raw_wa or '')
+        self.assertTrue((raw_wa or '').startswith('enc::'))
+
+    def test_blank_secret_stays_blank(self):
+        s = School.objects.create(name='Blank', subdomain='blanksec')
+        got = School.objects.get(pk=s.pk)
+        self.assertEqual(got.pay_jazzcash_password, '')
+
+
+class AdminPasswordHashTests(TestCase):
+    def test_hash_password_and_detection(self):
+        h = hash_password('MyPass123')
+        self.assertTrue(is_hashed(h))
+        self.assertNotEqual(h, 'MyPass123')
+        identify_hasher(h)  # must be a recognised Django hash
+        self.assertFalse(is_hashed('plaintextpw'))
+        self.assertEqual(hash_password(''), '')
+
+    def test_apply_stored_password_from_hash(self):
+        """A stored hash assigned to a User authenticates with the original
+        plaintext (exactly what the tenant rebuild does)."""
+        stored = hash_password('SchoolAdmin1')
+        u = User(username='rebuilt_admin')
+        apply_stored_password(u, stored)
+        u.save()
+        self.assertTrue(u.check_password('SchoolAdmin1'))
+
+    def test_apply_stored_password_from_legacy_plaintext(self):
+        u = User(username='legacy_admin')
+        apply_stored_password(u, 'legacyPlain9')   # not a hash
+        u.save()
+        self.assertTrue(u.check_password('legacyPlain9'))
+
+    def test_provisioning_stores_hash_not_plaintext(self):
+        """saas_school_add must never persist the admin password in plaintext."""
+        from django.urls import reverse
+        su = User.objects.create_superuser('root', 'root@x.com', 'rootpw123')
+        c = Client()
+        c.force_login(su)
+        # No admin_username → the school is created but no tenant DB is built,
+        # keeping this a pure unit test of the hashing behaviour.
+        c.post(reverse('saas_school_add'), {
+            'name': 'Hash School', 'subdomain': 'hashschool',
+            'subscription_rate': '5000', 'admin_password': 'PlainSecret1'})
+        s = School.objects.filter(subdomain='hashschool').first()
+        self.assertIsNotNone(s)
+        self.assertNotEqual(s.admin_password, 'PlainSecret1')
+        self.assertTrue(is_hashed(s.admin_password))
+

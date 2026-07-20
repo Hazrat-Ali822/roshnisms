@@ -31,6 +31,35 @@ def _get_secret_key():
 
 SECRET_KEY = _get_secret_key()
 
+
+# --- Field encryption key (for at-rest encryption of gateway/SMS secrets) ---
+# Same zero-setup pattern as SECRET_KEY: use ROSHNI_FIELD_KEY if set, else read/
+# create a stable key file. Keep this file (and .secret_key) safe and BACK IT UP
+# with the database — if it is lost, encrypted secrets (payment/SMS tokens) can
+# no longer be decrypted and must be re-entered in Settings. Nothing else breaks.
+def _get_field_key():
+    env = os.environ.get('ROSHNI_FIELD_KEY')
+    if env:
+        return env
+    key_file = DATA_DIR / '.field_key'
+    if key_file.exists():
+        return key_file.read_text().strip()
+    try:
+        from cryptography.fernet import Fernet
+        key = Fernet.generate_key().decode()
+    except Exception:
+        # cryptography unavailable — encryption is disabled; EncryptedCharField
+        # then stores plaintext (decrypt-tolerant), so the app still runs.
+        return ''
+    try:
+        key_file.write_text(key)
+    except OSError:
+        pass
+    return key
+
+
+FIELD_ENCRYPTION_KEY = _get_field_key()
+
 # DEBUG is ON by default so the app runs out-of-the-box on a local PC / LAN.
 # For an online/public deployment set  ROSHNI_DEBUG=0  (then serve static files
 # and set ROSHNI_ALLOWED_HOSTS).
