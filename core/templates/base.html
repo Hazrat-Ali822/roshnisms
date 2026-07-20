@@ -7,6 +7,12 @@
   <title>{% block title %}{{ brand_name }}{% endblock %}</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Spectral:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260720b">
+  <link rel="manifest" href="{% url 'web_manifest' %}">
+  <meta name="theme-color" content="{{ brand_primary }}">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="{% static 'icons/icon-192.png' %}">
   <style>:root{--ink:{{ brand_primary }};--accent:{{ brand_accent }};--accent-d:{{ brand_accent }}}.badge-pending{display:inline-flex;align-items:center;justify-content:center;background-color:#EF4444;color:white;font-size:11px;font-weight:700;width:18px;height:18px;border-radius:50%;margin-left:auto;}</style>
   <script>(function(){try{if(localStorage.getItem('rs-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -230,6 +236,8 @@
           </select>
         </form>
         {% endif %}
+        <!-- Install app (PWA) — shown only when the browser offers install -->
+        <button type="button" class="act-btn ghost" id="pwaInstallBtn" style="display:none" title="Install this school app">Install app</button>
         <!-- Dark / light theme toggle -->
         <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark / light theme">
           <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -337,6 +345,29 @@ function showToast(message, type) {
     }, 300);
   }, 4000);
 }
+
+// PWA: register the service worker (scoped to this tenant portal) and wire the
+// "Install app" button to the browser's install prompt.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('{% url "service_worker" %}').catch(function(){});
+  });
+}
+var pwaPrompt = null;
+var pwaBtn = document.getElementById('pwaInstallBtn');
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  pwaPrompt = e;
+  if (pwaBtn) pwaBtn.style.display = '';
+});
+if (pwaBtn) {
+  pwaBtn.addEventListener('click', function() {
+    if (!pwaPrompt) return;
+    pwaPrompt.prompt();
+    pwaPrompt.userChoice.finally(function(){ pwaPrompt = null; pwaBtn.style.display = 'none'; });
+  });
+}
+window.addEventListener('appinstalled', function(){ if (pwaBtn) pwaBtn.style.display = 'none'; });
 
 // Dark / light theme toggle — persists choice in localStorage.
 var themeToggleBtn = document.getElementById('themeToggle');

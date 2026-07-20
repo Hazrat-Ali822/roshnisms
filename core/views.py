@@ -5392,6 +5392,108 @@ def raast_qr(request):
     return FileResponse(school.pay_raast_qr.open('rb'))
 
 
+# ------------------------- PWA (installable app) -------------------------
+
+def _abs_static(request, path):
+    """Absolute URL for a static asset (manifest icons must be absolute so they
+    resolve regardless of the tenant path prefix)."""
+    from django.templatetags.static import static
+    u = static(path)
+    if u.startswith('http'):
+        return u
+    if not u.startswith('/'):
+        u = '/' + u
+    return request.build_absolute_uri(u)
+
+
+def web_manifest(request):
+    """Per-school PWA manifest so parents can install the portal as an app.
+    Name/colours follow the tenant's branding; on the main/SaaS domain it stays
+    the neutral Roshni SMS identity."""
+    from django.http import JsonResponse
+    school = School.objects.first()
+    explicit = getattr(request, 'is_explicit_tenant', False)
+    name = (school.name if (explicit and school) else 'Roshni SMS')
+    theme = ((school.primary_color if school else None) or '#15294D')
+    start = request.build_absolute_uri(reverse('dashboard'))
+    data = {
+        'name': name,
+        'short_name': (name[:12] or 'Roshni'),
+        'start_url': start,
+        'scope': start,
+        'display': 'standalone',
+        'orientation': 'portrait',
+        'background_color': '#0B1120',
+        'theme_color': theme,
+        'icons': [
+            {'src': _abs_static(request, 'icons/icon-192.png'),
+             'sizes': '192x192', 'type': 'image/png'},
+            {'src': _abs_static(request, 'icons/icon-512.png'),
+             'sizes': '512x512', 'type': 'image/png'},
+            {'src': _abs_static(request, 'icons/icon-maskable-512.png'),
+             'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'},
+        ],
+    }
+    return JsonResponse(data, content_type='application/manifest+json')
+
+
+def service_worker(request):
+    """Service worker (served at the tenant root so its scope covers the whole
+    portal). Network-first so content is never stale online, with a cached
+    fallback offline; push handlers deliver web-push notifications."""
+    from django.http import HttpResponse
+    js = """
+const CACHE = 'roshni-shell-v2';
+self.addEventListener('install', e => self.skipWaiting());
+self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+
+// Network-first: always fresh when online, fall back to cache offline.
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith((async () => {
+    try {
+      const net = await fetch(e.request);
+      const c = await caches.open(CACHE);
+      c.put(e.request, net.clone());
+      return net;
+    } catch (err) {
+      const cached = await caches.match(e.request);
+      if (cached) return cached;
+      throw err;
+    }
+  })());
+});
+
+// Web push: show the notification the server sent.
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (_) { d = { body: e.data && e.data.text() }; }
+  const title = d.title || 'School update';
+  e.waitUntil(self.registration.showNotification(title, {
+    body: d.body || '',
+    icon: '/static/icons/icon-192.png',
+    badge: '/static/icons/icon-192.png',
+    data: { url: d.url || '/' }
+  }));
+});
+
+// Focus/open the app when a notification is tapped.
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || '/';
+  e.waitUntil((async () => {
+    const all = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of all) { if ('focus' in c) return c.focus(); }
+    if (clients.openWindow) return clients.openWindow(url);
+  })());
+});
+"""
+    resp = HttpResponse(js, content_type='application/javascript')
+    resp['Service-Worker-Allowed'] = '/'
+    resp['Cache-Control'] = 'no-cache'
+    return resp
+
+
 @login_required
 def profile_photo(request, pk):
     """Serve a user's avatar."""
