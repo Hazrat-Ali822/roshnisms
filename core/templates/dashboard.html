@@ -272,7 +272,7 @@
       <div class="card-pad">
         <div class="prog-row"><span>Total payable</span><b>Rs {{ fee_payable }}</b></div>
         <div class="prog-row"><span>Paid so far</span><b style="color:#0B5F4F">Rs {{ fee_paid_total }}</b></div>
-        <div class="prog-row" style="border-top:1px solid var(--line);margin-top:6px;padding-top:9px"><span><b style="color:#15294D">Outstanding</b></span><b style="color:#922A1B;font-size:15px">Rs {{ fee_outstanding }}</b></div>
+        <div class="prog-row" style="border-top:1px solid var(--line);margin-top:6px;padding-top:9px"><span><b style="color:var(--ink)">Outstanding</b></span><b style="color:#922A1B;font-size:15px">Rs {{ fee_outstanding }}</b></div>
         {% if fee_months_pending %}<div class="prog-row"><span>Months pending</span><b>{{ fee_months_pending }}</b></div>{% endif %}
       </div>
     </div>
@@ -355,7 +355,7 @@
     <div class="card-pad">
       <div class="prog-row"><span>Fees collected this month</span><b style="color:#0B5F4F">Rs {{ o_collected }}</b></div>
       <div class="prog-row"><span>Expenses this month</span><b style="color:#922A1B">Rs {{ o_expenses }}</b></div>
-      <div class="prog-row" style="border-top:1px solid var(--line);margin-top:6px;padding-top:9px"><span><b style="color:#15294D">Net this month</b></span><b style="color:{% if o_net >= 0 %}#0B5F4F{% else %}#922A1B{% endif %};font-size:15px">Rs {{ o_net }}</b></div>
+      <div class="prog-row" style="border-top:1px solid var(--line);margin-top:6px;padding-top:9px"><span><b style="color:var(--ink)">Net this month</b></span><b style="color:{% if o_net >= 0 %}#0B5F4F{% else %}#922A1B{% endif %};font-size:15px">Rs {{ o_net }}</b></div>
       <div class="prog-row"><span>Total outstanding (all months)</span><b style="color:#922A1B">Rs {{ o_outstanding }}</b></div>
     </div>
   </div>
@@ -384,7 +384,7 @@
       <div class="card-pad">
         {% for e in o_enrollment %}
           <div style="margin-bottom:13px">
-            <div class="prog-row" style="padding:0 0 5px"><span><b style="color:#15294D">{{ e.room }}</b></span><b>{{ e.count }} student{{ e.count|pluralize }}</b></div>
+            <div class="prog-row" style="padding:0 0 5px"><span><b style="color:var(--ink)">{{ e.room }}</b></span><b>{{ e.count }} student{{ e.count|pluralize }}</b></div>
             <div class="pbar"><span style="width:{{ e.pct }}%"></span></div>
           </div>
         {% empty %}
@@ -538,7 +538,7 @@ document.addEventListener("DOMContentLoaded", function() {
         data: [{% for s in fee_legend %}{{ s.value }},{% endfor %}],
         backgroundColor: [{% for s in fee_legend %}"{{ s.color }}",{% endfor %}],
         borderWidth: 2,
-        borderColor: '#ffffff',
+        borderColor: (getComputedStyle(document.body).getPropertyValue('--surface').trim() || '#ffffff'),
         hoverOffset: 4
       }]
     };
@@ -558,7 +558,7 @@ document.addEventListener("DOMContentLoaded", function() {
         data: [{% for s in o_fin_legend %}{{ s.value }},{% endfor %}],
         backgroundColor: [{% for s in o_fin_legend %}"{{ s.color }}",{% endfor %}],
         borderWidth: 2,
-        borderColor: '#ffffff',
+        borderColor: (getComputedStyle(document.body).getPropertyValue('--surface').trim() || '#ffffff'),
         hoverOffset: 4
       }]
     };
@@ -578,7 +578,7 @@ document.addEventListener("DOMContentLoaded", function() {
         data: [{% for s in p_att_legend %}{{ s.value }},{% endfor %}],
         backgroundColor: [{% for s in p_att_legend %}"{{ s.color }}",{% endfor %}],
         borderWidth: 2,
-        borderColor: '#ffffff',
+        borderColor: (getComputedStyle(document.body).getPropertyValue('--surface').trim() || '#ffffff'),
         hoverOffset: 4
       }]
     };

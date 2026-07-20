@@ -1013,3 +1013,148 @@ html,body{max-width:100%;overflow-x:clip}
   flex-direction: column;
   align-items: center;
 }
+
+/* ===================================================================
+   PREMIUM POLISH  —  refined typography, gradients & micro-details
+   Additive layer that lifts the default look without touching markup.
+   =================================================================== */
+
+/* Gradient wordmark on the dashboard greeting for a premium first look. */
+.welcome h1{
+  background:linear-gradient(90deg,var(--ink),color-mix(in srgb,var(--accent) 65%,var(--ink)));
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+/* Fallback for browsers without background-clip:text (colour stays solid). */
+@supports not (background-clip:text){ .welcome h1{-webkit-text-fill-color:currentColor;color:var(--ink)} }
+
+/* Cards: crisper edge + smoother lift. */
+.card{transition:transform .25s cubic-bezier(.4,0,.2,1),box-shadow .25s ease,border-color .25s ease}
+.stat{transition:transform .25s cubic-bezier(.4,0,.2,1),box-shadow .25s ease}
+.stat:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+.stat .s-ic{box-shadow:0 4px 12px -4px rgba(15,23,42,.18)}
+
+/* Nav active item gets a soft glow + left accent tick. */
+.nav-item.active{position:relative}
+.nav-item.active::before{content:"";position:absolute;left:-12px;top:50%;transform:translateY(-50%);
+  width:3px;height:20px;border-radius:0 4px 4px 0;background:#fff;opacity:.9}
+
+/* Topbar: a hairline gradient underline for depth. */
+.topbar{box-shadow:0 1px 0 rgba(15,23,42,.03)}
+
+/* Buttons: subtle sheen on primary/action buttons. */
+.btn-primary,.act-btn{position:relative;overflow:hidden}
+.btn-primary::after,.act-btn::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.18),transparent 60%);pointer-events:none}
+
+/* Reusable soft "chip" surfaces already themed via vars — nothing to do. */
+
+/* ===================================================================
+   THEME TOGGLE (sun / moon button in the topbar)
+   =================================================================== */
+.theme-toggle{
+  width:38px;height:38px;flex:0 0 38px;border-radius:50%;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  display:grid;place-items:center;cursor:pointer;transition:var(--transition);
+  box-shadow:var(--shadow-sm)}
+.theme-toggle:hover{color:var(--accent);border-color:var(--accent);transform:translateY(-1px)}
+.theme-toggle svg{width:19px;height:19px}
+.theme-toggle .ic-sun{display:none}
+.theme-toggle .ic-moon{display:block}
+[data-theme="dark"] .theme-toggle .ic-sun{display:block}
+[data-theme="dark"] .theme-toggle .ic-moon{display:none}
+
+/* ===================================================================
+   DARK MODE
+   Opt-in via <html data-theme="dark">. We remap the neutral palette
+   (school --accent stays, so branding is preserved) and then patch the
+   handful of surfaces/texts that were hard-coded light in the base sheet.
+   =================================================================== */
+:root[data-theme="dark"]{
+  --ink:#F1F5F9;
+  --paper:#0B1120;
+  --surface:#151D2E;
+  --line:#26314A;
+  --line-strong:#3A4763;
+  --text:#C6D2E3;
+  --muted:#8A97AE;
+  --paid-s:#0F2E26;
+  --pending-s:#33280F;
+  --overdue-s:#3A1D1D;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.45);
+  --shadow-md:0 12px 30px -4px rgba(0,0,0,.55);
+  --shadow-lg:0 20px 50px -8px rgba(0,0,0,.65);
+}
+/* A second, slightly-raised dark surface for inputs & subtle panels. */
+:root[data-theme="dark"]{ --surface-2:#1C2740; }
+
+[data-theme="dark"] body{background:var(--paper);color:var(--text)}
+[data-theme="dark"] .topbar{background:rgba(11,17,32,.82);border-bottom-color:var(--line)}
+
+/* Tables */
+[data-theme="dark"] th{background:var(--surface-2);color:var(--muted)}
+[data-theme="dark"] td{border-bottom-color:var(--line)}
+
+/* Form controls */
+[data-theme="dark"] .frow input,[data-theme="dark"] .frow select,[data-theme="dark"] .frow textarea,
+[data-theme="dark"] .bar input,[data-theme="dark"] .bar select,[data-theme="dark"] .mini-select,
+[data-theme="dark"] .mark-input,[data-theme="dark"] .login-card input{
+  background:var(--surface-2);color:var(--ink);border-color:var(--line-strong)}
+[data-theme="dark"] .frow input::placeholder,[data-theme="dark"] .login-card input::placeholder,
+[data-theme="dark"] .top-search input::placeholder{color:var(--muted)}
+
+/* Soft light panels → dark panels */
+[data-theme="dark"] .hint,[data-theme="dark"] .hint-inline,[data-theme="dark"] .quick,
+[data-theme="dark"] .child-switch,[data-theme="dark"] .top-search,[data-theme="dark"] .notif-header,
+[data-theme="dark"] .rc-foot,[data-theme="dark"] .vch-note,[data-theme="dark"] .prof-empty,
+[data-theme="dark"] .rc-stat,[data-theme="dark"] .rep-stat,[data-theme="dark"] .hamburger,
+[data-theme="dark"] .tt .slot.break,[data-theme="dark"] .cal .cell.off,
+[data-theme="dark"] .att-reg thead .stick{
+  background:var(--surface-2);color:var(--text);border-color:var(--line)}
+
+/* White inner cells (info/report/voucher grids, timetable slots, calendar) */
+[data-theme="dark"] .rc-meta div,[data-theme="dark"] .vch-meta div,[data-theme="dark"] .info-grid .ig,
+[data-theme="dark"] .att-reg .stick,[data-theme="dark"] .tt .slot,[data-theme="dark"] .cal .cell.future,
+[data-theme="dark"] .quick,[data-theme="dark"] .rc-meta div{background:var(--surface)}
+[data-theme="dark"] .rc-meta,[data-theme="dark"] .vch-meta,[data-theme="dark"] .info-grid{background:var(--line)}
+[data-theme="dark"] .tt .slot.subj{background:var(--surface-2)}
+
+/* Text that was hard-coded navy → theme ink */
+[data-theme="dark"] .mat-b b,[data-theme="dark"] .drow-time,[data-theme="dark"] .drow-b b,
+[data-theme="dark"] .notice-top b,[data-theme="dark"] .tt .slot b,[data-theme="dark"] .vch-title b,
+[data-theme="dark"] .quick,[data-theme="dark"] .rc-meta b,[data-theme="dark"] .vch-meta b,
+[data-theme="dark"] .info-grid b,[data-theme="dark"] .rc-foot .big,[data-theme="dark"] .tclass-top b,
+[data-theme="dark"] .rc-head h2,[data-theme="dark"] .vch-title b,[data-theme="dark"] .rv,
+[data-theme="dark"] .rc-v,[data-theme="dark"] .drow-time{color:var(--ink)}
+
+/* Notification bell button */
+[data-theme="dark"] .notif-bell-btn{color:var(--ink)}
+[data-theme="dark"] .notif-bell-btn:hover{background:rgba(255,255,255,.06)}
+
+/* Toasts (info variant used a light gradient) */
+[data-theme="dark"] .toast-info{background:linear-gradient(90deg,var(--surface-2) 0%,var(--surface) 100%)}
+
+/* Empty-state & misc paper chips */
+[data-theme="dark"] .empty-state .es-icon,[data-theme="dark"] .rc-stat,
+[data-theme="dark"] .shot{background:var(--surface-2);border-color:var(--line)}
+
+/* Keep the branded gradient wordmark readable in dark. */
+[data-theme="dark"] .welcome h1{
+  background:linear-gradient(90deg,#fff,color-mix(in srgb,var(--accent) 75%,#fff));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+
+/* Login card in dark mode */
+[data-theme="dark"] .login-card{background:var(--surface);color:var(--text)}
+[data-theme="dark"] .login-card p{color:var(--muted)}
+
+/* Floating theme toggle for standalone pages (login / public). */
+.theme-fab{position:fixed;top:18px;right:18px;z-index:50;width:40px;height:40px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.10);color:#fff;
+  display:grid;place-items:center;cursor:pointer;backdrop-filter:blur(6px);transition:var(--transition)}
+.theme-fab:hover{background:rgba(255,255,255,.18)}
+.theme-fab svg{width:19px;height:19px}
+.theme-fab .ic-sun{display:none}.theme-fab .ic-moon{display:block}
+[data-theme="dark"] .theme-fab .ic-sun{display:block}[data-theme="dark"] .theme-fab .ic-moon{display:none}
+
+/* Smooth the theme switch. */
+body,.card,.topbar,.stat,th,td,.frow input,.frow select{transition:background-color .25s ease,border-color .25s ease,color .25s ease}

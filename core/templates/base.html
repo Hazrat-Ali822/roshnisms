@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Spectral:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <style>:root{--ink:{{ brand_primary }};--accent:{{ brand_accent }};--accent-d:{{ brand_accent }}}.badge-pending{display:inline-flex;align-items:center;justify-content:center;background-color:#EF4444;color:white;font-size:11px;font-weight:700;width:18px;height:18px;border-radius:50%;margin-left:auto;}</style>
+  <script>(function(){try{if(localStorage.getItem('rs-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   {% block head %}{% endblock %}
 </head>
@@ -227,6 +228,11 @@
           </select>
         </form>
         {% endif %}
+        <!-- Dark / light theme toggle -->
+        <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark / light theme">
+          <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
+        </button>
         <!-- Notification Bell Dropdown -->
         {% if user.is_authenticated %}
         <div class="notif-dropdown-container">
@@ -328,6 +334,25 @@ function showToast(message, type) {
       toast.remove();
     }, 300);
   }, 4000);
+}
+
+// Dark / light theme toggle — persists choice in localStorage.
+var themeToggleBtn = document.getElementById('themeToggle');
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener('click', function() {
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (isDark) {
+      document.documentElement.removeAttribute('data-theme');
+      try { localStorage.setItem('rs-theme', 'light'); } catch (e) {}
+    } else {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      try { localStorage.setItem('rs-theme', 'dark'); } catch (e) {}
+    }
+    // Let charts (or anything listening) re-colour to the new theme.
+    document.dispatchEvent(new CustomEvent('themechange', {
+      detail: { dark: !isDark }
+    }));
+  });
 }
 
 // Toggle Notification Dropdown

@@ -8,8 +8,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Spectral:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <style>:root{--ink:{{ brand_primary }};--accent:{{ brand_accent }};--accent-d:{{ brand_accent }}}</style>
+  <script>(function(){try{if(localStorage.getItem('rs-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
 </head>
 <body class="login-page">
+  <button type="button" class="theme-fab" id="themeFab" aria-label="Toggle dark mode" title="Toggle dark / light theme">
+    <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
+  </button>
   <div class="login-card">
     <div class="lc-crest">{% if brand_logo %}<img src="{% url 'school_logo' %}" alt="{{ brand_name }}">{% else %}{{ brand_name|slice:":1"|upper }}{% endif %}</div>
     <h3>{{ brand_name }}</h3>
@@ -42,6 +47,15 @@
     </div>
   </div>
 <script>
+// Floating theme toggle (persists in localStorage, shared with the app).
+var themeFab = document.getElementById('themeFab');
+if (themeFab) {
+  themeFab.addEventListener('click', function() {
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (isDark) { document.documentElement.removeAttribute('data-theme'); try { localStorage.setItem('rs-theme','light'); } catch(e){} }
+    else { document.documentElement.setAttribute('data-theme','dark'); try { localStorage.setItem('rs-theme','dark'); } catch(e){} }
+  });
+}
 document.querySelectorAll('input[type=password]').forEach(function(inp){
   var wrap=document.createElement('span');wrap.className='pw-wrap';
   inp.parentNode.insertBefore(wrap,inp);wrap.appendChild(inp);
