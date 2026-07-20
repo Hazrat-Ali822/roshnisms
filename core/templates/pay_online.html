@@ -21,7 +21,7 @@
       {% for code, label in gateways %}
         <label class="qopt" style="display:block">
           <input type="radio" name="gateway" value="{{ code }}" {% if forloop.first %}checked{% endif %} onchange="payMethod()">
-          {{ label }}{% if code == 'bank' %} — transfer to the school account{% else %} — pay from your mobile wallet{% endif %}
+          {{ label }}{% if code == 'bank' %} — transfer to the school account{% elif code == 'raast' %} — scan the QR from any banking app{% else %} — pay from your mobile wallet{% endif %}
         </label>
       {% endfor %}
     </div>
@@ -52,6 +52,33 @@
     </div>
     {% endif %}
 
+    {% if has_raast %}
+    <div id="raastblock" class="card" style="background:#F7F9FB;padding:15px;margin-bottom:14px;display:none">
+      <b style="color:var(--ink)">Pay with RAAST QR</b>
+      <p class="muted" style="margin:6px 0 12px;font-size:12.5px">Open any banking app, choose “Scan QR / RAAST”, scan the code below, and pay <b>Rs {{ balance }}</b>.</p>
+      {% if raast.has_qr %}
+      <div style="text-align:center;margin-bottom:12px">
+        <img src="{% url 'raast_qr' %}" alt="RAAST QR" style="width:200px;max-width:70%;height:auto;border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px">
+      </div>
+      {% endif %}
+      {% if raast.id %}<div class="info-grid" style="margin-bottom:6px"><div class="ig"><span>RAAST ID / alias</span><b>{{ raast.id }}</b></div></div>{% endif %}
+      {% if raast.instructions %}<p class="muted" style="margin:8px 0 0;font-size:12.5px">{{ raast.instructions }}</p>{% endif %}
+      <div class="frow" style="margin-top:14px">
+        <label>RAAST transaction reference / ID</label>
+        <input type="text" name="raast_ref" placeholder="the transaction ID your banking app shows">
+      </div>
+      <div class="frow">
+        <label>Note (optional)</label>
+        <input type="text" name="note" placeholder="anything the office should know">
+      </div>
+      <div class="frow">
+        <label>Proof of payment (optional screenshot)</label>
+        <input type="file" name="proof" accept="image/*">
+      </div>
+      <p class="muted" style="font-size:12px;margin:0">After you submit, the office verifies your payment and marks the fee paid. You will see it under Payment history.</p>
+    </div>
+    {% endif %}
+
     <button class="btn-primary btn-auto" type="submit">Continue</button>
     <a class="act-btn ghost" href="{% url 'my_fees' %}" style="margin-left:8px;text-decoration:none">Cancel</a>
   </form>
@@ -59,10 +86,12 @@
 
 <script>
 function payMethod(){
-  var block=document.getElementById('bankblock');
-  if(!block)return;
   var sel=document.querySelector('input[name=gateway]:checked');
-  block.style.display=(sel&&sel.value==='bank')?'block':'none';
+  var val=sel?sel.value:'';
+  var bank=document.getElementById('bankblock');
+  var raast=document.getElementById('raastblock');
+  if(bank)bank.style.display=(val==='bank')?'block':'none';
+  if(raast)raast.style.display=(val==='raast')?'block':'none';
 }
 payMethod();
 </script>

@@ -38,6 +38,12 @@ def _bank_configured(school):
     return bool(school.pay_bank_account or school.pay_bank_iban)
 
 
+def _raast_configured(school):
+    # Ready once the school has provided either a scannable QR image or a
+    # RAAST ID / alias a parent can pay to from any banking app.
+    return bool(school.pay_raast_qr or school.pay_raast_id)
+
+
 def _jazzcash_configured(school):
     return bool(school.pay_jazzcash_merchant and school.pay_jazzcash_password
                 and school.pay_jazzcash_salt)
@@ -58,6 +64,8 @@ def available_gateways(school):
     out = []
     if school.pay_bank_enabled and _bank_configured(school):
         out.append(('bank', 'Bank transfer'))
+    if school.pay_raast_enabled and _raast_configured(school):
+        out.append(('raast', 'RAAST QR'))
     if school.pay_jazzcash_enabled and _jazzcash_configured(school):
         out.append(('jazzcash', 'JazzCash'))
     if school.pay_easypaisa_enabled and _easypaisa_configured(school):
@@ -75,6 +83,15 @@ def bank_details(school):
         'bank': school.pay_bank_name, 'title': school.pay_bank_title,
         'account': school.pay_bank_account, 'iban': school.pay_bank_iban,
         'instructions': school.pay_bank_instructions,
+    }
+
+
+def raast_details(school):
+    """The RAAST info shown to a parent: a scannable QR and/or a RAAST ID."""
+    return {
+        'id': school.pay_raast_id,
+        'has_qr': bool(school.pay_raast_qr),
+        'instructions': school.pay_raast_instructions,
     }
 
 

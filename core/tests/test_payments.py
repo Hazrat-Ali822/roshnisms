@@ -133,6 +133,62 @@ class BankTransferFlowTests(TestCase):
         self.assertEqual(r.status_code, 302)
 
 
+class RaastFlowTests(TestCase):
+    """RAAST QR (static merchant QR): offered when configured, and paid through
+    the same offline submit -> Accounts verify -> recorded flow as a bank
+    transfer, with no payment API."""
+    def setUp(self):
+        self.w = build_world()
+        self.s = self.w.school
+        self.s.online_payments_enabled = True
+        self.s.pay_raast_enabled = True
+        self.s.pay_raast_id = '03001234567'   # RAAST alias — enough to configure
+        self.s.save()
+        self.challan = _challan(self.w.ayaan, 5000)
+
+    def _parent(self):
+        c = Client()
+        c.login(username='parent1', password=PASSWORD)
+        return c
+
+    def test_raast_needs_qr_or_id(self):
+        self.s.pay_raast_id = ''
+        self.s.save()
+        self.assertNotIn('raast', [c for c, _ in payments.available_gateways(self.s)])
+        self.s.pay_raast_id = '03001234567'
+        self.s.save()
+        self.assertIn('raast', [c for c, _ in payments.available_gateways(self.s)])
+
+    def test_raast_off_when_disabled(self):
+        self.s.pay_raast_enabled = False
+        self.s.save()
+        self.assertNotIn('raast', [c for c, _ in payments.available_gateways(self.s)])
+
+    def test_parent_submits_raast_creates_pending(self):
+        c = self._parent()
+        r = c.post('/my-fees/pay/%d/' % self.challan.id,
+                   {'gateway': 'raast', 'amount': '5000', 'raast_ref': 'RST-777'})
+        self.assertEqual(r.status_code, 302)
+        intent = OnlinePayment.objects.get(challan=self.challan)
+        self.assertEqual(intent.gateway, 'raast')
+        self.assertEqual(intent.status, 'pending')
+        self.assertEqual(intent.gateway_ref, 'RST-777')
+        self.assertFalse(FeePayment.objects.filter(student=self.w.ayaan).exists())
+
+    def test_accounts_verify_records_raast_payment(self):
+        c = self._parent()
+        c.post('/my-fees/pay/%d/' % self.challan.id,
+               {'gateway': 'raast', 'amount': '5000', 'raast_ref': 'RST-1'})
+        intent = OnlinePayment.objects.get(challan=self.challan)
+        fin = Client(); fin.login(username='finance1', password=PASSWORD)
+        fin.post('/fees/online/', {'intent_id': intent.id, 'action': 'approve'})
+        intent.refresh_from_db()
+        self.assertEqual(intent.status, 'paid')
+        self.assertEqual(intent.payment.mode, 'RAAST')
+        self.challan.refresh_from_db()
+        self.assertEqual(self.challan.balance, 0)
+
+
 class GatewayHashTests(TestCase):
     def setUp(self):
         self.w = build_world()

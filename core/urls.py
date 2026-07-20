@@ -23,6 +23,7 @@ urlpatterns = [
     path('my-profile/', views.my_profile, name='my_profile'),
     path('student-photo/<int:pk>/', views.student_photo, name='student_photo'),
     path('school-logo/', views.school_logo, name='school_logo'),
+    path('raast-qr/', views.raast_qr, name='raast_qr'),
     path('profile-photo/<int:pk>/', views.profile_photo, name='profile_photo'),
     path('account/', views.account, name='account'),
     path('material/<int:pk>/download/', views.material_download, name='material_download'),

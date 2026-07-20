@@ -175,7 +175,7 @@
 <div class="card card-pad" style="max-width:640px;margin-top:20px">
   <h3 style="margin-bottom:6px">Online fee payments</h3>
   <p class="muted" style="font-size:13px;margin:0 0 14px">Let parents pay fees online. <b>Bank transfer</b> works on any setup: parents send money to your account and submit the reference, which Accounts verifies. <b>JazzCash / Easypaisa</b> need a merchant account and a public (internet) HTTPS deployment &mdash; leave them off for LAN use.</p>
-  <form method="post">{% csrf_token %}
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
     <input type="hidden" name="pay_action" value="save_payments">
     <label style="display:block;font-size:13.5px;margin-bottom:12px;text-transform:none;letter-spacing:0"><input type="checkbox" name="online_payments_enabled" {% if school.online_payments_enabled %}checked{% endif %}> <b>Turn online payments on</b> (shows a “Pay online” button to parents)</label>
 
@@ -188,6 +188,22 @@
         <div class="frow"><label>IBAN</label><input name="pay_bank_iban" value="{{ school.pay_bank_iban }}" placeholder="PK.."></div>
       </div>
       <div class="frow"><label>Instructions for parents (optional)</label><input name="pay_bank_instructions" value="{{ school.pay_bank_instructions }}" placeholder="e.g. write the student name in the transfer remarks"></div>
+    </div>
+
+    <div style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px">
+      <label style="display:block;font-size:13.5px;margin-bottom:8px;text-transform:none;letter-spacing:0"><input type="checkbox" name="pay_raast_enabled" {% if school.pay_raast_enabled %}checked{% endif %}> <b>RAAST QR</b> (recommended — no merchant account or API needed)</label>
+      <p class="muted" style="font-size:12px;margin:0 0 10px">Get your school's RAAST/merchant QR from your bank or banking app, then upload the QR image here. Parents scan it in any banking app to pay; Accounts verifies the reference — just like a bank transfer.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+        <div class="frow"><label>RAAST ID / alias (optional)</label><input name="pay_raast_id" value="{{ school.pay_raast_id }}" placeholder="e.g. registered mobile no. or IBAN"></div>
+        <div class="frow"><label>QR image (PNG/JPG)</label><input type="file" name="pay_raast_qr" accept="image/*"></div>
+      </div>
+      {% if school.pay_raast_qr %}
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+        <img src="{% url 'raast_qr' %}" alt="RAAST QR" style="width:84px;height:84px;object-fit:contain;border:1px solid var(--line);border-radius:8px;background:#fff;padding:4px">
+        <label style="font-size:12.5px;text-transform:none;letter-spacing:0"><input type="checkbox" name="pay_raast_qr_clear"> Remove current QR</label>
+      </div>
+      {% endif %}
+      <div class="frow"><label>Instructions for parents (optional)</label><input name="pay_raast_instructions" value="{{ school.pay_raast_instructions }}" placeholder="e.g. write the student name in the payment remarks"></div>
     </div>
 
     <div style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px">

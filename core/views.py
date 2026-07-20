@@ -2316,7 +2316,7 @@ def my_fee_voucher(request, pk):
 
 def _gateway_mode(gateway):
     """Map a gateway code to the FeePayment.mode label used on receipts."""
-    return {'bank': 'Bank', 'jazzcash': 'JazzCash',
+    return {'bank': 'Bank', 'raast': 'RAAST', 'jazzcash': 'JazzCash',
             'easypaisa': 'Easypaisa'}.get(gateway, 'Card')
 
 
@@ -2360,24 +2360,27 @@ def pay_online(request, pk):
         intent.ref = payments.make_reference(intent.id)
         intent.save(update_fields=['ref'])
 
-        if gateway == 'bank':
-            # Manual transfer: the parent tells us the bank reference; Accounts
-            # will match it against the bank statement and confirm.
+        if gateway in ('bank', 'raast'):
+            # Offline-verify methods: the parent tells us the transfer/RAAST
+            # transaction reference; Accounts matches it against the bank/RAAST
+            # statement and confirms. Works with no payment API.
             err = _upload_error(request.FILES.get('proof'), IMAGE_EXTS)
             if err:
                 intent.delete()
                 messages.error(request, err)
                 return redirect('pay_online', pk=pk)
-            intent.gateway_ref = (request.POST.get('bank_ref', '') or '').strip()
+            ref = (request.POST.get('%s_ref' % gateway, '') or '').strip()
+            intent.gateway_ref = ref
             intent.payer_note = (request.POST.get('note', '') or '').strip()[:200]
             if request.FILES.get('proof'):
                 intent.proof = request.FILES['proof']
             intent.status = 'pending'
             intent.save()
+            label = 'RAAST payment' if gateway == 'raast' else 'bank transfer'
             messages.success(
-                request, 'Thank you. Your bank transfer of Rs %d (ref %s) has '
-                'been submitted and will be confirmed by the office once '
-                'verified.' % (amount, intent.ref))
+                request, 'Thank you. Your %s of Rs %d (ref %s) has been '
+                'submitted and will be confirmed by the office once verified.'
+                % (label, amount, intent.ref))
             return redirect('my_fees')
 
         # Gateway hosted checkout (needs a public HTTPS deployment + credentials)
@@ -2406,6 +2409,8 @@ def pay_online(request, pk):
         'c': challan, 'balance': balance, 'gateways': gateways,
         'bank': payments.bank_details(school),
         'has_bank': any(g == 'bank' for g, _ in gateways),
+        'raast': payments.raast_details(school),
+        'has_raast': any(g == 'raast' for g, _ in gateways),
     })
 
 
@@ -4037,13 +4042,24 @@ def school_settings(request):
         s = school
         s.online_payments_enabled = bool(request.POST.get('online_payments_enabled'))
         s.pay_bank_enabled = bool(request.POST.get('pay_bank_enabled'))
+        s.pay_raast_enabled = bool(request.POST.get('pay_raast_enabled'))
         s.pay_jazzcash_enabled = bool(request.POST.get('pay_jazzcash_enabled'))
         s.pay_easypaisa_enabled = bool(request.POST.get('pay_easypaisa_enabled'))
         for f in ('pay_bank_name', 'pay_bank_title', 'pay_bank_account',
                   'pay_bank_iban', 'pay_bank_instructions',
+                  'pay_raast_id', 'pay_raast_instructions',
                   'pay_jazzcash_merchant', 'pay_jazzcash_password',
                   'pay_jazzcash_salt', 'pay_easypaisa_store', 'pay_easypaisa_hash'):
             setattr(s, f, (request.POST.get(f, '') or '').strip())
+        # RAAST QR image upload (optional). Remove if the box is checked.
+        if request.POST.get('pay_raast_qr_clear'):
+            s.pay_raast_qr = None
+        elif request.FILES.get('pay_raast_qr'):
+            err = _upload_error(request.FILES['pay_raast_qr'], IMAGE_EXTS)
+            if err:
+                messages.error(request, err)
+                return redirect('school_settings')
+            s.pay_raast_qr = request.FILES['pay_raast_qr']
         s.save()
         _audit(request, 'Online payment settings saved',
                'enabled=%s' % s.online_payments_enabled)
@@ -5139,6 +5155,16 @@ def school_logo(request):
     if not school or not school.logo:
         raise Http404('No logo uploaded.')
     return FileResponse(school.logo.open('rb'))
+
+
+@login_required
+def raast_qr(request):
+    """Serve the school's static RAAST QR image to signed-in users (shown on the
+    parent's Pay-online page). Not exposed on a public /media/ URL."""
+    school = School.objects.first()
+    if not school or not school.pay_raast_qr:
+        raise Http404('No RAAST QR uploaded.')
+    return FileResponse(school.pay_raast_qr.open('rb'))
 
 
 @login_required

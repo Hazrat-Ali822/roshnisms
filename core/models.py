@@ -117,6 +117,14 @@ class School(models.Model):
     # Easypaisa merchant credentials.
     pay_easypaisa_store = models.CharField(max_length=40, blank=True)
     pay_easypaisa_hash = EncryptedCharField(max_length=300, blank=True)   # encrypted at rest
+    # RAAST QR (State Bank instant payment). Static merchant QR — no API/keys:
+    # the school uploads the QR image its bank/app provides; a parent scans it
+    # in any banking app, pays, and submits the transaction reference for
+    # Accounts to verify (the same offline-friendly flow as a bank transfer).
+    pay_raast_enabled = models.BooleanField(default=False)
+    pay_raast_id = models.CharField(max_length=80, blank=True)   # RAAST ID / merchant alias / IBAN
+    pay_raast_qr = models.FileField(upload_to='school/', blank=True, null=True)
+    pay_raast_instructions = models.CharField(max_length=250, blank=True)
 
     def __str__(self):
         return self.name
@@ -531,8 +539,8 @@ class GradeConfig(models.Model):
 class FeePayment(models.Model):
     MODE_CHOICES = [
         ('Cash', 'Cash'), ('JazzCash', 'JazzCash'), ('Easypaisa', 'Easypaisa'),
-        ('Bank', 'Bank Transfer'), ('Card', 'Card'), ('Cheque', 'Cheque'),
-        ('Credit', 'Credit balance'),
+        ('RAAST', 'RAAST QR'), ('Bank', 'Bank Transfer'), ('Card', 'Card'),
+        ('Cheque', 'Cheque'), ('Credit', 'Credit balance'),
     ]
     student = models.ForeignKey(
         Student, on_delete=models.CASCADE, related_name='payments')
@@ -579,8 +587,8 @@ class OnlinePayment(models.Model):
     recorded exactly like a counter payment (receipt, audit, notification)."""
     STATUS = [('initiated', 'Initiated'), ('pending', 'Pending verification'),
               ('paid', 'Paid'), ('failed', 'Failed'), ('rejected', 'Rejected')]
-    GATEWAYS = [('bank', 'Bank transfer'), ('jazzcash', 'JazzCash'),
-                ('easypaisa', 'Easypaisa')]
+    GATEWAYS = [('bank', 'Bank transfer'), ('raast', 'RAAST QR'),
+                ('jazzcash', 'JazzCash'), ('easypaisa', 'Easypaisa')]
     student = models.ForeignKey(
         Student, on_delete=models.CASCADE, related_name='online_payments')
     challan = models.ForeignKey(
