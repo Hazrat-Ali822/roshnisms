@@ -4404,6 +4404,20 @@ def school_settings(request):
         if request.POST.get('remove_logo') and school.logo:
             school.logo.delete(save=False)
             school.logo = None
+        # Branded Android app (.apk built with PWABuilder) for the download page.
+        apk = request.FILES.get('app_apk')
+        if apk:
+            if not apk.name.lower().endswith('.apk'):
+                messages.error(request, 'App not saved: please upload a .apk file.')
+            elif apk.size > 80 * 1024 * 1024:
+                messages.error(request, 'App not saved: .apk is larger than 80 MB.')
+            else:
+                if school.app_apk:
+                    school.app_apk.delete(save=False)
+                school.app_apk = apk
+        if request.POST.get('remove_apk') and school.app_apk:
+            school.app_apk.delete(save=False)
+            school.app_apk = None
         school.save()
         messages.success(request, 'School settings saved.')
         return redirect('school_settings')
@@ -5542,6 +5556,25 @@ def web_manifest(request):
     name = (school.name if (explicit and school) else 'Roshni SMS')
     theme = ((school.primary_color if school else None) or '#15294D')
     start = request.build_absolute_uri(reverse('dashboard'))
+    # Generic Roshni icons are always offered as a fallback. If this school has
+    # uploaded a logo, put it FIRST so PWABuilder makes a branded app icon —
+    # the school's own logo becomes the launcher icon on the phone.
+    icons = []
+    if explicit and school and getattr(school, 'logo', None):
+        try:
+            logo_url = request.build_absolute_uri(school.logo.url)
+            icons.append({'src': logo_url, 'sizes': '512x512',
+                          'type': 'image/png', 'purpose': 'any'})
+        except Exception:
+            pass
+    icons += [
+        {'src': _abs_static(request, 'icons/icon-192.png'),
+         'sizes': '192x192', 'type': 'image/png'},
+        {'src': _abs_static(request, 'icons/icon-512.png'),
+         'sizes': '512x512', 'type': 'image/png'},
+        {'src': _abs_static(request, 'icons/icon-maskable-512.png'),
+         'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'},
+    ]
     data = {
         'name': name,
         'short_name': (name[:12] or 'Roshni'),
@@ -5551,14 +5584,7 @@ def web_manifest(request):
         'orientation': 'portrait',
         'background_color': '#0B1120',
         'theme_color': theme,
-        'icons': [
-            {'src': _abs_static(request, 'icons/icon-192.png'),
-             'sizes': '192x192', 'type': 'image/png'},
-            {'src': _abs_static(request, 'icons/icon-512.png'),
-             'sizes': '512x512', 'type': 'image/png'},
-            {'src': _abs_static(request, 'icons/icon-maskable-512.png'),
-             'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'},
-        ],
+        'icons': icons,
     }
     return JsonResponse(data, content_type='application/manifest+json')
 
@@ -5618,6 +5644,49 @@ self.addEventListener('notificationclick', e => {
     resp['Service-Worker-Allowed'] = '/'
     resp['Cache-Control'] = 'no-cache'
     return resp
+
+
+def assetlinks(request):
+    """Digital Asset Links, served at the bare-domain /.well-known/assetlinks.json.
+    Verifies every school's Android (TWA) app so it opens full-screen without a
+    browser address bar. One file covers all schools on this domain — the list
+    comes from settings.TWA_ASSETLINKS (env ROSHNI_TWA_ASSETLINKS). Public, no
+    login, no tenant scope (it must live on the root domain)."""
+    from django.conf import settings
+    from django.http import JsonResponse
+    statements = []
+    for entry in getattr(settings, 'TWA_ASSETLINKS', []) or []:
+        pkg = entry.get('package')
+        fps = entry.get('sha256')
+        if not pkg or not fps:
+            continue
+        if isinstance(fps, str):
+            fps = [fps]
+        statements.append({
+            'relation': ['delegate_permission/common.handle_all_urls'],
+            'target': {'namespace': 'android_app', 'package_name': pkg,
+                       'sha256_cert_fingerprints': fps},
+        })
+    return JsonResponse(statements, safe=False,
+                        content_type='application/json')
+
+
+def app_download(request):
+    """A friendly 'Get the app' page for a school's portal: the Download App
+    button for the school's branded .apk (if uploaded) plus install steps, and
+    the browser 'Install app' (PWA) route as an always-available alternative."""
+    school = School.objects.first()
+    explicit = getattr(request, 'is_explicit_tenant', False)
+    apk_url = ''
+    if explicit and school and getattr(school, 'app_apk', None):
+        try:
+            apk_url = school.app_apk.url
+        except Exception:
+            apk_url = ''
+    return render(request, 'app_download.html', {
+        'school': school if explicit else None,
+        'apk_url': apk_url,
+    })
 
 
 @login_required

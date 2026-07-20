@@ -57,6 +57,10 @@ class School(models.Model):
     logo = models.FileField(upload_to='school/', blank=True, null=True)
     primary_color = models.CharField(max_length=7, default='#15294D')   # headers/sidebar
     accent_color = models.CharField(max_length=7, default='#0E7C66')    # buttons/highlights
+    # This school's branded Android app (.apk built with PWABuilder from the
+    # school's own portal URL). When present, a "Download App" button appears on
+    # the portal so parents/students can install it (no Play Store needed).
+    app_apk = models.FileField(upload_to='school/apk/', blank=True, null=True)
     # New logins (auto-created when a student/staff is added) get this password;
     # each person changes it themselves after signing in.
     default_password = models.CharField(max_length=64, default='school123')

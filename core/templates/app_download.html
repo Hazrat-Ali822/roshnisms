@@ -1,0 +1,65 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if school %}{{ school.name }} &mdash; {% endif %}Get the App</title>
+  <link rel="manifest" href="{% url 'web_manifest' %}">
+  <meta name="theme-color" content="{% if school %}{{ school.primary_color }}{% else %}#15294D{% endif %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260720b">
+  <style>
+    .app-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;
+      padding:24px;background:var(--bg,#0B1120)}
+    .app-card{width:100%;max-width:460px;background:var(--surface,#fff);border-radius:20px;
+      padding:34px 28px;box-shadow:0 24px 60px rgba(0,0,0,.28);text-align:center}
+    .app-logo{width:96px;height:96px;border-radius:22px;object-fit:cover;margin:0 auto 14px;
+      display:block;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+    .app-badge{width:96px;height:96px;border-radius:22px;margin:0 auto 14px;display:flex;
+      align-items:center;justify-content:center;font-size:44px;font-weight:800;color:#fff;
+      background:linear-gradient(135deg,var(--brand,#2C5FA8),#0E7C66)}
+    .app-card h1{margin:6px 0 4px;font-size:1.5rem;color:var(--ink,#15294D)}
+    .app-card .sub{color:var(--muted,#667);margin-bottom:22px;font-size:.95rem}
+    .dl-btn{display:block;width:100%;padding:15px;border-radius:14px;border:0;cursor:pointer;
+      font-size:1.05rem;font-weight:700;text-decoration:none;color:#fff;
+      background:linear-gradient(135deg,#2C5FA8,#0E7C66);box-shadow:0 10px 24px rgba(44,95,168,.35)}
+    .dl-note{margin:18px 2px 0;font-size:.86rem;color:var(--muted,#778);text-align:left;line-height:1.6}
+    .dl-note b{color:var(--ink,#15294D)}
+    .alt{margin-top:22px;padding-top:18px;border-top:1px solid var(--line,#e6e9f0)}
+    .alt a{color:var(--brand,#2C5FA8);font-weight:600;text-decoration:none}
+    .back{display:inline-block;margin-top:20px;color:var(--muted,#889);font-size:.9rem;text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="app-wrap">
+    <div class="app-card">
+      {% if school and school.logo %}
+        <img class="app-logo" src="{{ school.logo.url }}" alt="logo">
+      {% else %}
+        <div class="app-badge">{% if school %}{{ school.name|slice:':1'|upper }}{% else %}R{% endif %}</div>
+      {% endif %}
+      <h1>{% if school %}{{ school.name }}{% else %}Roshni{% endif %} App</h1>
+      <p class="sub">Apna school phone par app ki tarah &mdash; attendance, results, fees aur notices, sab ek jagah.</p>
+
+      {% if apk_url %}
+        <a class="dl-btn" href="{{ apk_url }}" download>&#11015;&nbsp; Download App (.apk)</a>
+        <div class="dl-note">
+          <b>Install kaise karein:</b><br>
+          1. Upar button se <b>.apk</b> download karein.<br>
+          2. Download hone par file kholein &mdash; phone <b>"Unknown sources / is source se install"</b> ki ijazat maange to <b>Allow</b> karein.<br>
+          3. <b>Install</b> dabayein &mdash; home screen par app icon aa jayega.<br>
+          4. App kholein aur apne <b>username &amp; password</b> se login karein.
+        </div>
+      {% else %}
+        <p class="sub" style="margin-bottom:0">App abhi taiyaar ho rahi hai. Tab tak aap browser se <b>"Install app"</b> laga sakte hain 👇</p>
+      {% endif %}
+
+      <div class="alt">
+        <p style="margin:0 0 6px;color:var(--muted,#778);font-size:.9rem">Ya browser se install karein:</p>
+        <p style="margin:0;font-size:.9rem">Chrome menu (&#8942;) &rarr; <b>"Install app"</b> / <b>"Add to Home screen"</b></p>
+      </div>
+
+      <a class="back" href="{% url 'dashboard' %}">&larr; Portal par wapas jayein</a>
+    </div>
+  </div>
+</body>
+</html>

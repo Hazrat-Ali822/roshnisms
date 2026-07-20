@@ -101,6 +101,27 @@ def _get_vapid():
 VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY = _get_vapid()
 VAPID_CLAIM_EMAIL = os.environ.get('ROSHNI_VAPID_EMAIL', 'mailto:admin@roshni.local')
 
+
+def _get_assetlinks():
+    """Digital Asset Links for the per-school Android (TWA) apps built with
+    PWABuilder. One JSON file at /.well-known/assetlinks.json verifies every
+    school's app so it opens full-screen (no browser bar). Because all schools
+    share one domain, ONE file — a list of {"package": ..., "sha256": [...]}
+    entries — covers them all; reuse a single signing key so the fingerprint is
+    shared. Set env ROSHNI_TWA_ASSETLINKS to that JSON list once apps are built."""
+    raw = os.environ.get('ROSHNI_TWA_ASSETLINKS', '').strip()
+    if not raw:
+        return []
+    try:
+        import json
+        data = json.loads(raw)
+        return data if isinstance(data, list) else []
+    except Exception:
+        return []
+
+
+TWA_ASSETLINKS = _get_assetlinks()
+
 # DEBUG is ON by default so the app runs out-of-the-box on a local PC / LAN.
 # For an online/public deployment set  ROSHNI_DEBUG=0  (then serve static files
 # and set ROSHNI_ALLOWED_HOSTS).

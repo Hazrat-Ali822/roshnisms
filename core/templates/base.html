@@ -201,6 +201,7 @@
         <a class="nav-item {% if active == 'help' %}active{% endif %}" href="{% url 'help_guide' %}" style="margin-bottom:8px">Help &amp; Guide</a>
         <a class="logout" href="{% url 'logout_get' %}" style="display: block; text-align: center; text-decoration: none;">Sign out</a>
       {% else %}
+        <a class="nav-item" href="{% url 'app_download' %}" style="margin-bottom:8px">Get the App &#128241;</a>
         <a class="nav-item {% if active == 'help' %}active{% endif %}" href="{% url 'help_guide' %}" style="margin-bottom:8px">Help &amp; Guide</a>
         <a class="nav-item {% if active == 'account' or active == 'password' %}active{% endif %}" href="{% url 'account' %}" style="margin-bottom:8px">My account</a>
         <a class="logout" href="{% url 'logout_get' %}" style="display: block; text-align: center; text-decoration: none;">Sign out</a>
