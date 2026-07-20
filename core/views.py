@@ -6021,6 +6021,69 @@ def saas_admin_dashboard(request):
         'chart_expense_json': json.dumps(chart_expense),
     })
 
+def _init_tenant_db(school, *, force=False):
+    """Create a CLEAN database file for a tenant school.
+
+    The file gets the full schema (copied from the master) but NONE of the
+    master's data — only this school's own School record and admin login. This
+    stops the master's users/students/staff from leaking into every school.
+
+    Normally a no-op if the tenant file already exists (never wipes live data).
+    Pass force=True to REBUILD an existing tenant from scratch (used by the
+    `reset_tenant` command to repair a contaminated school). Returns True if it
+    (re)built the file.
+    """
+    import os
+    import copy as _copy
+    import shutil
+    from django.core.management import call_command
+    from django.db import connections
+    from django.contrib.auth.models import User
+    from core.models import Profile, School as TenantSchool
+
+    subdomain = school.subdomain or 'default'
+    master_db = os.path.join(settings.BASE_DIR, 'db.sqlite3')
+    tenant_db_path = os.path.join(settings.BASE_DIR, '%s.sqlite3' % subdomain)
+
+    if os.path.exists(tenant_db_path):
+        if not force:
+            return False
+        os.remove(tenant_db_path)
+
+    # Copy the master only for its SCHEMA; the data is flushed immediately.
+    shutil.copyfile(master_db, tenant_db_path)
+
+    conn = connections['default']
+    conn.close()
+    original_db_name = conn.settings_dict['NAME']
+    conn.settings_dict = _copy.deepcopy(conn.settings_dict)
+    conn.settings_dict['NAME'] = tenant_db_path
+    try:
+        # Empty every table (removes the master's users/students/... that the
+        # copy brought in), then seed only this tenant's school + admin.
+        call_command('flush', verbosity=0, interactive=False)
+        ts = TenantSchool.objects.create(
+            name=school.name, subdomain=subdomain,
+            subscription_start=school.subscription_start,
+            subscription_end=school.subscription_end,
+            subscription_active=True,
+            admin_username=school.admin_username or '',
+            admin_email=school.admin_email or '',
+            admin_password=school.admin_password or '',
+            subscription_rate=school.subscription_rate or 5000)
+        if school.admin_username and school.admin_password:
+            user = User.objects.create_user(
+                username=school.admin_username, email=school.admin_email or '',
+                password=school.admin_password, first_name=school.name)
+            Profile.objects.create(user=user, role='admin', school=ts,
+                                   must_change_password=False)
+    finally:
+        conn.close()
+        conn.settings_dict = _copy.deepcopy(settings.DATABASES['default'])
+        conn.settings_dict['NAME'] = original_db_name
+    return True
+
+
 @login_required(login_url='login')
 def saas_school_add(request):
     if not request.user.is_superuser:
@@ -6051,57 +6114,10 @@ def saas_school_add(request):
             )
             
             if admin_username and admin_password:
-                import os
-                import copy
-                import shutil
-                from django.db import connections
-                
-                tenant_db_path = os.path.join(settings.BASE_DIR, f"{subdomain}.sqlite3")
-                if not os.path.exists(tenant_db_path):
-                    shutil.copyfile(os.path.join(settings.BASE_DIR, "db.sqlite3"), tenant_db_path)
-                    
-                conn = connections['default']
-                conn.close()
-                original_db_name = conn.settings_dict['NAME']
-                conn.settings_dict = copy.deepcopy(conn.settings_dict)
-                conn.settings_dict['NAME'] = tenant_db_path
-                
-                try:
-                    from django.contrib.auth.models import User
-                    from core.models import Profile, School as TenantSchool
-                    
-                    # Ensure the school record itself exists inside the tenant database
-                    tenant_school = TenantSchool.objects.filter(subdomain=subdomain).first()
-                    if not tenant_school:
-                        tenant_school = TenantSchool.objects.create(
-                            name=name,
-                            subdomain=subdomain,
-                            subscription_start=start_date,
-                            subscription_end=end_date,
-                            subscription_active=True,
-                            admin_username=admin_username or '',
-                            admin_email=admin_email or '',
-                            admin_password=admin_password or '',
-                            subscription_rate=int(rate)
-                        )
-                        
-                    if not User.objects.filter(username=admin_username).exists():
-                        user = User.objects.create_user(
-                            username=admin_username,
-                            email=admin_email or '',
-                            password=admin_password,
-                            first_name=name
-                        )
-                        Profile.objects.create(
-                            user=user,
-                            role='admin',
-                            school=tenant_school,
-                            must_change_password=False
-                        )
-                finally:
-                    conn.close()
-                    conn.settings_dict['NAME'] = original_db_name
-            
+                # Build a CLEAN tenant database — only this school's admin, never
+                # the master's users/data (that was the cross-tenant leak).
+                _init_tenant_db(school)
+
             messages.success(request, f"School '{name}' and Admin account created successfully!")
             return redirect('saas_admin_dashboard')
             
@@ -6145,8 +6161,10 @@ def saas_school_edit(request, pk):
             subdomain = school.subdomain or 'default'
             tenant_db_path = os.path.join(settings.BASE_DIR, f"{subdomain}.sqlite3")
             if not os.path.exists(tenant_db_path):
-                shutil.copyfile(os.path.join(settings.BASE_DIR, "db.sqlite3"), tenant_db_path)
-                
+                # First-time provisioning — build the tenant DB CLEAN (only this
+                # school's admin), never a raw copy of the master's data.
+                _init_tenant_db(school)
+
             conn = connections['default']
             conn.close()
             original_db_name = conn.settings_dict['NAME']
