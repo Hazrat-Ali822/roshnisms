@@ -54,9 +54,8 @@ class Command(BaseCommand):
             if confirm != subdomain:
                 raise CommandError('Aborted (confirmation did not match).')
 
-        # Import here so the helper's own imports resolve against the app.
-        from core.views import _init_tenant_db
-        _init_tenant_db(school, force=True)
+        from core.tenancy import build_clean_tenant_db
+        build_clean_tenant_db(school, force=True)
 
         self.stdout.write(self.style.SUCCESS(
             '%s tenant "%s" rebuilt clean: only its school record and admin "%s".'

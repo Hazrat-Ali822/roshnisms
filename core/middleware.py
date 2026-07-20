@@ -153,29 +153,24 @@ class TenantDatabaseMiddleware:
             from django.conf import settings
 
             db_path = os.path.join(settings.BASE_DIR, "db.sqlite3")
-            just_created = False
             if school and school.subdomain and school.subdomain != 'default' and not request.path.startswith('/saas-admin/'):
                 db_path = os.path.join(settings.BASE_DIR, f"{school.subdomain}.sqlite3")
                 if not os.path.exists(db_path):
-                    shutil.copyfile(os.path.join(settings.BASE_DIR, "db.sqlite3"), db_path)
-                    just_created = True
+                    # First touch of a tenant whose DB doesn't exist yet: build it
+                    # CLEAN (schema only + this school's admin). NEVER a raw copy
+                    # of the master — that leaked every school's users/data into
+                    # each tenant. build_clean_tenant_db restores the connection
+                    # to the master, so we re-point at the tenant right after.
+                    try:
+                        from core.tenancy import build_clean_tenant_db
+                        build_clean_tenant_db(school)
+                    except Exception:
+                        pass
 
             conn = connections['default']
             conn.close()
             conn.settings_dict = copy.deepcopy(settings.DATABASES['default'])
             conn.settings_dict['NAME'] = db_path
-
-            # A freshly-copied tenant file still contains every school's row.
-            # Trim it to just this tenant ONCE, at creation, so School.objects
-            # .first() inside the tenant resolves correctly. This used to run on
-            # EVERY request (a per-request destructive delete) — wasteful and a
-            # data-loss risk if the tenant was ever misresolved.
-            if just_created and school and school.subdomain and school.subdomain != 'default':
-                try:
-                    from core.models import School as TenantSchool
-                    TenantSchool.objects.exclude(subdomain=school.subdomain).delete()
-                except Exception:
-                    pass
 
         try:
             return self.get_response(request)
@@ -248,27 +243,21 @@ class TenantRoutingMiddleware:
                         from django.conf import settings
 
                         db_path = os.path.join(settings.BASE_DIR, "db.sqlite3")
-                        just_created = False
                         if school and school.subdomain and school.subdomain != 'default' and not request.path.startswith('/saas-admin/'):
                             db_path = os.path.join(settings.BASE_DIR, f"{school.subdomain}.sqlite3")
                             if not os.path.exists(db_path):
-                                shutil.copyfile(os.path.join(settings.BASE_DIR, "db.sqlite3"), db_path)
-                                just_created = True
+                                # Build CLEAN, never a raw copy of the master (that
+                                # leaked every school's users/data into each tenant).
+                                try:
+                                    from core.tenancy import build_clean_tenant_db
+                                    build_clean_tenant_db(school)
+                                except Exception:
+                                    pass
 
                         conn = connections['default']
                         conn.close()
                         conn.settings_dict = copy.deepcopy(settings.DATABASES['default'])
                         conn.settings_dict['NAME'] = db_path
-
-                        # Trim a freshly-created tenant file to just this school,
-                        # ONCE at creation (not on every request — see the note in
-                        # TenantDatabaseMiddleware).
-                        if just_created and school and school.subdomain and school.subdomain != 'default':
-                            try:
-                                from core.models import School as TenantSchool
-                                TenantSchool.objects.exclude(subdomain=school.subdomain).delete()
-                            except Exception:
-                                pass
             
         # Calculate subscription status (using the global database record!)
         # Only lock down if it is an explicit school tenant request! The SaaS root/admin itself is never expired.

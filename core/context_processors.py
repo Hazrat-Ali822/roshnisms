@@ -11,17 +11,23 @@ def branding(request):
 
     school = getattr(request, 'tenant', None)
     is_explicit_tenant = getattr(request, 'is_explicit_tenant', False)
-        
+
     if not is_explicit_tenant or not school:
         return {'brand_name': 'Roshni SMS', 'brand_logo': False,
                 'brand_primary': '#15294D', 'brand_accent': '#0E7C66',
                 'current_session': '2025-26', 'my_photo': my_photo}
+
+    # We're in a real tenant context, and by now the DB connection is switched
+    # to the tenant's own database. Read the school's OWN record so name, logo
+    # and colours reflect what that school set in its Settings (the request
+    # .tenant object came from the master registry and would show stale values).
+    tenant_school = School.objects.first() or school
     return {
-        'brand_name': school.name,
-        'brand_logo': bool(school.logo),
-        'brand_primary': school.primary_color or '#15294D',
-        'brand_accent': school.accent_color or '#0E7C66',
-        'current_session': school.session or '2025-26',
+        'brand_name': tenant_school.name,
+        'brand_logo': bool(tenant_school.logo),
+        'brand_primary': tenant_school.primary_color or '#15294D',
+        'brand_accent': tenant_school.accent_color or '#0E7C66',
+        'current_session': tenant_school.session or '2025-26',
         'my_photo': my_photo,
     }
 
