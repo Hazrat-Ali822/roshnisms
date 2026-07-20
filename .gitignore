@@ -17,6 +17,7 @@ db.sqlite3
 # gateway+SMS secrets re-entered, but nothing else breaks).
 .secret_key
 .field_key
+.vapid_key
 .env
 
 # Media and Static folders

@@ -615,6 +615,20 @@ class OnlinePayment(models.Model):
         return '%s %s Rs%d (%s)' % (self.gateway, self.ref, self.amount, self.status)
 
 
+class PushSubscription(models.Model):
+    """A browser's Web Push subscription for a user, so the school can send
+    push notifications to installed PWAs / desktops. One row per browser."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE,
+                             related_name='push_subs')
+    endpoint = models.TextField(unique=True)
+    p256dh = models.CharField(max_length=200)
+    auth = models.CharField(max_length=100)
+    created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return 'push:%s' % self.user_id
+
+
 class PaymentSource(models.Model):
     """Where an expense's money came from — a cash box or bank account. Lets a
     school track spending per fund and reconcile against each account."""

@@ -60,6 +60,47 @@ def _get_field_key():
 
 FIELD_ENCRYPTION_KEY = _get_field_key()
 
+
+# --- Web Push (VAPID) keys for browser push notifications ---
+# Auto-generated once and stored in .vapid_key (same back-up rules as the other
+# keys). VAPID_PUBLIC_KEY is handed to the browser as the applicationServerKey.
+def _get_vapid():
+    pem = os.environ.get('ROSHNI_VAPID_PRIVATE')
+    key_file = DATA_DIR / '.vapid_key'
+    if not pem and key_file.exists():
+        pem = key_file.read_text()
+    if not pem:
+        try:
+            from cryptography.hazmat.primitives.asymmetric import ec
+            from cryptography.hazmat.primitives import serialization
+            priv = ec.generate_private_key(ec.SECP256R1())
+            pem = priv.private_bytes(
+                serialization.Encoding.PEM,
+                serialization.PrivateFormat.PKCS8,
+                serialization.NoEncryption()).decode()
+            try:
+                key_file.write_text(pem)
+            except OSError:
+                pass
+        except Exception:
+            return '', ''
+    try:
+        import base64
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.serialization import load_pem_private_key
+        priv = load_pem_private_key(pem.encode(), password=None)
+        raw = priv.public_key().public_bytes(
+            serialization.Encoding.X962,
+            serialization.PublicFormat.UncompressedPoint)
+        pub = base64.urlsafe_b64encode(raw).rstrip(b'=').decode()
+    except Exception:
+        pub = ''
+    return pem, pub
+
+
+VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY = _get_vapid()
+VAPID_CLAIM_EMAIL = os.environ.get('ROSHNI_VAPID_EMAIL', 'mailto:admin@roshni.local')
+
 # DEBUG is ON by default so the app runs out-of-the-box on a local PC / LAN.
 # For an online/public deployment set  ROSHNI_DEBUG=0  (then serve static files
 # and set ROSHNI_ALLOWED_HOSTS).
@@ -116,6 +157,7 @@ TEMPLATES = [
                 'core.context_processors.branding',
                 'core.context_processors.nav_children',
                 'core.context_processors.notifications',
+                'core.context_processors.pwa',
             ],
         },
     },

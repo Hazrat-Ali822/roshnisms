@@ -651,6 +651,9 @@ def attendance_mark(request):
                 if email_on and (s.guardian_email or '').strip():
                     send_email_alert('Absence alert — %s' % sname, text,
                                      s.guardian_email, msg_type='Absent Alert')
+                # Web push to the family's installed app / browser (best-effort).
+                from .push import push_student_guardians
+                push_student_guardians(s, '%s — Absent' % sname, text)
         msg = ('Attendance saved for %s (%s).'
                % (classroom, date.strftime('%d %b %Y')))
         if sent:
@@ -1638,6 +1641,9 @@ def _record_fee_payment(student, challan, amount, mode, received_by,
         if email_alerts_enabled() and (student.guardian_email or '').strip():
             send_email_alert('Fee received — %s' % sname, text,
                              student.guardian_email, msg_type='Fee Receipt')
+        # Web push to the family's installed app / browser (best-effort).
+        from .push import push_student_guardians
+        push_student_guardians(student, '%s — Fee received' % sname, text)
     _sync_fee_status(student)
     return payment
 
@@ -5492,6 +5498,39 @@ self.addEventListener('notificationclick', e => {
     resp['Service-Worker-Allowed'] = '/'
     resp['Cache-Control'] = 'no-cache'
     return resp
+
+
+@login_required
+def push_subscribe(request):
+    """Save (or refresh) the current browser's Web Push subscription."""
+    from django.http import JsonResponse
+    if request.method != 'POST':
+        return JsonResponse({'ok': False}, status=405)
+    from .models import PushSubscription
+    try:
+        data = json.loads((request.body or b'').decode() or '{}')
+    except Exception:
+        return JsonResponse({'ok': False, 'error': 'bad json'}, status=400)
+    endpoint = data.get('endpoint')
+    keys = data.get('keys') or {}
+    if not endpoint or not keys.get('p256dh') or not keys.get('auth'):
+        return JsonResponse({'ok': False, 'error': 'incomplete'}, status=400)
+    PushSubscription.objects.update_or_create(
+        endpoint=endpoint,
+        defaults={'user': request.user, 'p256dh': keys['p256dh'],
+                  'auth': keys['auth']})
+    return JsonResponse({'ok': True})
+
+
+@login_required
+def push_test(request):
+    """Send a test push to the signed-in user's own browsers (self-check)."""
+    from django.http import JsonResponse
+    from .push import send_web_push
+    n = send_web_push([request.user], 'Test notification',
+                      'Push notifications are working. 🎉',
+                      url=request.build_absolute_uri(reverse('dashboard')))
+    return JsonResponse({'ok': True, 'sent': n})
 
 
 @login_required

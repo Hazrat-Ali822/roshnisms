@@ -1,5 +1,13 @@
 """Template context available on every page."""
+from django.conf import settings
+
 from .models import School
+
+
+def pwa(request):
+    """Expose the Web Push public key (applicationServerKey) to templates so the
+    browser can subscribe. Empty string disables push cleanly."""
+    return {'vapid_public_key': getattr(settings, 'VAPID_PUBLIC_KEY', '')}
 
 
 def branding(request):
