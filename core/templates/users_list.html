@@ -49,6 +49,13 @@
             <input type="hidden" name="user_id" value="{{ u.id }}">
             <button class="act-btn ghost" type="submit">Reset pw</button>
           </form>
+          {% if u.profile.student %}
+          <form method="post" class="inline-form" onsubmit="return confirm('Reset the password and text the new login to the guardian?');">{% csrf_token %}
+            <input type="hidden" name="action" value="reset_password_sms">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <button class="act-btn ghost" type="submit">Reset + SMS</button>
+          </form>
+          {% endif %}
           {% if not u.is_superuser and u.id != request.user.id %}
           <form method="post" class="inline-form">{% csrf_token %}
             <input type="hidden" name="action" value="toggle_active">

@@ -2728,6 +2728,45 @@ def applicant_convert(request, pk):
 @login_required
 @role_required('admin')
 def communication(request):
+    if request.method == 'POST' and request.POST.get('action') == 'result_sms':
+        # One-click result blast: SMS each student's overall result for the
+        # chosen exam to their guardian. Reuses the school's notify channel.
+        from .models import Exam, Mark, grade_for
+        exam = Exam.objects.filter(pk=_pk(request.POST.get('exam'))).first()
+        if not exam:
+            messages.error(request, 'Please choose an exam first.')
+            return redirect('communication')
+        agg = {}
+        for m in Mark.objects.filter(exam=exam).select_related('student'):
+            d = agg.setdefault(m.student_id,
+                               {'student': m.student, 'obt': 0, 'tot': 0})
+            d['obt'] += m.marks_obtained
+            d['tot'] += m.total_marks
+        school = School.objects.first()
+        sname = school.name if school else 'School'
+        sent = failed = skipped = 0
+        for d in agg.values():
+            st = d['student']
+            phone = (st.guardian_phone or '').strip()
+            if not phone or d['tot'] <= 0:
+                skipped += 1
+                continue
+            pct = round(d['obt'] * 100.0 / d['tot'], 1)
+            text = ('%s: %s result (%s) — %s/%s = %s%% (Grade %s). See the '
+                    'parent portal for the full report.'
+                    % (sname, st.name, exam.name, d['obt'], d['tot'], pct,
+                       grade_for(pct)))
+            res = notify(text, to_phone=phone,
+                         recipients=st.guardian_name or st.name, msg_type='Result')
+            if 'Failed' in res:
+                failed += 1
+            else:
+                sent += 1
+        messages.success(
+            request, 'Result SMS for %s: %d sent, %d failed, %d skipped '
+            '(no phone or no marks).' % (exam.name, sent, failed, skipped))
+        return redirect('communication')
+
     if request.method == 'POST':
         body = (request.POST.get('body', '') or '').strip()
         single = (request.POST.get('to_phone', '') or '').strip()
@@ -2771,10 +2810,12 @@ def communication(request):
                         request, '%d message(s) %s for %s.'
                         % (len(targets), note, audience))
         return redirect('communication')
+    from .models import Exam
     return render(request, 'communication.html', {
         'role': 'admin', 'active': 'communication',
         'messages_log': SmsMessage.objects.all()[:50],
         'sms_backend': settings.SMS_BACKEND,
+        'exams': Exam.objects.all()[:50],
     })
 
 
@@ -4995,6 +5036,35 @@ def users_list(request):
                 _audit(request, 'Password reset', u.username)
                 messages.success(
                     request, 'Password for %s reset to the default.' % u.username)
+        elif action == 'reset_password_sms':
+            # Reset the login and text the new credentials to the family's phone
+            # (student/parent accounts) so they can sign in and change it.
+            u = User.objects.filter(pk=_pk(request.POST.get('user_id'))).first()
+            if u:
+                prof = getattr(u, 'profile', None)
+                st = getattr(prof, 'student', None) if prof else None
+                phone = (getattr(st, 'guardian_phone', '') or '').strip() if st else ''
+                if not phone:
+                    messages.error(
+                        request, 'No guardian phone on file for %s, so the login '
+                        'could not be sent by SMS.' % u.username)
+                else:
+                    dp = _school_default_password()
+                    u.set_password(dp)
+                    u.save(update_fields=['password'])
+                    _force_change(u)
+                    school = School.objects.first()
+                    sname = school.name if school else 'School'
+                    text = ('%s login — username: %s, password: %s. Please sign '
+                            'in and change your password.'
+                            % (sname, u.username, dp))
+                    notify(text, to_phone=phone,
+                           recipients=getattr(st, 'guardian_name', '') or u.username,
+                           msg_type='Login')
+                    _audit(request, 'Password reset + SMS', u.username)
+                    messages.success(
+                        request, 'Password for %s reset and the login sent by SMS.'
+                        % u.username)
         elif action == 'toggle_active':
             u = User.objects.filter(pk=_pk(request.POST.get('user_id'))).first()
             if u and not u.is_superuser and u.id != request.user.id:

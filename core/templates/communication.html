@@ -39,6 +39,22 @@
   </form>
 </div>
 
+<div class="card card-pad" style="max-width:680px;margin-top:16px">
+  <h3 style="margin-bottom:6px">Result via SMS</h3>
+  <p class="muted" style="font-size:13px;margin:0 0 14px">Send every student's overall result for one exam to their guardian in a single click.</p>
+  <form method="post" onsubmit="return confirm('Send result SMS to all guardians for the selected exam?');">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="result_sms">
+    <div class="frow"><label>Exam</label>
+      <select name="exam" required>
+        <option value="">- Choose exam -</option>
+        {% for e in exams %}<option value="{{ e.id }}">{{ e.name }}{% if e.session %} ({{ e.session }}){% endif %}</option>{% endfor %}
+      </select>
+    </div>
+    <button class="btn-primary btn-auto" type="submit">Send results</button>
+  </form>
+</div>
+
 <div class="card">
   <div class="sec-head"><h3>Message log</h3></div>
   <div class="table-wrap"><table>
