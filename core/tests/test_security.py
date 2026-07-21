@@ -92,7 +92,9 @@ class IdleTimeoutTests(TestCase):
         c = Client(); c.force_login(self.w.admin_u)
         c.get('/')                                   # stamps last_activity
         s = c.session
-        s['last_activity'] = int(time.time()) - 3600  # an hour ago (> 30 min)
+        # Older than the configured idle window (whatever the default is), so the
+        # session is guaranteed stale and must be signed out.
+        s['last_activity'] = int(time.time()) - settings.SESSION_IDLE_TIMEOUT - 3600
         s.save()
         c.cookies[settings.SESSION_COOKIE_NAME] = s.session_key
         r = c.get('/')

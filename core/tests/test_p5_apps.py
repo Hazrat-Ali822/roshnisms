@@ -65,3 +65,28 @@ class ApkUploadTests(TestCase):
                 bad = SimpleUploadedFile('virus.exe', b'MZ not an apk')
                 self.c.post(reverse('school_settings'), {'app_apk': bad})
                 self.assertFalse(School.objects.first().app_apk)
+
+
+class AppIconTests(TestCase):
+    def setUp(self):
+        self.w = build_world()
+
+    def test_non_square_logo_becomes_square_icon(self):
+        import io
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as media:
+            with override_settings(MEDIA_ROOT=media):
+                buf = io.BytesIO()
+                Image.new('RGB', (200, 100), (12, 41, 77)).save(buf, 'PNG')
+                self.w.school.logo = SimpleUploadedFile(
+                    'logo.png', buf.getvalue(), content_type='image/png')
+                self.w.school.save()
+                r = Client().get(reverse('app_icon') + '?size=512')
+                self.assertEqual(r.status_code, 200)
+                self.assertEqual(r['Content-Type'], 'image/png')
+                img = Image.open(io.BytesIO(b''.join(r.streaming_content)))
+                self.assertEqual(img.size, (512, 512))
+
+    def test_icon_falls_back_without_logo(self):
+        r = Client().get(reverse('app_icon') + '?size=192')
+        self.assertIn(r.status_code, (301, 302))

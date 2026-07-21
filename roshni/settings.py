@@ -159,8 +159,16 @@ MIDDLEWARE = [
     'core.middleware.SessionIdleTimeoutMiddleware',
 ]
 
-# Sign users out after this many seconds of inactivity (0 = never).
-SESSION_IDLE_TIMEOUT = int(os.environ.get('ROSHNI_IDLE_TIMEOUT', str(30 * 60)))
+# Sign users out after this many seconds of inactivity (0 = never). Default is
+# long (30 days) so parents/students/staff on the mobile app stay signed in like
+# a normal app — one login, then remembered. Set ROSHNI_IDLE_TIMEOUT lower
+# (e.g. 1800 = 30 min) for stricter security on shared office computers.
+SESSION_IDLE_TIMEOUT = int(os.environ.get('ROSHNI_IDLE_TIMEOUT', str(30 * 24 * 3600)))
+# Keep the login cookie across app/browser restarts, and roll its expiry forward
+# on every visit, so an active user is never logged out unexpectedly.
+SESSION_COOKIE_AGE = int(os.environ.get('ROSHNI_SESSION_AGE', str(30 * 24 * 3600)))
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
 ROOT_URLCONF = 'roshni.urls'
 

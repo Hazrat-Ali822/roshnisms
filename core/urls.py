@@ -30,6 +30,7 @@ urlpatterns = [
     path('manifest.webmanifest', views.web_manifest, name='web_manifest'),
     path('sw.js', views.service_worker, name='service_worker'),
     path('.well-known/assetlinks.json', views.assetlinks, name='assetlinks'),
+    path('app-icon.png', views.app_icon, name='app_icon'),
     path('app/', views.app_download, name='app_download'),
     path('push/subscribe/', views.push_subscribe, name='push_subscribe'),
     path('push/test/', views.push_test, name='push_test'),

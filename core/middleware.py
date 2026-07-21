@@ -220,7 +220,8 @@ class TenantRoutingMiddleware:
         _p = request.path.rstrip('/')
         if (_p.endswith('/manifest.webmanifest') or _p == '/manifest.webmanifest'
                 or _p.endswith('/sw.js') or _p == '/sw.js'
-                or _p.endswith('/assetlinks.json')):
+                or _p.endswith('/assetlinks.json')
+                or _p.endswith('/app-icon.png')):
             return self.get_response(request)
 
         # 3. User session-based routing and verification
