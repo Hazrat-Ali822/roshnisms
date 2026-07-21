@@ -4,9 +4,33 @@ import datetime
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from core.models import (Book, CalendarEvent, Expense, PaymentSource,
+from core.models import (Book, CalendarEvent, Expense, PaymentSource, Staff,
                          TransportRoute)
 from core.tests.factory import build_world, PASSWORD
+
+
+class StaffCrudTests(TestCase):
+    def setUp(self):
+        self.w = build_world()
+        self.c = Client()
+        self.c.login(username='admin1', password=PASSWORD)
+        self.s = Staff.objects.create(name='Sara', designation='Teacher',
+                                      phone='0300-0000000', basic_salary=40000,
+                                      allowances=5000)
+
+    def test_edit_staff(self):
+        self.c.post(reverse('staff_list'), {
+            'action': 'edit_staff', 'id': self.s.id, 'name': 'Sara Khan',
+            'designation': 'Senior Teacher', 'phone': '0301-1111111',
+            'email': 'sara@x.pk', 'basic_salary': '45000', 'allowances': '6000'})
+        self.s.refresh_from_db()
+        self.assertEqual(self.s.name, 'Sara Khan')
+        self.assertEqual(self.s.basic_salary, 45000)
+        self.assertEqual(self.s.designation, 'Senior Teacher')
+
+    def test_delete_staff(self):
+        self.c.post(reverse('staff_list'), {'action': 'delete_staff', 'id': self.s.id})
+        self.assertFalse(Staff.objects.filter(id=self.s.id).exists())
 
 
 class TransportCrudTests(TestCase):

@@ -4734,6 +4734,31 @@ def staff_list(request):
             return 0
 
     if request.method == 'POST':
+        action = request.POST.get('action', 'add')
+
+        if action == 'delete_staff':
+            s = Staff.objects.filter(pk=_pk(request.POST.get('id'))).first()
+            if s:
+                messages.success(request, 'Staff removed: %s. (Any login account '
+                                 'stays — remove it in Users & Roles.)' % s.name)
+                s.delete()          # user FK is SET_NULL, so the login survives
+            return redirect('staff_list')
+
+        if action == 'edit_staff':
+            s = Staff.objects.filter(pk=_pk(request.POST.get('id'))).first()
+            if s:
+                name = (request.POST.get('name', '') or '').strip()
+                if name:
+                    s.name = name
+                s.designation = (request.POST.get('designation', '') or '').strip()
+                s.phone = (request.POST.get('phone', '') or '').strip()
+                s.email = (request.POST.get('email', '') or '').strip()
+                s.basic_salary = amt('basic_salary')
+                s.allowances = amt('allowances')
+                s.save()
+                messages.success(request, 'Staff updated: %s.' % s.name)
+            return redirect('staff_list')
+
         name = (request.POST.get('name', '') or '').strip()
         if name:
             staff = Staff.objects.create(
