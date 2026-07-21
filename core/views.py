@@ -5556,15 +5556,18 @@ def web_manifest(request):
     name = (school.name if (explicit and school) else 'Roshni SMS')
     theme = ((school.primary_color if school else None) or '#15294D')
     start = request.build_absolute_uri(reverse('dashboard'))
-    # Generic Roshni icons are always offered as a fallback. If this school has
-    # uploaded a logo, put it FIRST so PWABuilder makes a branded app icon —
-    # the school's own logo becomes the launcher icon on the phone.
+    # If this school has a logo, put it FIRST so it becomes the app's launcher
+    # icon. Serve it through the school_logo VIEW (Django-streamed), not the raw
+    # /media/ URL — media isn't mapped on every host (e.g. PythonAnywhere), and a
+    # 404 icon both hides the logo AND breaks installability (Chrome falls back
+    # to a plain shortcut). The generic Roshni icons always follow as a
+    # guaranteed-valid 192+512 fallback so the app stays installable regardless.
     icons = []
     if explicit and school and getattr(school, 'logo', None):
         try:
-            logo_url = request.build_absolute_uri(school.logo.url)
-            icons.append({'src': logo_url, 'sizes': '512x512',
-                          'type': 'image/png', 'purpose': 'any'})
+            logo_url = request.build_absolute_uri(reverse('school_logo'))
+            icons.append({'src': logo_url, 'sizes': '512x512', 'purpose': 'any'})
+            icons.append({'src': logo_url, 'sizes': '192x192', 'purpose': 'any'})
         except Exception:
             pass
     icons += [
@@ -5576,6 +5579,7 @@ def web_manifest(request):
          'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'},
     ]
     data = {
+        'id': start,
         'name': name,
         'short_name': (name[:12] or 'Roshni'),
         'start_url': start,

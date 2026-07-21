@@ -33,7 +33,7 @@
   <div class="app-wrap">
     <div class="app-card">
       {% if school and school.logo %}
-        <img class="app-logo" src="{{ school.logo.url }}" alt="logo">
+        <img class="app-logo" src="{% url 'school_logo' %}" alt="logo">
       {% else %}
         <div class="app-badge">{% if school %}{{ school.name|slice:':1'|upper }}{% else %}R{% endif %}</div>
       {% endif %}
