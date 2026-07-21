@@ -16,12 +16,13 @@
   <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between">
     <div>
       <h3 style="margin:0 0 4px">Auto-generate timetable</h3>
-      <p class="muted" style="font-size:12.5px;margin:0;max-width:560px">Builds a <b>clash-free</b> weekly grid for <b>every class</b> at once — no teacher is booked in two places, no class gets two subjects in one slot. It uses each subject's <b>weekly periods</b> (below) and the <b>teacher</b> from Classes &amp; Subjects. You can still edit any slot afterwards.</p>
+      <p class="muted" style="font-size:12.5px;margin:0;max-width:560px">Builds a <b>clash-free</b> grid — no teacher is booked in two places, no class gets two subjects in one slot. Uses each subject's <b>weekly periods</b> (below) and the <b>teacher</b> from Classes &amp; Subjects. Generate <b>just this class</b> (keeps the others) or <b>all classes</b>. You can still edit or <b>drag</b> any slot afterwards.</p>
     </div>
-    <form method="post" onsubmit="return confirm('Generate a fresh timetable for ALL classes? This replaces the current timetable (you can still edit slots after).');">{% csrf_token %}
+    <form method="post" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">{% csrf_token %}
       <input type="hidden" name="action" value="generate">
       <input type="hidden" name="class_id" value="{{ classroom.id }}">
-      <button class="btn-primary btn-auto" type="submit">Generate now</button>
+      <button class="btn-primary btn-auto" type="submit" name="scope" value="class" onclick="return confirm('Generate the timetable for {{ classroom }} only? This replaces {{ classroom }}’s current slots (other classes stay).');">Generate {{ classroom }}</button>
+      <button class="act-btn ghost" type="submit" name="scope" value="all" onclick="return confirm('Generate a fresh timetable for ALL classes? This replaces every class’s timetable.');">Generate all classes</button>
     </form>
   </div>
 
@@ -92,8 +93,15 @@
 </details>
 
 <div class="card">
-  <div class="sec-head"><h3>{{ classroom }} weekly grid</h3></div>
+  <div class="sec-head"><h3>{{ classroom }} weekly grid</h3><span class="muted no-print" style="font-size:12.5px">Tip: <b>drag</b> a subject to another cell to move it.</span></div>
   {% if rows %}
+  <form method="post" id="ttMoveForm" style="display:none">{% csrf_token %}
+    <input type="hidden" name="action" value="move">
+    <input type="hidden" name="class_id" value="{{ classroom.id }}">
+    <input type="hidden" name="slot_id" id="mvSlot">
+    <input type="hidden" name="day" id="mvDay">
+    <input type="hidden" name="period" id="mvPeriod">
+  </form>
   <div class="tt-wrap">
     <table class="tt">
       <thead><tr><th></th>{% for d in days %}<th>{{ d }}</th>{% endfor %}</tr></thead>
@@ -102,19 +110,19 @@
         <tr>
           <td class="time">P{{ row.period }}<br><span class="muted">{{ row.time }}</span></td>
           {% for cell in row.cells %}
-            <td>
+            <td data-cell data-day="{{ cell.day }}" data-period="{{ row.period }}">
               {% if cell.slot %}
-                <div class="slot {% if cell.slot.subject == 'Break' %}break{% else %}subj{% endif %}">
+                <div class="slot {% if cell.slot.subject == 'Break' %}break{% else %}subj{% endif %}" draggable="true" data-slot-id="{{ cell.slot.id }}" title="Drag to move">
                   <b>{{ cell.slot.subject }}</b>
                   {% if cell.slot.teacher %}<span>{{ cell.slot.teacher }}</span>{% endif %}
-                  <form method="post" style="margin-top:6px">{% csrf_token %}
+                  <form method="post" style="margin-top:6px" class="no-print">{% csrf_token %}
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="class_id" value="{{ classroom.id }}">
                     <input type="hidden" name="slot_id" value="{{ cell.slot.id }}">
                     <button class="act-btn ghost" type="submit" style="padding:2px 8px;font-size:11px">Remove</button>
                   </form>
                 </div>
-              {% else %}<div class="slot" style="opacity:.35;min-height:40px"></div>{% endif %}
+              {% else %}<div class="slot slot-empty" style="opacity:.35;min-height:40px"></div>{% endif %}
             </td>
           {% endfor %}
         </tr>
@@ -129,4 +137,37 @@
 {% else %}
 <div class="card card-pad muted">Add a class first (Classes &amp; Subjects), then build its timetable here.</div>
 {% endif %}
+
+<script>
+// Timetable drag-and-drop: drag a slot onto another cell to move (or swap) it.
+(function(){
+  var dragId = null;
+  document.addEventListener('dragstart', function(e){
+    var s = e.target.closest ? e.target.closest('[data-slot-id]') : null;
+    if(s){ dragId = s.getAttribute('data-slot-id'); e.dataTransfer.effectAllowed = 'move'; s.style.opacity = '.4'; }
+  });
+  document.addEventListener('dragend', function(e){
+    var s = e.target.closest ? e.target.closest('[data-slot-id]') : null;
+    if(s) s.style.opacity = '';
+  });
+  document.addEventListener('dragover', function(e){
+    var c = e.target.closest ? e.target.closest('[data-cell]') : null;
+    if(c && dragId !== null){ e.preventDefault(); c.classList.add('drop-hover'); }
+  });
+  document.addEventListener('dragleave', function(e){
+    var c = e.target.closest ? e.target.closest('[data-cell]') : null;
+    if(c) c.classList.remove('drop-hover');
+  });
+  document.addEventListener('drop', function(e){
+    var c = e.target.closest ? e.target.closest('[data-cell]') : null;
+    if(c && dragId !== null){
+      e.preventDefault(); c.classList.remove('drop-hover');
+      document.getElementById('mvSlot').value = dragId;
+      document.getElementById('mvDay').value = c.getAttribute('data-day');
+      document.getElementById('mvPeriod').value = c.getAttribute('data-period');
+      document.getElementById('ttMoveForm').submit();
+    }
+  });
+})();
+</script>
 {% endblock %}

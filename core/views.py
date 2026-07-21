@@ -4289,17 +4289,19 @@ def _period_time(p, start_h=8, minutes=40):
     return '%02d:%02d' % (total // 60, total % 60)
 
 
-def _generate_timetable():
-    """Auto-build a CLASH-FREE weekly timetable for every class in one pass.
+def _generate_timetable(only_class=None):
+    """Auto-build a CLASH-FREE weekly timetable.
 
     Hard rules enforced: a teacher is never in two classes at the same time, and
     a class never has two subjects in the same slot. Soft rule: spread a subject
     so it doesn't repeat twice in a day when possible.
 
     Reads Subject.periods_per_week (how many periods each subject needs) and
-    TeachingAssignment (which teacher takes each class+subject). Overwrites the
-    whole TimetableSlot table. Returns the lessons it could NOT place without a
-    clash, as (classroom, subject, teacher_name) — report these to the admin."""
+    TeachingAssignment (which teacher takes each class+subject). If only_class is
+    given, ONLY that class is rebuilt — the other classes keep their slots and
+    their teacher bookings are respected. Otherwise every class is rebuilt.
+    Returns the lessons it could NOT place without a clash, as
+    (classroom, subject, teacher_name) — report these to the admin."""
     school = School.objects.first()
     days = [d.strip() for d in ((school.tt_days if school else '') or
             'Mon,Tue,Wed,Thu,Fri,Sat').split(',') if d.strip()]
@@ -4308,29 +4310,39 @@ def _generate_timetable():
     periods = [p for p in range(1, ppd + 1) if p != brk]
     slots_order = [(d, p) for d in days for p in periods]
 
-    # (classroom_id, subject_name) -> Profile of the teacher who takes it.
+    def _tname(t):
+        return ((t.user.get_full_name() or '').strip() or t.user.username) if t else ''
+
+    # (classroom_id, subject_name) -> teacher display name.
     teach = {}
     for ta in TeachingAssignment.objects.select_related('teacher__user'):
-        teach[(ta.classroom_id, ta.subject)] = ta.teacher
+        teach[(ta.classroom_id, ta.subject)] = _tname(ta.teacher)
 
-    # One lesson entry per required period; track teacher load to schedule the
-    # busiest teachers first (fewer dead-ends).
-    lessons, load = [], {}
-    for c in ClassRoom.objects.all():
-        for sub in Subject.objects.filter(classroom=c):
-            t = teach.get((c.id, sub.name))
-            for _ in range(max(0, sub.periods_per_week)):
-                lessons.append((c, sub.name, t))
-                if t:
-                    load[t.id] = load.get(t.id, 0) + 1
-    lessons.sort(key=lambda L: -(load.get(L[2].id, 0) if L[2] else 0))
+    targets = [only_class] if only_class else list(ClassRoom.objects.all())
 
     class_busy, teacher_busy, day_subject = set(), set(), set()
+    if only_class:
+        # Freeze the other classes: seed teacher busy-times from their slots.
+        for s in TimetableSlot.objects.exclude(classroom_id=only_class.id):
+            if s.teacher:
+                teacher_busy.add((s.teacher, s.day, s.period))
+        TimetableSlot.objects.filter(classroom_id=only_class.id).delete()
+    else:
+        TimetableSlot.objects.all().delete()
+
+    # One lesson entry per required period; schedule the busiest teachers first.
+    lessons, load = [], {}
+    for c in targets:
+        for sub in Subject.objects.filter(classroom=c):
+            tname = teach.get((c.id, sub.name), '')
+            for _ in range(max(0, sub.periods_per_week)):
+                lessons.append((c, sub.name, tname))
+                if tname:
+                    load[tname] = load.get(tname, 0) + 1
+    lessons.sort(key=lambda L: -(load.get(L[2], 0) if L[2] else 0))
+
     placements, unplaced = [], []
-    for c, subject, teacher in lessons:
-        tname = ''
-        if teacher:
-            tname = (teacher.user.get_full_name() or '').strip() or teacher.user.username
+    for c, subject, tname in lessons:
         done = False
         # Pass 1 keeps a subject to once-a-day; pass 2 relaxes that if needed.
         for spread in (True, False):
@@ -4339,12 +4351,12 @@ def _generate_timetable():
                     continue
                 if spread and (c.id, d, subject) in day_subject:
                     continue
-                if teacher and (teacher.id, d, p) in teacher_busy:
+                if tname and (tname, d, p) in teacher_busy:
                     continue
                 class_busy.add((c.id, d, p))
                 day_subject.add((c.id, d, subject))
-                if teacher:
-                    teacher_busy.add((teacher.id, d, p))
+                if tname:
+                    teacher_busy.add((tname, d, p))
                 placements.append((c, d, p, subject, tname))
                 done = True
                 break
@@ -4353,7 +4365,6 @@ def _generate_timetable():
         if not done:
             unplaced.append((c, subject, tname))
 
-    TimetableSlot.objects.all().delete()
     TimetableSlot.objects.bulk_create([
         TimetableSlot(classroom=c, day=d, period=p, start_time=_period_time(p),
                       subject=subject, teacher=tname)
@@ -4402,7 +4413,11 @@ def timetable_manage(request):
                 pk=request.POST.get('slot_id'), classroom=classroom).delete()
             messages.success(request, 'Slot removed.')
         elif action == 'generate':
-            unplaced = _generate_timetable()
+            # scope='class' rebuilds only the selected class (respecting the
+            # other classes); anything else rebuilds every class.
+            only = classroom if request.POST.get('scope') == 'class' else None
+            unplaced = _generate_timetable(only_class=only)
+            where = str(classroom) if only else 'all classes'
             if unplaced:
                 preview = '; '.join('%s %s' % (c, s) for c, s, _ in unplaced[:6])
                 messages.warning(
@@ -4411,8 +4426,49 @@ def timetable_manage(request):
                     'periods-per-week, then fix by hand.'
                     % (len(unplaced), preview, ' …' if len(unplaced) > 6 else ''))
             else:
-                messages.success(request, 'Clash-free timetable generated for all '
-                                 'classes. You can still edit any slot below.')
+                messages.success(request, 'Clash-free timetable generated for %s. '
+                                 'You can still edit or drag any slot below.' % where)
+            return redirect('%s?class=%s' % (reverse('timetable_manage'), classroom.id))
+        elif action == 'move':
+            # Drag-and-drop: move a slot to another (day, period); swap if the
+            # target cell is taken. Blocks teacher clashes with other classes.
+            slot = TimetableSlot.objects.filter(
+                pk=_pk(request.POST.get('slot_id')), classroom=classroom).first()
+            tday = (request.POST.get('day') or '').strip()
+            try:
+                tperiod = int(request.POST.get('period') or 0)
+            except (ValueError, TypeError):
+                tperiod = 0
+            if slot and tday in days and tperiod and not (
+                    slot.day == tday and slot.period == tperiod):
+                busy = (bool(slot.teacher) and TimetableSlot.objects.filter(
+                    day=tday, period=tperiod, teacher=slot.teacher).exclude(
+                    classroom=classroom).exists())
+                target = TimetableSlot.objects.filter(
+                    classroom=classroom, day=tday, period=tperiod).first()
+                if busy:
+                    messages.error(request, '%s already teaches another class at '
+                                   '%s P%d.' % (slot.teacher, tday, tperiod))
+                elif target:
+                    back = (bool(target.teacher) and TimetableSlot.objects.filter(
+                        day=slot.day, period=slot.period, teacher=target.teacher
+                        ).exclude(classroom=classroom).exists())
+                    if back:
+                        messages.error(request, 'Cannot swap: %s is busy at %s P%d.'
+                                       % (target.teacher, slot.day, slot.period))
+                    else:
+                        sd, sp = slot.day, slot.period
+                        slot.day, slot.period, slot.start_time = (
+                            tday, tperiod, _period_time(tperiod))
+                        target.day, target.period, target.start_time = (
+                            sd, sp, _period_time(sp))
+                        slot.save(); target.save()
+                        messages.success(request, 'Slots swapped.')
+                else:
+                    slot.day, slot.period, slot.start_time = (
+                        tday, tperiod, _period_time(tperiod))
+                    slot.save()
+                    messages.success(request, 'Slot moved.')
             return redirect('%s?class=%s' % (reverse('timetable_manage'), classroom.id))
         elif action == 'save_periods':
             for sub in Subject.objects.filter(classroom=classroom):

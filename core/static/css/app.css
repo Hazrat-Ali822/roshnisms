@@ -304,6 +304,11 @@ tr:last-child td { border-bottom: none; }
   .topbar{padding:0 14px}
 }
 
+/* Timetable drag-and-drop */
+.tt .slot[draggable=true]{cursor:grab}
+.tt .slot[draggable=true]:active{cursor:grabbing}
+.tt td.drop-hover{outline:2px dashed var(--accent);outline-offset:-3px;background:rgba(14,124,102,.06)}
+
 /* Read-only row + "Edit" reveals a full-width form (replaces inline-cell edits) */
 .edit-row > td{background:var(--paper);padding:14px 16px;border-top:none}
 .edit-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 16px;align-items:end;max-width:860px}

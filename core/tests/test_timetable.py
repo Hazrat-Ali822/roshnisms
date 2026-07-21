@@ -79,6 +79,52 @@ class TimetableGeneratorTests(TestCase):
         self.assertFalse(
             TimetableSlot.objects.filter(period=4).exists())   # no lessons at break
 
+    def test_generate_single_class_keeps_others(self):
+        self.c.post(reverse('timetable_manage'),
+                    {'action': 'generate', 'class_id': self.w.c9.id})   # all
+        before = set(TimetableSlot.objects.filter(classroom=self.w.c10)
+                     .values_list('day', 'period', 'subject'))
+        self.assertTrue(before)
+        # regenerate ONLY class 9
+        self.c.post(reverse('timetable_manage'), {
+            'action': 'generate', 'scope': 'class', 'class_id': self.w.c9.id})
+        after = set(TimetableSlot.objects.filter(classroom=self.w.c10)
+                    .values_list('day', 'period', 'subject'))
+        self.assertEqual(before, after)                     # class 10 untouched
+        self.assertTrue(TimetableSlot.objects.filter(classroom=self.w.c9).exists())
+
+    def test_move_slot_to_empty(self):
+        s = TimetableSlot.objects.create(classroom=self.w.c9, day='Mon',
+                                         period=1, subject='Math', teacher='')
+        self.c.post(reverse('timetable_manage'), {
+            'action': 'move', 'class_id': self.w.c9.id, 'slot_id': s.id,
+            'day': 'Tue', 'period': '3'})
+        s.refresh_from_db()
+        self.assertEqual((s.day, s.period), ('Tue', 3))
+
+    def test_move_swaps_when_target_taken(self):
+        a = TimetableSlot.objects.create(classroom=self.w.c9, day='Mon',
+                                         period=1, subject='Math', teacher='')
+        b = TimetableSlot.objects.create(classroom=self.w.c9, day='Mon',
+                                         period=2, subject='Eng', teacher='')
+        self.c.post(reverse('timetable_manage'), {
+            'action': 'move', 'class_id': self.w.c9.id, 'slot_id': a.id,
+            'day': 'Mon', 'period': '2'})
+        a.refresh_from_db(); b.refresh_from_db()
+        self.assertEqual(a.period, 2)
+        self.assertEqual(b.period, 1)                       # swapped
+
+    def test_move_blocked_by_teacher_clash(self):
+        TimetableSlot.objects.create(classroom=self.w.c10, day='Tue',
+                                     period=3, subject='X', teacher='Sir A')
+        s = TimetableSlot.objects.create(classroom=self.w.c9, day='Mon',
+                                         period=1, subject='Math', teacher='Sir A')
+        self.c.post(reverse('timetable_manage'), {
+            'action': 'move', 'class_id': self.w.c9.id, 'slot_id': s.id,
+            'day': 'Tue', 'period': '3'})
+        s.refresh_from_db()
+        self.assertEqual((s.day, s.period), ('Mon', 1))     # rejected, unchanged
+
 
 class ClassTeacherTests(TestCase):
     def setUp(self):
