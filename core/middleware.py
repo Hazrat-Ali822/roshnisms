@@ -123,7 +123,16 @@ class TenantDatabaseMiddleware:
                         # Strip the tenant prefix from PATH_INFO so Django's URL
                         # resolver matches core.urls normally...
                         new_path = '/' + '/'.join(path_parts[1:])
-                        if not new_path.endswith('/') and len(path_parts) > 1:
+                        # Append a trailing slash for normal page URLs (Django's
+                        # convention), but NOT for file-like URLs whose last
+                        # segment carries an extension — manifest.webmanifest,
+                        # sw.js, assetlinks.json, etc. Those routes are declared
+                        # WITHOUT a trailing slash, so forcing one turned every
+                        # PWA/TWA asset into a 404 under path-based tenancy and
+                        # broke install/packaging (no manifest, no service worker).
+                        last_seg = path_parts[-1] if path_parts else ''
+                        if (not new_path.endswith('/') and len(path_parts) > 1
+                                and '.' not in last_seg):
                             new_path += '/'
                         request.path_info = new_path
                         # ...but set SCRIPT_NAME so every URL Django BUILDS

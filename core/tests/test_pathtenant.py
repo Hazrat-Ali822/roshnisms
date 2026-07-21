@@ -36,3 +36,23 @@ class PathTenantRoutingTests(TestCase):
         resp = Client().get('/login/')
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, 'Roshni SMS')
+
+    def test_tenant_manifest_is_reachable(self):
+        """File-like tenant URLs (manifest.webmanifest) must NOT get a forced
+        trailing slash — that turned every PWA asset into a 404 under path
+        tenancy and broke install/packaging (no manifest found)."""
+        resp = Client().get('/sca/manifest.webmanifest')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('manifest', resp['Content-Type'])
+
+    def test_tenant_service_worker_is_reachable(self):
+        resp = Client().get('/sca/sw.js')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('javascript', resp['Content-Type'])
+
+    def test_tenant_page_still_gets_trailing_slash(self):
+        """Normal (non-file) tenant pages keep Django's trailing-slash behaviour
+        — /sca/login (no slash) still resolves to the tenant login."""
+        resp = Client().get('/sca/login/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Sudhum Children Academy')
