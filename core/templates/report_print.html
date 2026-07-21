@@ -10,6 +10,7 @@
   <div class="rc-head">
     <div class="rc-crest">{% if brand_logo %}<img src="{% url 'school_logo' %}" alt="">{% else %}{{ brand_name|slice:":1"|upper }}{% endif %}</div>
     <h2>{{ brand_name }}</h2>
+    {% if brand_school.address or brand_school.phone %}<div class="sub" style="font-size:11.5px">{{ brand_school.address }}{% if brand_school.address and brand_school.phone %} &middot; {% endif %}{{ brand_school.phone }}</div>{% endif %}
     <div class="sub">{{ title }}{% if subtitle %} &middot; {{ subtitle }}{% endif %}</div>
   </div>
 

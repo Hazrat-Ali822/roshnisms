@@ -4488,6 +4488,14 @@ def school_settings(request):
         if nm:
             school.name = nm
         school.campus = (request.POST.get('campus', '') or '').strip()
+        # Public profile / contact info + login & receipt customisation.
+        _profile_limits = {
+            'address': 200, 'phone': 40, 'contact_email': 120, 'website': 120,
+            'principal_name': 80, 'motto': 160, 'established': 10,
+            'receipt_footer': 240, 'login_headline': 160, 'login_tagline': 300,
+        }
+        for _f, _mx in _profile_limits.items():
+            setattr(school, _f, (request.POST.get(_f, '') or '').strip()[:_mx])
         ses = (request.POST.get('session', '') or '').strip()
         if ses:
             school.session = ses

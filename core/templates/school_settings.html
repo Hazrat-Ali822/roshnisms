@@ -8,6 +8,19 @@
   <form method="post" enctype="multipart/form-data">{% csrf_token %}
     <div class="frow"><label>School name</label><input name="name" value="{{ school.name }}" required></div>
     <div class="frow"><label>Campus / address</label><input name="campus" value="{{ school.campus }}"></div>
+
+    <h3 style="margin:18px 0 12px;font-size:15px">Contact &amp; public info</h3>
+    <p class="muted" style="font-size:12px;margin:-6px 0 12px">Printed on receipts, vouchers, result cards &amp; certificates, and shown on the login page and app.</p>
+    <div class="frow"><label>Full postal address</label><input name="address" value="{{ school.address }}" placeholder="Street, area, city"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+      <div class="frow"><label>Phone</label><input name="phone" value="{{ school.phone }}" placeholder="e.g. 042-111-1111"></div>
+      <div class="frow"><label>Public email</label><input name="contact_email" value="{{ school.contact_email }}" placeholder="info@school.edu.pk"></div>
+      <div class="frow"><label>Website</label><input name="website" value="{{ school.website }}" placeholder="www.school.edu.pk"></div>
+      <div class="frow"><label>Principal's name</label><input name="principal_name" value="{{ school.principal_name }}"></div>
+      <div class="frow"><label>Motto / tagline</label><input name="motto" value="{{ school.motto }}" placeholder="e.g. Knowledge with character"></div>
+      <div class="frow"><label>Established (year)</label><input name="established" value="{{ school.established }}" placeholder="e.g. 1998" maxlength="10"></div>
+    </div>
+    <div class="frow"><label>Receipt / voucher footer note</label><input name="receipt_footer" value="{{ school.receipt_footer }}" maxlength="240" placeholder="e.g. Fees once paid are non-refundable. Thank you."><p class="muted" style="font-size:12px;margin-top:5px">A single line printed at the bottom of every receipt and fee voucher.</p></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
       <div class="frow"><label>Academic session</label><input name="session" value="{{ school.session }}" placeholder="e.g. 2025-26"></div>
       <div class="frow"><label>Final / graduating grade</label><input name="final_grade" value="{{ school.final_grade }}" placeholder="e.g. 10"></div>
@@ -62,6 +75,11 @@
       <input type="file" name="app_apk" accept=".apk">
       <p class="muted" style="font-size:12px;margin-top:5px">Build your school's app free at <b>pwabuilder.com</b> using this portal's link, then upload the <code>.apk</code> here. Parents get a <b>Download App</b> button at <code>/app</code>. Set your <b>logo</b> above first &mdash; it becomes the app icon.</p>
     </div>
+
+    <h3 style="margin:18px 0 12px;font-size:15px">Login page</h3>
+    <p class="muted" style="font-size:12px;margin:-6px 0 12px">Custom wording on the sign-in screen parents &amp; staff see. Blank = use the default text.</p>
+    <div class="frow"><label>Headline</label><input name="login_headline" value="{{ school.login_headline }}" maxlength="160" placeholder="Everything your school runs on — in one place."></div>
+    <div class="frow"><label>Tagline / sub-text</label><input name="login_tagline" value="{{ school.login_tagline }}" maxlength="300" placeholder="Attendance, fees, exams, results and parent communication — one secure portal."></div>
 
     <button class="btn-primary btn-auto" type="submit">Save settings</button>
   </form>

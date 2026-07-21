@@ -69,6 +69,27 @@ class School(models.Model):
     # each person changes it themselves after signing in.
     default_password = models.CharField(max_length=64, default='school123')
 
+    # --- Public profile / contact info (admin-editable in Settings). Surfaces
+    # on printed receipts/vouchers/result cards/certificates, the login page
+    # and the app, so each school shows its own identity everywhere. ---
+    address = models.CharField(max_length=200, blank=True)
+    phone = models.CharField(max_length=40, blank=True)
+    contact_email = models.CharField(max_length=120, blank=True)
+    website = models.CharField(max_length=120, blank=True)
+    principal_name = models.CharField(max_length=80, blank=True)
+    motto = models.CharField(max_length=160, blank=True)          # tagline / slogan
+    established = models.CharField(max_length=10, blank=True)      # e.g. "1998"
+    # Extra line printed at the bottom of receipts/vouchers (bank details, a
+    # thank-you note, return policy, etc.). Blank = nothing extra.
+    receipt_footer = models.CharField(max_length=240, blank=True)
+    # Login-page wording — school overrides the generic marketing copy.
+    login_headline = models.CharField(max_length=160, blank=True)
+    login_tagline = models.CharField(max_length=300, blank=True)
+    # Sidebar/dashboard customisation: comma-separated nav keys the admin has
+    # chosen to hide (e.g. "hostel,transport,library"). Core items can't be
+    # hidden. Empty = show everything the role normally sees.
+    hidden_nav = models.TextField(blank=True)
+
     # --- SMS / notifications (configurable from the Settings page) ---
     # backend: 'console' (log only, default), 'http' (generic gateway / WhatsApp
     # provider) or 'twilio'. DB config here overrides settings.py.

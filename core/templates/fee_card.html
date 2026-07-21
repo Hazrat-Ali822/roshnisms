@@ -14,7 +14,7 @@
 <div class="card card-pad">
   <div class="rcpt-head" style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
     <div class="rcpt-crest" style="width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#fff;font-weight:800;font-size:20px">{{ school.name|slice:":1" }}</div>
-    <div><b style="font-size:16px;color:var(--ink)">{{ school.name }}</b><br><span class="muted">{{ school.campus|default:"Main Campus" }} &middot; Annual Fee Card {{ year }}</span></div>
+    <div><b style="font-size:16px;color:var(--ink)">{{ school.name }}</b><br><span class="muted">{% if brand_school.address %}{{ brand_school.address }}{% else %}{{ school.campus|default:"Main Campus" }}{% endif %}{% if brand_school.phone %} &middot; {{ brand_school.phone }}{% endif %} &middot; Annual Fee Card {{ year }}</span></div>
   </div>
 
   <div class="prof-grid" style="margin-bottom:14px">
@@ -45,6 +45,6 @@
       <td></td>
     </tr></tfoot>
   </table></div>
-  <p class="muted" style="font-size:11.5px;margin-top:10px">Balance reflects concessions, and excludes payments later voided or refunded. Generated {{ year }} fee statement.</p>
+  <p class="muted" style="font-size:11.5px;margin-top:10px">{% if brand_school.receipt_footer %}{{ brand_school.receipt_footer }}<br>{% endif %}Balance reflects concessions, and excludes payments later voided or refunded. Generated {{ year }} fee statement.</p>
 </div>
 {% endblock %}

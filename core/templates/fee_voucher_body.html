@@ -1,7 +1,7 @@
 <div class="card voucher">
   <div class="vch-head">
     <div class="rc-crest">{% if brand_logo %}<img src="{% url 'school_logo' %}" alt="">{% else %}{{ brand_name|slice:":1"|upper }}{% endif %}</div>
-    <div class="vch-title"><b>{{ brand_name }}</b><span>{% if school %}{{ school.campus }} &middot; {% endif %}Fee Voucher</span></div>
+    <div class="vch-title"><b>{{ brand_name }}</b><span>{% if brand_school.address %}{{ brand_school.address }}{% elif school %}{{ school.campus }}{% endif %}{% if brand_school.phone %} &middot; {{ brand_school.phone }}{% endif %} &middot; Fee Voucher</span></div>
     <div class="vch-tag">{{ c.status }}</div>
   </div>
   <div class="vch-meta">
@@ -28,5 +28,5 @@
     </tbody>
   </table></div>
   {% if c.discount_by %}<div class="vch-note">Discount approved by: {{ c.discount_by }}.</div>{% endif %}
-  <div class="vch-note">Please pay before the due date to avoid a late charge. This voucher is computer-generated.</div>
+  <div class="vch-note">{% if brand_school.receipt_footer %}{{ brand_school.receipt_footer }} &middot; {% endif %}Please pay before the due date to avoid a late charge. This voucher is computer-generated.</div>
 </div>

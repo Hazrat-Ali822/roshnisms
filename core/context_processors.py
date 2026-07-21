@@ -95,8 +95,8 @@ def branding(request):
 
     if not is_explicit_tenant or not school:
         ctx = {'brand_name': 'Roshni SMS', 'brand_logo': False,
-               'brand_logo_ver': '', 'current_session': '2025-26',
-               'my_photo': my_photo}
+               'brand_logo_ver': '', 'brand_school': None, 'hidden_nav': set(),
+               'current_session': '2025-26', 'my_photo': my_photo}
         ctx.update(_brand_theme('#15294D', '#0E7C66'))
         return ctx
 
@@ -109,6 +109,9 @@ def branding(request):
         'brand_name': tenant_school.name,
         'brand_logo': bool(tenant_school.logo),
         'brand_logo_ver': _logo_version(tenant_school),
+        'brand_school': tenant_school,
+        'hidden_nav': {k.strip() for k in
+                       (tenant_school.hidden_nav or '').split(',') if k.strip()},
         'current_session': tenant_school.session or '2025-26',
         'my_photo': my_photo,
     }
