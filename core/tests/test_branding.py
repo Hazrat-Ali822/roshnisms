@@ -98,6 +98,20 @@ class BrandingTests(TestCase):
         rb, gb, bb = (int(s.accent_color[i:i + 2], 16) for i in (1, 3, 5))
         self.assertTrue(bb > rb)                             # accent is blue-ish
 
+    def test_hide_sidebar_module(self):
+        School.objects.filter(pk=self.w.school.pk).update(subdomain='greenvalley')
+        # Hide Transport + Library via the settings form (unticked = hidden).
+        self.c.post('/settings/', {
+            'name': 'X', 'nav_show_hostel': 'on', 'nav_show_inventory': 'on'})
+        s = School.objects.first()
+        self.assertIn('transport', s.hidden_nav)
+        self.assertIn('library', s.hidden_nav)
+        self.assertNotIn('hostel', s.hidden_nav)          # left ticked -> visible
+        html = self.c.get('/', HTTP_HOST='greenvalley.example.com').content.decode()
+        self.assertNotIn('>Transport</a>', html)          # hidden from sidebar
+        self.assertNotIn('>Library</a>', html)
+        self.assertIn('>Students</a>', html)              # core item still there
+
     def test_logo_served_with_cache_header(self):
         School.objects.filter(pk=self.w.school.pk).update(subdomain='greenvalley')
         s = School.objects.first()

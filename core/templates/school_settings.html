@@ -76,6 +76,14 @@
       <p class="muted" style="font-size:12px;margin-top:5px">Build your school's app free at <b>pwabuilder.com</b> using this portal's link, then upload the <code>.apk</code> here. Parents get a <b>Download App</b> button at <code>/app</code>. Set your <b>logo</b> above first &mdash; it becomes the app icon.</p>
     </div>
 
+    <h3 style="margin:18px 0 12px;font-size:15px">Sidebar menu</h3>
+    <p class="muted" style="font-size:12px;margin:-6px 0 12px">Tick the modules you use — unticked ones are hidden from the menu (core items like Dashboard, Students, Staff, Fees &amp; Settings always stay).</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;margin-bottom:6px">
+      {% for key, label in nav_modules %}
+      <label style="display:flex;align-items:center;gap:9px;text-transform:none;letter-spacing:0;font-weight:500;font-size:13.5px"><input type="checkbox" name="nav_show_{{ key }}" style="width:auto" {% if key not in hidden_nav %}checked{% endif %}> {{ label }}</label>
+      {% endfor %}
+    </div>
+
     <h3 style="margin:18px 0 12px;font-size:15px">Login page</h3>
     <p class="muted" style="font-size:12px;margin:-6px 0 12px">Custom wording on the sign-in screen parents &amp; staff see. Blank = use the default text.</p>
     <div class="frow"><label>Headline</label><input name="login_headline" value="{{ school.login_headline }}" maxlength="160" placeholder="Everything your school runs on — in one place."></div>

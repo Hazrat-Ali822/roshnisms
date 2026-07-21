@@ -4281,6 +4281,23 @@ def timetable_manage(request):
     })
 
 
+# Sidebar modules an admin may hide (the core ones — Dashboard, Students,
+# Classes, Staff, Fees, Settings, etc. — are never hideable). Keys match the
+# nav item's `active` value in base.html.
+OPTIONAL_NAV = [
+    ('timetable', 'Timetable'), ('discipline', 'Discipline'),
+    ('sessional', 'Sessional Attendance'), ('insights', 'Insights'),
+    ('payroll', 'Payroll'), ('appraisal', 'Appraisals'),
+    ('online_payments', 'Online Payments'), ('exams', 'Exams'),
+    ('communication', 'Communication'), ('transport', 'Transport'),
+    ('hostel', 'Hostel'), ('library', 'Library'),
+    ('certificates', 'Certificates'), ('idcards', 'ID Cards'),
+    ('calendar', 'Calendar'), ('inventory', 'Inventory'),
+    ('visitors', 'Visitors'), ('complaints', 'Complaints'),
+    ('audit', 'Audit Log'),
+]
+
+
 @login_required
 @role_required('admin')
 def school_settings(request):
@@ -4562,6 +4579,10 @@ def school_settings(request):
             school.app_apk.delete(save=False)
             school.app_apk = None
         school.app_name = (request.POST.get('app_name', '') or '').strip()[:30]
+        # Sidebar customisation: a module is hidden when its "show" box is
+        # unticked. Core items aren't in OPTIONAL_NAV so can never be hidden.
+        school.hidden_nav = ','.join(
+            k for k, _ in OPTIONAL_NAV if not request.POST.get('nav_show_' + k))
         school.save()
         # If the admin ticked "match theme to logo", derive the colours from the
         # (now saved) logo — this deliberately overrides the manual pickers, so
@@ -4580,6 +4601,7 @@ def school_settings(request):
         'sms_backends': School.SMS_BACKENDS,
         'notify_channels': School.NOTIFY_CHANNELS,
         'wa_providers': School.WA_PROVIDERS,
+        'nav_modules': OPTIONAL_NAV,
     })
 
 
