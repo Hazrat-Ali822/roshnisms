@@ -26,6 +26,10 @@ class Command(BaseCommand):
         parser.add_argument(
             '--demo', action='store_true',
             help='Confirm you want to WIPE all data and load demo data.')
+        parser.add_argument(
+            '--tenant', default='',
+            help="Subdomain of a tenant school to seed into ITS OWN database "
+                 "(e.g. --tenant sca). Omit to seed the master db.sqlite3.")
 
     def handle(self, *args, **options):
         if not options['demo']:
@@ -34,6 +38,35 @@ class Command(BaseCommand):
                 'If this is a real school, do NOT run this.\n'
                 'To load the demo anyway, run:  python manage.py seed --demo\n'
                 'To start a blank school instead, run:  python manage.py setup_school')
+
+        # --tenant: point the connection at that school's own SQLite file before
+        # touching any data, so the demo lands in the tenant DB (not the master).
+        # We grab the school's real name from the master registry first, then
+        # (after switching) stamp the subdomain onto the seeded School row — the
+        # routing middleware deletes any School whose subdomain != the tenant.
+        self._tenant = (options.get('tenant') or '').strip()
+        self._tenant_name = ''
+        if self._tenant:
+            import os
+            import copy
+            from django.conf import settings
+            from django.db import connections
+            from django.core.management import call_command
+            reg = School.objects.filter(subdomain=self._tenant).first()
+            self._tenant_name = reg.name if reg else self._tenant.title()
+            db_path = os.path.join(str(settings.BASE_DIR),
+                                   '%s.sqlite3' % self._tenant)
+            conn = connections['default']
+            conn.close()
+            conn.settings_dict = copy.deepcopy(settings.DATABASES['default'])
+            conn.settings_dict['NAME'] = db_path
+            self.stdout.write(self.style.MIGRATE_HEADING(
+                'Seeding tenant "%s"  ->  %s' % (self._tenant,
+                                                 os.path.basename(db_path))))
+            # Ensure the tenant DB exists and has the current schema before we
+            # start deleting/inserting (creates the file if it's the first time).
+            call_command('migrate', interactive=False, verbosity=0)
+
         self.stdout.write('Clearing old demo data...')
         Visitor.objects.all().delete()
         InventoryItem.objects.all().delete()
@@ -77,7 +110,14 @@ class Command(BaseCommand):
         User.objects.filter(is_superuser=False).delete()
 
         self.stdout.write('Creating school and classes...')
-        School.objects.create(default_password=PASSWORD)
+        school_obj = School.objects.create(default_password=PASSWORD)
+        if self._tenant:
+            # Keep this row alive under the tenant routing middleware, and carry
+            # the school's real name over from the master registry.
+            school_obj.subdomain = self._tenant
+            if self._tenant_name:
+                school_obj.name = self._tenant_name
+            school_obj.save()
         c9 = ClassRoom.objects.create(name='9', section='A', monthly_fee=5500)
         c10 = ClassRoom.objects.create(name='10', section='A', monthly_fee=5500)
         c5 = ClassRoom.objects.create(name='5', section='B', monthly_fee=4500)
