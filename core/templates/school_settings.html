@@ -69,11 +69,20 @@
     <tbody>
     {% for h in fee_heads %}
       <tr>
-        <td><b style="color:var(--ink)">{{ h.name }}</b></td>
-        <td class="ta-r num">Rs {{ h.amount }}</td>
-        <td>{{ h.get_frequency_display }}</td>
+        <td><input name="head_name" value="{{ h.name }}" form="fh{{ h.id }}" style="min-width:120px"></td>
+        <td class="ta-r"><input type="number" name="head_amount" min="0" value="{{ h.amount }}" form="fh{{ h.id }}" style="width:90px"></td>
+        <td>
+          <select name="head_frequency" form="fh{{ h.id }}">
+            {% for val, lbl in head_frequencies %}<option value="{{ val }}" {% if val == h.frequency %}selected{% endif %}>{{ lbl }}</option>{% endfor %}
+          </select>
+        </td>
         <td>{% if h.active %}<span class="pill pill-paid">Active</span>{% else %}<span class="pill pill-pending">Off</span>{% endif %}</td>
         <td class="ta-c" style="white-space:nowrap">
+          <form id="fh{{ h.id }}" method="post" class="inline-form">{% csrf_token %}
+            <input type="hidden" name="fee_action" value="edit_head">
+            <input type="hidden" name="head_id" value="{{ h.id }}">
+            <button class="act-btn" type="submit">Save</button>
+          </form>
           <form method="post" class="inline-form">{% csrf_token %}
             <input type="hidden" name="fee_action" value="toggle_head">
             <input type="hidden" name="head_id" value="{{ h.id }}">

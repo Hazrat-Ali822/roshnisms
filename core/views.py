@@ -3299,6 +3299,19 @@ def hostel(request):
                 room.delete()
                 messages.success(
                     request, 'Removed %s; its residents are now unassigned.' % label)
+        elif action == 'edit_room':
+            room = HostelRoom.objects.filter(pk=_pk(request.POST.get('room_id'))).first()
+            if room:
+                name = (request.POST.get('name', '') or '').strip()
+                if name:
+                    room.name = name
+                try:
+                    room.capacity = max(1, int(request.POST.get('capacity') or room.capacity))
+                except (ValueError, TypeError):
+                    pass
+                room.warden = (request.POST.get('warden', '') or '').strip()
+                room.save()
+                messages.success(request, 'Hostel room updated: %s.' % room.name)
         elif action == 'allocate':
             residents = Student.objects.filter(is_hostel=True, graduated=False)
             changed = 0
@@ -4196,6 +4209,13 @@ def classes_manage(request):
         elif action == 'delete_subject':
             Subject.objects.filter(pk=request.POST.get('subject_id')).delete()
             messages.success(request, 'Subject removed.')
+        elif action == 'edit_subject':
+            subj = Subject.objects.filter(pk=_pk(request.POST.get('subject_id'))).first()
+            nm = (request.POST.get('subject', '') or '').strip()
+            if subj and nm:
+                subj.name = nm
+                subj.save(update_fields=['name'])
+                messages.success(request, 'Subject renamed to "%s".' % nm)
         return redirect('classes_manage')
 
     classes = ClassRoom.objects.prefetch_related('subjects').order_by('name', 'section')
@@ -4297,6 +4317,21 @@ def school_settings(request):
             if h:
                 messages.success(request, 'Fee head removed: %s.' % h.name)
                 h.delete()
+        elif fee_action == 'edit_head':
+            h = FeeHead.objects.filter(pk=_pk(request.POST.get('head_id'))).first()
+            if h:
+                name = (request.POST.get('head_name', '') or '').strip()
+                if name:
+                    h.name = name
+                try:
+                    h.amount = max(0, int(request.POST.get('head_amount') or h.amount))
+                except (ValueError, TypeError):
+                    pass
+                freq = request.POST.get('head_frequency')
+                if freq in {f for f, _ in FeeHead.FREQUENCY}:
+                    h.frequency = freq
+                h.save()
+                messages.success(request, 'Fee head updated: %s.' % h.name)
         return redirect('school_settings')
 
     # --- Testing tools: load demo data / start fresh (destructive) ---
@@ -5076,6 +5111,18 @@ def exam_rooms(request):
         elif action == 'delete':
             ExamRoom.objects.filter(pk=request.POST.get('room_id')).delete()
             messages.success(request, 'Room removed.')
+        elif action == 'edit':
+            room = ExamRoom.objects.filter(pk=_pk(request.POST.get('room_id'))).first()
+            if room:
+                name = (request.POST.get('name', '') or '').strip()
+                if name:
+                    room.name = name
+                try:
+                    room.capacity = max(1, int(request.POST.get('capacity') or room.capacity))
+                except (ValueError, TypeError):
+                    pass
+                room.save()
+                messages.success(request, 'Room updated: %s.' % room.name)
         return redirect('exam_rooms')
     return render(request, 'exam_rooms.html', {
         'role': 'admin', 'active': 'exams', 'rooms': ExamRoom.objects.all(),

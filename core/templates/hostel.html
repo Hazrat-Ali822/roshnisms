@@ -29,20 +29,25 @@
 <div class="card">
   <div class="sec-head"><h3>Rooms</h3></div>
   <div class="table-wrap"><table>
-    <thead><tr><th>Room</th><th class="ta-r">Beds</th><th class="ta-r">Occupied</th><th>Warden</th><th>Residents</th><th></th></tr></thead>
+    <thead><tr><th>Room</th><th class="ta-r">Beds</th><th class="ta-r">Occupied</th><th>Warden</th><th>Residents</th><th class="ta-c no-print">Actions</th></tr></thead>
     <tbody>
     {% for r in rooms %}
       <tr>
-        <td><b style="color:var(--ink)">{{ r.name }}</b></td>
-        <td class="ta-r num">{{ r.capacity }}</td>
+        <td><input name="name" value="{{ r.name }}" form="hr{{ r.id }}" style="min-width:110px"></td>
+        <td class="ta-r"><input type="number" name="capacity" min="1" value="{{ r.capacity }}" form="hr{{ r.id }}" style="width:70px"></td>
         <td class="ta-r num">{% if r.occupied > r.capacity %}<b style="color:#922A1B">{{ r.occupied }}</b>{% else %}{{ r.occupied }}{% endif %}</td>
-        <td>{{ r.warden|default:"&mdash;" }}</td>
+        <td><input name="warden" value="{{ r.warden }}" form="hr{{ r.id }}" style="min-width:100px"></td>
         <td class="muted" style="font-size:12.5px">{% for s in r.residents.all %}{{ s.name }}{% if not forloop.last %}, {% endif %}{% empty %}&mdash;{% endfor %}</td>
-        <td>
-          <form method="post" style="display:inline" onsubmit="return confirm('Remove this room? Its residents will become unassigned.');">{% csrf_token %}
+        <td class="ta-c no-print" style="white-space:nowrap">
+          <form id="hr{{ r.id }}" method="post" class="inline-form">{% csrf_token %}
+            <input type="hidden" name="action" value="edit_room">
+            <input type="hidden" name="room_id" value="{{ r.id }}">
+            <button class="act-btn" type="submit">Save</button>
+          </form>
+          <form method="post" class="inline-form" onsubmit="return confirm('Remove this room? Its residents will become unassigned.');">{% csrf_token %}
             <input type="hidden" name="action" value="delete_room">
             <input type="hidden" name="room_id" value="{{ r.id }}">
-            <button class="btn-reject" type="submit" style="padding:5px 11px">Remove</button>
+            <button class="act-btn ghost" type="submit">Delete</button>
           </form>
         </td>
       </tr>

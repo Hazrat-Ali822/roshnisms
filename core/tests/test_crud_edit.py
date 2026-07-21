@@ -4,9 +4,53 @@ import datetime
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from core.models import (Book, CalendarEvent, Expense, PaymentSource, Staff,
+from core.models import (Book, CalendarEvent, ExamRoom, Expense, FeeHead,
+                         HostelRoom, PaymentSource, Staff, Subject,
                          TransportRoute)
 from core.tests.factory import build_world, PASSWORD
+
+
+class EditOnlyModulesTests(TestCase):
+    """Modules that already had delete but were missing edit."""
+    def setUp(self):
+        self.w = build_world()
+        self.c = Client()
+        self.c.login(username='admin1', password=PASSWORD)
+
+    def test_fee_head_edit(self):
+        h = FeeHead.objects.create(name='Admission', amount=1000, frequency='once')
+        self.c.post(reverse('school_settings'), {
+            'fee_action': 'edit_head', 'head_id': h.id, 'head_name': 'Admission Fee',
+            'head_amount': '2500', 'head_frequency': 'monthly'})
+        h.refresh_from_db()
+        self.assertEqual(h.name, 'Admission Fee')
+        self.assertEqual(h.amount, 2500)
+        self.assertEqual(h.frequency, 'monthly')
+
+    def test_exam_room_edit(self):
+        r = ExamRoom.objects.create(name='Hall A', capacity=30)
+        self.c.post(reverse('exam_rooms'), {
+            'action': 'edit', 'room_id': r.id, 'name': 'Main Hall', 'capacity': '50'})
+        r.refresh_from_db()
+        self.assertEqual(r.name, 'Main Hall')
+        self.assertEqual(r.capacity, 50)
+
+    def test_hostel_room_edit(self):
+        r = HostelRoom.objects.create(name='R1', capacity=4, warden='Kamran')
+        self.c.post(reverse('hostel'), {
+            'action': 'edit_room', 'room_id': r.id, 'name': 'Room 1',
+            'capacity': '6', 'warden': 'Kamran Ali'})
+        r.refresh_from_db()
+        self.assertEqual(r.name, 'Room 1')
+        self.assertEqual(r.capacity, 6)
+        self.assertEqual(r.warden, 'Kamran Ali')
+
+    def test_subject_rename(self):
+        self.c.post(reverse('classes_manage'), {
+            'action': 'edit_subject', 'subject_id': self.w.math9.id,
+            'subject': 'Maths'})
+        self.w.math9.refresh_from_db()
+        self.assertEqual(self.w.math9.name, 'Maths')
 
 
 class StaffCrudTests(TestCase):
