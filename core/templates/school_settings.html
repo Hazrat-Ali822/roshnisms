@@ -33,8 +33,16 @@
       <p class="muted" style="font-size:12px;margin-top:5px">PNG/JPG/SVG &mdash; <b>any shape or size works</b>; it's auto-fitted into a square for the phone app icon. Appears in the sidebar, login page and as the installed app's icon.</p>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
-      <div class="frow"><label>Primary colour (headers)</label><input type="color" name="primary_color" value="{{ school.primary_color }}" style="width:64px;height:40px;padding:2px"></div>
-      <div class="frow"><label>Accent colour (buttons)</label><input type="color" name="accent_color" value="{{ school.accent_color }}" style="width:64px;height:40px;padding:2px"></div>
+      <div class="frow"><label>Primary colour (sidebar &amp; headers)</label><input type="color" name="primary_color" value="{{ school.primary_color }}" style="width:64px;height:40px;padding:2px"></div>
+      <div class="frow"><label>Accent colour (buttons &amp; highlights)</label><input type="color" name="accent_color" value="{{ school.accent_color }}" style="width:64px;height:40px;padding:2px"></div>
+    </div>
+    <div class="frow" style="background:var(--paper);border-radius:10px;padding:12px 14px;margin-top:4px">
+      <label style="display:flex;align-items:center;gap:9px;text-transform:none;letter-spacing:0;font-weight:600">
+        <input type="checkbox" name="auto_theme" style="width:auto" {% if not brand_logo %}disabled{% endif %}>
+        Match the theme colours to my logo automatically
+      </label>
+      <p class="muted" style="font-size:12px;margin:6px 0 0">Tick this and press <b>Save settings</b> — the system reads your logo and sets the sidebar &amp; button colours from it. Untick to keep the colours you pick above.
+      {% if brand_logo %}<br>Or apply it right now: <button class="act-btn ghost" type="submit" name="action" value="logo_colors" formnovalidate style="margin-top:8px">Match colours to my logo now</button>{% else %}<br><b>Upload &amp; save a logo first</b> to use this.{% endif %}</p>
     </div>
 
     <h3 style="margin:18px 0 12px;font-size:15px">Mobile app (Android)</h3>

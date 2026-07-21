@@ -4469,6 +4469,20 @@ def school_settings(request):
         messages.success(request, 'Online payment settings saved.')
         return redirect('school_settings')
 
+    # --- One-click: pull the theme colours straight from the uploaded logo ---
+    if request.method == 'POST' and request.POST.get('action') == 'logo_colors':
+        pal = _logo_palette(school)
+        if pal:
+            school.primary_color, school.accent_color = pal
+            school.save(update_fields=['primary_color', 'accent_color'])
+            _audit(request, 'Theme colours matched to logo', '%s / %s' % pal)
+            messages.success(request, 'Theme colours updated from your logo '
+                             '(sidebar %s, highlights %s).' % pal)
+        else:
+            messages.error(request, 'Could not read colours from the logo. '
+                           'Upload a clear logo first, then try again.')
+        return redirect('school_settings')
+
     if request.method == 'POST':
         nm = (request.POST.get('name', '') or '').strip()
         if nm:
@@ -4541,6 +4555,14 @@ def school_settings(request):
             school.app_apk = None
         school.app_name = (request.POST.get('app_name', '') or '').strip()[:30]
         school.save()
+        # If the admin ticked "match theme to logo", derive the colours from the
+        # (now saved) logo — this deliberately overrides the manual pickers, so
+        # unticking the box is how you keep hand-chosen colours.
+        if request.POST.get('auto_theme') and school.logo:
+            pal = _logo_palette(school)
+            if pal:
+                school.primary_color, school.accent_color = pal
+                school.save(update_fields=['primary_color', 'accent_color'])
         messages.success(request, 'School settings saved.')
         return redirect('school_settings')
     return render(request, 'school_settings.html', {
@@ -5735,7 +5757,9 @@ def student_photo(request, pk):
     student = get_object_or_404(Student, pk=pk)
     if not student.photo:
         raise Http404('No photo on file.')
-    return FileResponse(open(student.photo.path, 'rb'))
+    resp = FileResponse(open(student.photo.path, 'rb'))
+    resp['Cache-Control'] = 'private, max-age=86400'   # stop per-page re-fetch flicker
+    return resp
 
 
 def school_logo(request):
@@ -5788,6 +5812,60 @@ def app_icon(request):
         except Exception:
             pass
     return HttpResponseRedirect(_abs_static(request, 'icons/icon-%d.png' % size))
+
+
+def _logo_palette(school):
+    """Pick a (primary, accent) colour pair straight out of the school's logo so
+    the whole system can auto-theme itself to the school's brand. Returns hex
+    strings, or None if there's no logo / Pillow / usable colour.
+
+    accent  = the most vivid (saturated) colour in the logo — buttons, highlights.
+    primary = the logo's own darkest strong colour (great for the sidebar); if the
+              logo has no dark tone, a dark version of the accent is used."""
+    logo = getattr(school, 'logo', None)
+    if not logo:
+        return None
+    try:
+        from PIL import Image
+        import io
+        with logo.open('rb') as fh:
+            data = fh.read()
+        img = Image.open(io.BytesIO(data)).convert('RGBA')
+    except Exception:
+        return None
+    img.thumbnail((120, 120))
+    bg = Image.new('RGBA', img.size, (255, 255, 255, 255))
+    bg.alpha_composite(img)
+    vivid, darks = {}, {}
+    for r, g, b in bg.convert('RGB').getdata():
+        mx, mn = max(r, g, b), min(r, g, b)
+        if mx >= 244 and mn >= 232:            # essentially the white background
+            continue
+        sat = mx - mn
+        lum = 0.299 * r + 0.587 * g + 0.114 * b
+        key = (r // 16 * 16 + 8, g // 16 * 16 + 8, b // 16 * 16 + 8)
+        if sat >= 38:
+            vivid[key] = vivid.get(key, 0) + sat          # weight vivid pixels
+        if lum <= 95:
+            darks[key] = darks.get(key, 0) + 1
+
+    def _hx(c):
+        return '#%02X%02X%02X' % (min(255, c[0]), min(255, c[1]), min(255, c[2]))
+
+    def _dark(c, f=0.42):
+        return '#%02X%02X%02X' % (int(c[0] * f), int(c[1] * f), int(c[2] * f))
+
+    accent_key = (max(vivid, key=vivid.get) if vivid else
+                  (max(darks, key=darks.get) if darks else None))
+    if accent_key is None:
+        return None
+    accent = _hx(accent_key)
+    # primary drives the sidebar, so make it a genuinely deep tone: take the
+    # logo's darkest strong colour (or the accent) and deepen it so it always
+    # reads as a dark sidebar that's distinct from the vivid accent.
+    primary_src = max(darks, key=darks.get) if darks else accent_key
+    primary = _dark(primary_src, 0.60)
+    return primary, accent
 
 
 @login_required
@@ -6016,7 +6094,9 @@ def profile_photo(request, pk):
     prof = Profile.objects.filter(user_id=pk).first()
     if not prof or not prof.photo:
         raise Http404('No photo.')
-    return FileResponse(prof.photo.open('rb'))
+    resp = FileResponse(prof.photo.open('rb'))
+    resp['Cache-Control'] = 'private, max-age=86400'   # stop per-page re-fetch flicker
+    return resp
 
 
 @login_required
