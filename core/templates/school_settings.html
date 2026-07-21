@@ -39,6 +39,11 @@
 
     <h3 style="margin:18px 0 12px;font-size:15px">Mobile app (Android)</h3>
     <div class="frow">
+      <label>App name (shown under the phone icon)</label>
+      <input type="text" name="app_name" value="{{ school.app_name }}" maxlength="30" placeholder="e.g. Sudhum Academy">
+      <p class="muted" style="font-size:12px;margin-top:5px">Keep it <b>short</b> (the full school name is too long to fit under an icon). Blank = use the full school name.</p>
+    </div>
+    <div class="frow">
       <label>Branded app file (.apk)</label>
       {% if school.app_apk %}
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">

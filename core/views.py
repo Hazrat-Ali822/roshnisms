@@ -4418,6 +4418,7 @@ def school_settings(request):
         if request.POST.get('remove_apk') and school.app_apk:
             school.app_apk.delete(save=False)
             school.app_apk = None
+        school.app_name = (request.POST.get('app_name', '') or '').strip()[:30]
         school.save()
         messages.success(request, 'School settings saved.')
         return redirect('school_settings')
@@ -5589,7 +5590,12 @@ def web_manifest(request):
     from django.http import JsonResponse
     school = School.objects.first()
     explicit = getattr(request, 'is_explicit_tenant', False)
-    name = (school.name if (explicit and school) else 'Roshni SMS')
+    full_name = (school.name if (explicit and school) else 'Roshni SMS')
+    # The launcher label under the icon: the school's chosen short app name if
+    # set (the full name is usually too long), else the full name itself.
+    app_label = ((school.app_name or '').strip()
+                 if (explicit and school) else '') or full_name
+    name = full_name
     theme = ((school.primary_color if school else None) or '#15294D')
     start = request.build_absolute_uri(reverse('dashboard'))
     # If this school has a logo, put it FIRST so it becomes the app's launcher
@@ -5626,7 +5632,7 @@ def web_manifest(request):
     data = {
         'id': start,
         'name': name,
-        'short_name': (name[:12] or 'Roshni'),
+        'short_name': (app_label[:20] or 'Roshni'),
         'description': '%s — school management portal for parents, students and '
                        'staff.' % name,
         'start_url': start,

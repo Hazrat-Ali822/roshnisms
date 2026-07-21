@@ -61,6 +61,10 @@ class School(models.Model):
     # school's own portal URL). When present, a "Download App" button appears on
     # the portal so parents/students can install it (no Play Store needed).
     app_apk = models.FileField(upload_to='school/apk/', blank=True, null=True)
+    # Short name shown UNDER the phone app icon (the full school name is often
+    # too long to fit). Blank = fall back to the school name. e.g. "Sudhum
+    # Academy". Feeds the PWA manifest short_name.
+    app_name = models.CharField(max_length=30, blank=True)
     # New logins (auto-created when a student/staff is added) get this password;
     # each person changes it themselves after signing in.
     default_password = models.CharField(max_length=64, default='school123')
