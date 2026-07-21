@@ -62,7 +62,7 @@ a { text-decoration: none; color: inherit; }
   height: 42px;
   border-radius: 12px;
   flex: 0 0 42px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-d));
+  background: var(--accent);
   display: grid;
   place-items: center;
   color: var(--on-accent);
@@ -115,7 +115,7 @@ a { text-decoration: none; color: inherit; }
   transform: translateX(4px);
 }
 .nav-item.active {
-  background: linear-gradient(135deg, var(--accent), var(--accent-d));
+  background: var(--accent);
   color: var(--on-accent);
   opacity: 1;
   font-weight: 600;
@@ -257,7 +257,7 @@ tr:last-child td { border-bottom: none; }
 .login-card input:focus{border-color:var(--accent)}
 .btn-primary{
   width:100%;
-  background: linear-gradient(135deg, var(--accent), var(--accent-d));
+  background: var(--accent);
   color:var(--on-accent);
   border:none;
   border-radius: var(--radius-sm);
@@ -268,12 +268,12 @@ tr:last-child td { border-bottom: none; }
   font-family:inherit;
   margin-top:4px;
   transition: var(--transition);
-  box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.15);
+  box-shadow: 0 1px 2px rgba(var(--accent-rgb), 0.10);
 }
 .btn-primary:hover{
-  background: linear-gradient(135deg, var(--accent-d), var(--accent));
+  background: var(--accent-d);
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(var(--accent-rgb), 0.25);
+  box-shadow: 0 3px 10px rgba(var(--accent-rgb), 0.18);
 }
 .btn-primary:active{
   transform: translateY(1px);
@@ -361,7 +361,7 @@ tr:last-child td { border-bottom: none; }
 /* ---------- Step 3: fees & finance ---------- */
 .act-btn{
   display:inline-block;
-  background: linear-gradient(135deg, var(--accent), var(--accent-d));
+  background: var(--accent);
   color:var(--on-accent);
   border-radius: 50px;
   padding:8px 18px;
@@ -371,11 +371,11 @@ tr:last-child td { border-bottom: none; }
   cursor:pointer;
   font-family:inherit;
   transition: var(--transition);
-  box-shadow: 0 4px 10px rgba(var(--accent-rgb), 0.15);
+  box-shadow: 0 1px 2px rgba(var(--accent-rgb), 0.10);
 }
 .act-btn:hover{
   transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(var(--accent-rgb), 0.25);
+  box-shadow: 0 3px 10px rgba(var(--accent-rgb), 0.18);
 }
 .act-btn.ghost{
   background:#fff;
