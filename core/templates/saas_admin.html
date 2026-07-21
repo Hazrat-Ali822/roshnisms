@@ -173,8 +173,7 @@
 
 </div>
 
-<!-- Chart.js and rendering scripts -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Chart.js is loaded (deferred) by base.html; render the charts here. -->
 <script>
   document.addEventListener("DOMContentLoaded", function() {
     const schoolNames = {{ school_names_json|safe }};
