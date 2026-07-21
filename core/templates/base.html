@@ -433,16 +433,24 @@ function exportTableToCSV(tableSelector, filename) {
     var totalCols = cols.length;
     var excludeLast = false;
     
-    // Exclude the Action column if present
+    // Exclude the Action(s) column if present
     var lastHeader = rows[0].querySelector("th:last-child");
-    if (lastHeader && lastHeader.innerText.trim().toLowerCase() === 'action') {
+    if (lastHeader && ['action', 'actions'].indexOf(lastHeader.innerText.trim().toLowerCase()) !== -1) {
       excludeLast = true;
     }
-    
+
     var limit = excludeLast ? totalCols - 1 : totalCols;
-    
+
     for (var j = 0; j < limit; j++) {
-      var text = cols[j].innerText.trim();
+      // Inline-editable cells hold a form control, not text — read its value.
+      var ctrl = cols[j].querySelector('input, select, textarea');
+      var text;
+      if (ctrl) {
+        text = (ctrl.tagName === 'SELECT' && ctrl.selectedIndex >= 0)
+               ? ctrl.options[ctrl.selectedIndex].text : (ctrl.value || '');
+      } else {
+        text = cols[j].innerText.trim();
+      }
       text = text.replace(/"/g, '""');
       text = text.replace(/\s+/g, ' ');
       row.push('"' + text + '"');

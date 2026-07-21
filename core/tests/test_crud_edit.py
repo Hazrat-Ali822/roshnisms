@@ -4,7 +4,8 @@ import datetime
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from core.models import CalendarEvent, TransportRoute
+from core.models import (Book, CalendarEvent, Expense, PaymentSource,
+                         TransportRoute)
 from core.tests.factory import build_world, PASSWORD
 
 
@@ -50,3 +51,62 @@ class CalendarCrudTests(TestCase):
     def test_delete_event(self):
         self.c.post(reverse('calendar'), {'action': 'delete', 'id': self.e.id})
         self.assertFalse(CalendarEvent.objects.filter(id=self.e.id).exists())
+
+
+class LibraryCrudTests(TestCase):
+    def setUp(self):
+        self.w = build_world()
+        self.c = Client()
+        self.c.login(username='admin1', password=PASSWORD)
+        self.b = Book.objects.create(title='Physics', author='Ali', code='LIB-0001',
+                                     copies=5, available=3)   # 2 out on loan
+
+    def test_edit_book_keeps_loans_consistent(self):
+        # raise copies 5 -> 8; 2 are out, so available should become 6
+        self.c.post(reverse('library'), {
+            'action': 'edit_book', 'id': self.b.id, 'title': 'Physics XI',
+            'author': 'Ali Khan', 'copies': '8'})
+        self.b.refresh_from_db()
+        self.assertEqual(self.b.title, 'Physics XI')
+        self.assertEqual(self.b.copies, 8)
+        self.assertEqual(self.b.available, 6)
+
+    def test_delete_book(self):
+        self.c.post(reverse('library'), {'action': 'delete_book', 'id': self.b.id})
+        self.assertFalse(Book.objects.filter(id=self.b.id).exists())
+
+
+class ExpensesCrudTests(TestCase):
+    def setUp(self):
+        self.w = build_world()
+        self.c = Client()
+        self.c.login(username='finance1', password=PASSWORD)
+        self.src = PaymentSource.objects.create(name='Main Bank')
+        self.e = Expense.objects.create(title='Electric', category='Utilities',
+                                        amount=5000, date=datetime.date(2026, 6, 1),
+                                        source=self.src)
+
+    def test_edit_expense(self):
+        self.c.post(reverse('expenses'), {
+            'action': 'edit_expense', 'id': self.e.id, 'title': 'Electricity bill',
+            'category': 'Maintenance', 'amount': '7500', 'source': self.src.id})
+        self.e.refresh_from_db()
+        self.assertEqual(self.e.title, 'Electricity bill')
+        self.assertEqual(self.e.category, 'Maintenance')
+        self.assertEqual(self.e.amount, 7500)
+
+    def test_delete_expense(self):
+        self.c.post(reverse('expenses'), {'action': 'delete_expense', 'id': self.e.id})
+        self.assertFalse(Expense.objects.filter(id=self.e.id).exists())
+
+    def test_edit_source(self):
+        self.c.post(reverse('expenses'), {
+            'action': 'edit_source', 'id': self.src.id, 'name': 'Meezan Bank'})
+        self.src.refresh_from_db()
+        self.assertEqual(self.src.name, 'Meezan Bank')
+
+    def test_delete_source_unassigns_expense(self):
+        self.c.post(reverse('expenses'), {'action': 'delete_source', 'id': self.src.id})
+        self.assertFalse(PaymentSource.objects.filter(id=self.src.id).exists())
+        self.e.refresh_from_db()
+        self.assertIsNone(self.e.source)   # SET_NULL kept the expense

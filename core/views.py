@@ -2169,6 +2169,45 @@ def expenses(request):
                     defaults={'note': (request.POST.get('note', '') or '').strip()})
                 messages.success(request, 'Payment source added: %s.' % name)
             return redirect('expenses')
+        if action == 'edit_source':
+            s = PaymentSource.objects.filter(pk=_pk(request.POST.get('id'))).first()
+            if s:
+                name = (request.POST.get('name', '') or '').strip()
+                if name:
+                    s.name = name
+                    s.save(update_fields=['name'])
+                    messages.success(request, 'Source updated: %s.' % s.name)
+            return redirect('expenses')
+        if action == 'delete_source':
+            s = PaymentSource.objects.filter(pk=_pk(request.POST.get('id'))).first()
+            if s:
+                messages.success(request, 'Source removed: %s.' % s.name)
+                s.delete()          # expenses' source FK is SET_NULL (safe)
+            return redirect('expenses')
+        if action == 'delete_expense':
+            e = Expense.objects.filter(pk=_pk(request.POST.get('id'))).first()
+            if e:
+                messages.success(request, 'Expense removed: %s.' % e.title)
+                e.delete()
+            return redirect('expenses')
+        if action == 'edit_expense':
+            e = Expense.objects.filter(pk=_pk(request.POST.get('id'))).first()
+            if e:
+                title = (request.POST.get('title', '') or '').strip()
+                if title:
+                    e.title = title
+                cat = request.POST.get('category')
+                if cat in dict(Expense.CATEGORY_CHOICES):
+                    e.category = cat
+                try:
+                    e.amount = max(0, int(request.POST.get('amount') or e.amount))
+                except (ValueError, TypeError):
+                    pass
+                e.source = PaymentSource.objects.filter(
+                    pk=_pk(request.POST.get('source'))).first()
+                e.save()
+                messages.success(request, 'Expense updated: %s.' % e.title)
+            return redirect('expenses')
         title = (request.POST.get('title', '') or '').strip()
         if title:
             try:
@@ -2199,6 +2238,7 @@ def expenses(request):
         'role': 'finance', 'active': 'expenses', 'items': items, 'total': total,
         'sources': sources, 'source_totals': list(by_source.values()),
         'unassigned': unassigned,
+        'categories': [c for c, _ in Expense.CATEGORY_CHOICES],
     })
 
 
@@ -3149,6 +3189,27 @@ def library(request):
             else:
                 messages.error(request,
                                'Could not issue: no copies available or borrower missing.')
+        elif action == 'edit_book':
+            book = Book.objects.filter(pk=_pk(request.POST.get('id'))).first()
+            if book:
+                title = (request.POST.get('title', '') or '').strip()
+                if title:
+                    book.title = title
+                book.author = (request.POST.get('author', '') or '').strip()
+                issued = max(0, book.copies - book.available)   # copies out on loan
+                try:
+                    new_copies = max(1, int(request.POST.get('copies') or book.copies))
+                except (ValueError, TypeError):
+                    new_copies = book.copies
+                book.copies = new_copies
+                book.available = max(0, new_copies - issued)    # keep loans consistent
+                book.save()
+                messages.success(request, 'Book updated: %s.' % book.title)
+        elif action == 'delete_book':
+            book = Book.objects.filter(pk=_pk(request.POST.get('id'))).first()
+            if book:
+                messages.success(request, 'Book removed: %s.' % book.title)
+                book.delete()          # its issue history cascades away
         return redirect('library')
 
     ret = request.GET.get('return')
