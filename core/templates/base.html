@@ -59,7 +59,7 @@
           <a class="nav-item {% if active == 'discipline' %}active{% endif %}" href="{% url 'discipline' %}">Discipline</a>
           <a class="nav-item {% if active == 'absent' %}active{% endif %}" href="{% url 'absent_list' %}">Daily Absent List</a>
           <a class="nav-item {% if active == 'sessional' %}active{% endif %}" href="{% url 'attendance_sessional' %}">Sessional Attendance</a>
-          <a class="nav-item {% if active == 'insights' %}active{% endif %}" href="{% url 'insights' %}">Insights &#10024;</a>
+          <a class="nav-item {% if active == 'insights' %}active{% endif %}" href="{% url 'insights' %}">Insights</a>
           <a class="nav-item {% if active == 'staff' or active == 'staff_attendance' or active == 'leave' %}active{% endif %}" href="{% url 'staff_list' %}">Staff</a>
           <a class="nav-item {% if active == 'payroll' %}active{% endif %}" href="{% url 'payroll' %}">Payroll</a>
           <a class="nav-item {% if active == 'appraisal' %}active{% endif %}" href="{% url 'staff_appraisal' %}">Appraisals</a>
@@ -189,7 +189,7 @@
         {% elif role == 'principal' %}
           <a class="nav-item {% if active == 'approvals' %}active{% endif %}" href="{% url 'principal_approvals' %}">Approvals</a>
           <a class="nav-item {% if active == 'academics' %}active{% endif %}" href="{% url 'principal_academics' %}">Academics</a>
-          <a class="nav-item {% if active == 'insights' %}active{% endif %}" href="{% url 'insights' %}">Insights &#10024;</a>
+          <a class="nav-item {% if active == 'insights' %}active{% endif %}" href="{% url 'insights' %}">Insights</a>
           <a class="nav-item {% if active == 'promotion' %}active{% endif %}" href="{% url 'promotion' %}">Year-End</a>
           <a class="nav-item {% if active == 'staff' %}active{% endif %}" href="{% url 'principal_staff' %}">Staff</a>
         {% endif %}
@@ -201,7 +201,7 @@
         <a class="nav-item {% if active == 'help' %}active{% endif %}" href="{% url 'help_guide' %}" style="margin-bottom:8px">Help &amp; Guide</a>
         <a class="logout" href="{% url 'logout_get' %}" style="display: block; text-align: center; text-decoration: none;">Sign out</a>
       {% else %}
-        <a class="nav-item" href="{% url 'app_download' %}" style="margin-bottom:8px">Get the App &#128241;</a>
+        <a class="nav-item" href="{% url 'app_download' %}" style="margin-bottom:8px">Get the App</a>
         <a class="nav-item {% if active == 'help' %}active{% endif %}" href="{% url 'help_guide' %}" style="margin-bottom:8px">Help &amp; Guide</a>
         <a class="nav-item {% if active == 'account' or active == 'password' %}active{% endif %}" href="{% url 'account' %}" style="margin-bottom:8px">My account</a>
         <a class="logout" href="{% url 'logout_get' %}" style="display: block; text-align: center; text-decoration: none;">Sign out</a>
