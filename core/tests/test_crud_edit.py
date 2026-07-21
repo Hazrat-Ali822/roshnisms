@@ -53,6 +53,43 @@ class EditOnlyModulesTests(TestCase):
         self.assertEqual(self.w.math9.name, 'Maths')
 
 
+class EditRevealRendersTests(TestCase):
+    """Each list page renders the read-only row + hidden Edit form (rowEdit)."""
+    def setUp(self):
+        self.w = build_world()
+        self.c = Client()
+        self.c.login(username='admin1', password=PASSWORD)
+
+    def test_pages_render_edit_reveal(self):
+        from core.models import (Book, CalendarEvent, ExamRoom, Expense, FeeHead,
+                                 HostelRoom, InventoryItem, Staff, TransportRoute)
+        FeeHead.objects.create(name='Admission', amount=1000, frequency='once')
+        InventoryItem.objects.create(name='Chalk', category='Supplies', quantity=5)
+        TransportRoute.objects.create(name='R1', vehicle='X', driver='D', fee=1)
+        CalendarEvent.objects.create(title='Ev', event_type='Event',
+                                     date=datetime.date(2026, 3, 1))
+        Book.objects.create(title='T', author='A', code='LIB-1', copies=1, available=1)
+        Staff.objects.create(name='S', designation='T', basic_salary=1, allowances=0)
+        Expense.objects.create(title='E', category='Utilities', amount=1,
+                               date=datetime.date(2026, 6, 1))
+        ExamRoom.objects.create(name='Hall', capacity=10)
+        HostelRoom.objects.create(name='R', capacity=2, warden='W')
+
+        def _check(client, name):
+            r = client.get(reverse(name))
+            self.assertEqual(r.status_code, 200, name)
+            html = r.content.decode()
+            self.assertIn('rowEdit(this)', html, name)   # Edit button present
+            self.assertIn('edit-row', html, name)        # hidden edit form present
+
+        for name in ('inventory', 'transport', 'calendar', 'library', 'staff_list',
+                     'exam_rooms', 'hostel', 'school_settings'):
+            _check(self.c, name)
+        fc = Client()                       # expenses is finance-only
+        fc.login(username='finance1', password=PASSWORD)
+        _check(fc, 'expenses')
+
+
 class StaffCrudTests(TestCase):
     def setUp(self):
         self.w = build_world()

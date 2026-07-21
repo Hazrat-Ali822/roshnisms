@@ -26,18 +26,25 @@
     <tbody>
     {% for r in rooms %}
       <tr>
-        <td><input name="name" value="{{ r.name }}" form="rm{{ r.id }}" style="min-width:140px"></td>
-        <td class="ta-r"><input type="number" name="capacity" min="1" value="{{ r.capacity }}" form="rm{{ r.id }}" style="width:80px"></td>
+        <td><b style="color:var(--ink)">{{ r.name }}</b></td>
+        <td class="ta-r num">{{ r.capacity }}</td>
         <td class="ta-c no-print" style="white-space:nowrap">
-          <form id="rm{{ r.id }}" method="post" class="inline-form">{% csrf_token %}
-            <input type="hidden" name="action" value="edit">
-            <input type="hidden" name="room_id" value="{{ r.id }}">
-            <button class="act-btn" type="submit">Save</button>
-          </form>
+          <button type="button" class="act-btn ghost" onclick="rowEdit(this)">Edit</button>
           <form method="post" class="inline-form" onsubmit="return confirm('Remove room {{ r.name|escapejs }}?');">{% csrf_token %}
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="room_id" value="{{ r.id }}">
             <button class="act-btn ghost" type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      <tr class="edit-row no-print" hidden>
+        <td colspan="3">
+          <form method="post" class="edit-form">{% csrf_token %}
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="room_id" value="{{ r.id }}">
+            <div class="frow"><label>Room name</label><input name="name" value="{{ r.name }}"></div>
+            <div class="frow"><label>Capacity</label><input type="number" name="capacity" min="1" value="{{ r.capacity }}"></div>
+            <div class="btns"><button class="btn-primary btn-auto" type="submit">Save changes</button></div>
           </form>
         </td>
       </tr>

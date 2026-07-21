@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ brand_name }}{% endblock %}</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Spectral:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260721c">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260721d">
   <link rel="manifest" href="{% url 'web_manifest' %}">
   <meta name="csrf-token" content="{{ csrf_token }}">
   <meta name="theme-color" content="{{ brand_primary }}">
@@ -423,8 +423,9 @@ function exportTableToCSV(tableSelector, filename) {
   
   for (var i = 0; i < rows.length; i++) {
     var row = [];
+    if (rows[i].classList.contains('edit-row')) { continue; }   // skip hidden edit forms
     var cols = rows[i].querySelectorAll("td, th");
-    
+
     // Skip empty rows
     if (cols.length === 0 || (cols.length === 1 && cols[0].classList.contains('dempty'))) {
       continue;
@@ -491,7 +492,11 @@ function exportTableToCSV(tableSelector, filename) {
   document.querySelectorAll('.table-wrap > table').forEach(function(table){
     if(table.classList.contains('no-search')) return;
     var tb = table.tBodies[0];
-    if(!tb || tb.rows.length < 6) return;
+    if(!tb) return;
+    // Only count/filter real data rows, not the hidden "Edit" form rows.
+    var rows = Array.prototype.filter.call(tb.rows, function(r){
+      return !r.classList.contains('edit-row'); });
+    if(rows.length < 6) return;
     var box = document.createElement('div'); box.className = 'tbl-search no-print';
     var inp = document.createElement('input');
     inp.type = 'search'; inp.placeholder = 'Search this list…';
@@ -501,15 +506,29 @@ function exportTableToCSV(tableSelector, filename) {
     var cache = null;
     inp.addEventListener('input', function(){
       var q = inp.value.trim().toLowerCase();
-      if(cache === null){ cache = Array.prototype.map.call(tb.rows, rowText); }
-      for(var i=0;i<tb.rows.length;i++){
-        tb.rows[i].style.display = (!q || cache[i].indexOf(q) >= 0) ? '' : 'none';
+      if(cache === null){ cache = rows.map(rowText); }
+      for(var i=0;i<rows.length;i++){
+        var show = (!q || cache[i].indexOf(q) >= 0);
+        rows[i].style.display = show ? '' : 'none';
+        var er = rows[i].nextElementSibling;   // hide the paired edit form too
+        if(er && er.classList.contains('edit-row') && !show) er.style.display = 'none';
       }
     });
-    // Rebuild the text cache if the user edits an inline field.
     tb.addEventListener('change', function(){ cache = null; });
   });
 })();
+
+// "Edit" button reveals that row's edit form (the next .edit-row) — replaces the
+// old every-cell-is-an-input style with a clean read-only row + on-demand form.
+function rowEdit(btn){
+  var tr = btn.closest('tr');
+  var er = tr && tr.nextElementSibling;
+  if(er && er.classList.contains('edit-row')){
+    er.hidden = !er.hidden;
+    btn.textContent = er.hidden ? 'Edit' : 'Close';
+    if(!er.hidden){ var f = er.querySelector('input,select,textarea'); if(f) f.focus(); }
+  }
+}
 </script>
 {% if user.is_authenticated and vapid_public_key %}
 {% if user.profile.role == 'parent' or user.profile.role == 'student' %}

@@ -20,29 +20,35 @@
 </div>
 </details>
 <div class="card">
-  <div class="sec-head"><h3>Upcoming events</h3><span class="muted no-print" style="font-size:12.5px">Edit any field, then press <b>Save</b>.</span></div>
+  <div class="sec-head"><h3>Upcoming events</h3><span class="muted no-print" style="font-size:12.5px">Press <b>Edit</b> to change an event.</span></div>
   <div class="table-wrap"><table>
     <thead><tr><th>Date</th><th>Title</th><th>Type</th><th class="ta-c no-print">Actions</th></tr></thead>
     <tbody>
     {% for e in events %}
       <tr>
-        <td><input type="date" name="date" value="{{ e.date|date:'Y-m-d' }}" form="ev{{ e.id }}"></td>
-        <td><input name="title" value="{{ e.title }}" form="ev{{ e.id }}" style="min-width:150px"></td>
-        <td>
-          <select name="event_type" form="ev{{ e.id }}">
-            {% for t in event_types %}<option value="{{ t }}" {% if t == e.event_type %}selected{% endif %}>{{ t }}</option>{% endfor %}
-          </select>
-        </td>
+        <td>{{ e.date|date:'D, d M Y' }}</td>
+        <td><b style="color:var(--ink)">{{ e.title }}</b></td>
+        <td><span class="pill pill-info">{{ e.event_type }}</span></td>
         <td class="ta-c no-print" style="white-space:nowrap">
-          <form id="ev{{ e.id }}" method="post" class="inline-form">{% csrf_token %}
-            <input type="hidden" name="action" value="edit">
-            <input type="hidden" name="id" value="{{ e.id }}">
-            <button class="act-btn" type="submit">Save</button>
-          </form>
+          <button type="button" class="act-btn ghost" onclick="rowEdit(this)">Edit</button>
           <form method="post" class="inline-form" onsubmit="return confirm('Delete event {{ e.title|escapejs }}?');">{% csrf_token %}
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="id" value="{{ e.id }}">
             <button class="act-btn ghost" type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      <tr class="edit-row no-print" hidden>
+        <td colspan="4">
+          <form method="post" class="edit-form">{% csrf_token %}
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="id" value="{{ e.id }}">
+            <div class="frow"><label>Date</label><input type="date" name="date" value="{{ e.date|date:'Y-m-d' }}"></div>
+            <div class="frow"><label>Title</label><input name="title" value="{{ e.title }}"></div>
+            <div class="frow"><label>Type</label>
+              <select name="event_type">{% for t in event_types %}<option value="{{ t }}" {% if t == e.event_type %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+            </div>
+            <div class="btns"><button class="btn-primary btn-auto" type="submit">Save changes</button></div>
           </form>
         </td>
       </tr>

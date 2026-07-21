@@ -40,30 +40,41 @@
 </details>
 <div class="card">
   <div class="sec-head"><h3>All staff ({{ staff|length }})</h3></div>
-  <div class="sec-head" style="border:0"><span class="muted no-print" style="font-size:12.5px">Edit any field, then press <b>Save</b>.</span></div>
+  <div class="sec-head" style="border:0"><span class="muted no-print" style="font-size:12.5px">Press <b>Edit</b> to change a staff member.</span></div>
   <div class="table-wrap"><table id="staff-table">
     <thead><tr><th>Name</th><th>Designation</th><th>Phone</th><th>Email</th><th class="ta-r">Basic</th><th class="ta-r">Allow.</th><th class="ta-r">Monthly</th><th>Joined</th><th class="ta-c no-print">Actions</th></tr></thead>
     <tbody>
     {% for s in staff %}
       <tr>
-        <td><input name="name" value="{{ s.name }}" form="st{{ s.id }}" style="min-width:120px"></td>
-        <td><input name="designation" value="{{ s.designation }}" form="st{{ s.id }}" style="min-width:110px"></td>
-        <td><input name="phone" value="{{ s.phone }}" form="st{{ s.id }}" style="width:120px"></td>
-        <td><input name="email" value="{{ s.email }}" form="st{{ s.id }}" style="min-width:140px"></td>
-        <td><input type="number" name="basic_salary" min="0" value="{{ s.basic_salary }}" form="st{{ s.id }}" style="width:90px"></td>
-        <td><input type="number" name="allowances" min="0" value="{{ s.allowances }}" form="st{{ s.id }}" style="width:90px"></td>
+        <td><b style="color:var(--ink)">{{ s.name }}</b></td>
+        <td>{{ s.designation|default:"&mdash;" }}</td>
+        <td>{{ s.phone|default:"&mdash;" }}</td>
+        <td>{{ s.email|default:"&mdash;" }}</td>
+        <td class="ta-r num">{{ s.basic_salary }}</td>
+        <td class="ta-r num">{{ s.allowances }}</td>
         <td class="ta-r num">Rs {{ s.monthly_salary }}</td>
         <td>{{ s.joined|date:"d M Y" }}</td>
         <td class="ta-c no-print" style="white-space:nowrap">
-          <form id="st{{ s.id }}" method="post" class="inline-form">{% csrf_token %}
-            <input type="hidden" name="action" value="edit_staff">
-            <input type="hidden" name="id" value="{{ s.id }}">
-            <button class="act-btn" type="submit">Save</button>
-          </form>
+          <button type="button" class="act-btn ghost" onclick="rowEdit(this)">Edit</button>
           <form method="post" class="inline-form" onsubmit="return confirm('Delete staff {{ s.name|escapejs }}?');">{% csrf_token %}
             <input type="hidden" name="action" value="delete_staff">
             <input type="hidden" name="id" value="{{ s.id }}">
             <button class="act-btn ghost" type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      <tr class="edit-row no-print" hidden>
+        <td colspan="9">
+          <form method="post" class="edit-form">{% csrf_token %}
+            <input type="hidden" name="action" value="edit_staff">
+            <input type="hidden" name="id" value="{{ s.id }}">
+            <div class="frow"><label>Name</label><input name="name" value="{{ s.name }}"></div>
+            <div class="frow"><label>Designation</label><input name="designation" value="{{ s.designation }}"></div>
+            <div class="frow"><label>Phone</label><input name="phone" value="{{ s.phone }}"></div>
+            <div class="frow"><label>Email</label><input name="email" value="{{ s.email }}"></div>
+            <div class="frow"><label>Basic salary (Rs)</label><input type="number" name="basic_salary" min="0" value="{{ s.basic_salary }}"></div>
+            <div class="frow"><label>Allowances (Rs)</label><input type="number" name="allowances" min="0" value="{{ s.allowances }}"></div>
+            <div class="btns"><button class="btn-primary btn-auto" type="submit">Save changes</button></div>
           </form>
         </td>
       </tr>

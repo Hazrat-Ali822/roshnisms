@@ -43,27 +43,35 @@
 </details>
 </div>
 <div class="card">
-  <div class="sec-head"><h3>Catalogue</h3><span class="muted no-print" style="font-size:12.5px">Edit a field, then press <b>Save</b>.</span></div>
+  <div class="sec-head"><h3>Catalogue</h3><span class="muted no-print" style="font-size:12.5px">Press <b>Edit</b> to change a book.</span></div>
   <div class="table-wrap"><table>
-    <thead><tr><th>Code</th><th>Title</th><th>Author</th><th>Copies</th><th>Available</th><th class="ta-c no-print">Actions</th></tr></thead>
+    <thead><tr><th>Code</th><th>Title</th><th>Author</th><th class="ta-r">Copies</th><th class="ta-r">Available</th><th class="ta-c no-print">Actions</th></tr></thead>
     <tbody>
     {% for b in books %}
       <tr>
         <td>{{ b.code }}</td>
-        <td><input name="title" value="{{ b.title }}" form="bk{{ b.id }}" style="min-width:140px"></td>
-        <td><input name="author" value="{{ b.author }}" form="bk{{ b.id }}" style="min-width:120px"></td>
-        <td><input type="number" name="copies" min="1" value="{{ b.copies }}" form="bk{{ b.id }}" style="width:72px"></td>
-        <td><b {% if b.available == 0 %}style="color:var(--overdue)"{% endif %}>{{ b.available }}</b></td>
+        <td><b style="color:var(--ink)">{{ b.title }}</b></td>
+        <td>{{ b.author|default:"&mdash;" }}</td>
+        <td class="ta-r num">{{ b.copies }}</td>
+        <td class="ta-r num"><b {% if b.available == 0 %}style="color:var(--overdue)"{% endif %}>{{ b.available }}</b></td>
         <td class="ta-c no-print" style="white-space:nowrap">
-          <form id="bk{{ b.id }}" method="post" class="inline-form">{% csrf_token %}
-            <input type="hidden" name="action" value="edit_book">
-            <input type="hidden" name="id" value="{{ b.id }}">
-            <button class="act-btn" type="submit">Save</button>
-          </form>
+          <button type="button" class="act-btn ghost" onclick="rowEdit(this)">Edit</button>
           <form method="post" class="inline-form" onsubmit="return confirm('Delete book {{ b.title|escapejs }}?');">{% csrf_token %}
             <input type="hidden" name="action" value="delete_book">
             <input type="hidden" name="id" value="{{ b.id }}">
             <button class="act-btn ghost" type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      <tr class="edit-row no-print" hidden>
+        <td colspan="6">
+          <form method="post" class="edit-form">{% csrf_token %}
+            <input type="hidden" name="action" value="edit_book">
+            <input type="hidden" name="id" value="{{ b.id }}">
+            <div class="frow"><label>Title</label><input name="title" value="{{ b.title }}"></div>
+            <div class="frow"><label>Author</label><input name="author" value="{{ b.author }}"></div>
+            <div class="frow"><label>Copies</label><input type="number" name="copies" min="1" value="{{ b.copies }}"></div>
+            <div class="btns"><button class="btn-primary btn-auto" type="submit">Save changes</button></div>
           </form>
         </td>
       </tr>

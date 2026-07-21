@@ -42,18 +42,24 @@
     <tbody>
     {% for row in source_totals %}
       <tr>
-        <td><input name="name" value="{{ row.source.name }}" form="src{{ row.source.id }}" style="min-width:130px"></td>
+        <td><b style="color:var(--ink)">{{ row.source.name }}</b></td>
         <td class="ta-r num">Rs {{ row.total }}</td>
         <td class="ta-c no-print" style="white-space:nowrap">
-          <form id="src{{ row.source.id }}" method="post" class="inline-form">{% csrf_token %}
-            <input type="hidden" name="action" value="edit_source">
-            <input type="hidden" name="id" value="{{ row.source.id }}">
-            <button class="act-btn" type="submit">Save</button>
-          </form>
+          <button type="button" class="act-btn ghost" onclick="rowEdit(this)">Edit</button>
           <form method="post" class="inline-form" onsubmit="return confirm('Delete source {{ row.source.name|escapejs }}? Its expenses become Unassigned.');">{% csrf_token %}
             <input type="hidden" name="action" value="delete_source">
             <input type="hidden" name="id" value="{{ row.source.id }}">
             <button class="act-btn ghost" type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      <tr class="edit-row no-print" hidden>
+        <td colspan="3">
+          <form method="post" class="edit-form">{% csrf_token %}
+            <input type="hidden" name="action" value="edit_source">
+            <input type="hidden" name="id" value="{{ row.source.id }}">
+            <div class="frow"><label>Source name</label><input name="name" value="{{ row.source.name }}"></div>
+            <div class="btns"><button class="btn-primary btn-auto" type="submit">Save changes</button></div>
           </form>
         </td>
       </tr>
@@ -73,30 +79,34 @@
     <tbody>
     {% for e in items %}
       <tr>
-        <td><input name="title" value="{{ e.title }}" form="ex{{ e.id }}" style="min-width:130px"></td>
-        <td>
-          <select name="category" form="ex{{ e.id }}">
-            {% for c in categories %}<option value="{{ c }}" {% if c == e.category %}selected{% endif %}>{{ c }}</option>{% endfor %}
-          </select>
-        </td>
-        <td>
-          <select name="source" form="ex{{ e.id }}">
-            <option value="">&mdash;</option>
-            {% for s in sources %}<option value="{{ s.id }}" {% if s.id == e.source_id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
-          </select>
-        </td>
-        <td><input type="number" name="amount" min="0" value="{{ e.amount }}" form="ex{{ e.id }}" style="width:90px"></td>
+        <td><b style="color:var(--ink)">{{ e.title }}</b></td>
+        <td>{{ e.category }}</td>
+        <td>{% if e.source_id %}{{ e.source.name }}{% else %}<span class="muted">&mdash;</span>{% endif %}</td>
+        <td class="num">Rs {{ e.amount }}</td>
         <td>{{ e.date|date:"d M Y" }}</td>
         <td class="ta-c no-print" style="white-space:nowrap">
-          <form id="ex{{ e.id }}" method="post" class="inline-form">{% csrf_token %}
-            <input type="hidden" name="action" value="edit_expense">
-            <input type="hidden" name="id" value="{{ e.id }}">
-            <button class="act-btn" type="submit">Save</button>
-          </form>
+          <button type="button" class="act-btn ghost" onclick="rowEdit(this)">Edit</button>
           <form method="post" class="inline-form" onsubmit="return confirm('Delete expense {{ e.title|escapejs }}?');">{% csrf_token %}
             <input type="hidden" name="action" value="delete_expense">
             <input type="hidden" name="id" value="{{ e.id }}">
             <button class="act-btn ghost" type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      <tr class="edit-row no-print" hidden>
+        <td colspan="6">
+          <form method="post" class="edit-form">{% csrf_token %}
+            <input type="hidden" name="action" value="edit_expense">
+            <input type="hidden" name="id" value="{{ e.id }}">
+            <div class="frow"><label>Title</label><input name="title" value="{{ e.title }}"></div>
+            <div class="frow"><label>Category</label>
+              <select name="category">{% for c in categories %}<option value="{{ c }}" {% if c == e.category %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+            </div>
+            <div class="frow"><label>Paid from</label>
+              <select name="source"><option value="">&mdash; Unassigned &mdash;</option>{% for s in sources %}<option value="{{ s.id }}" {% if s.id == e.source_id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select>
+            </div>
+            <div class="frow"><label>Amount (Rs)</label><input type="number" name="amount" min="0" value="{{ e.amount }}"></div>
+            <div class="btns"><button class="btn-primary btn-auto" type="submit">Save changes</button></div>
           </form>
         </td>
       </tr>

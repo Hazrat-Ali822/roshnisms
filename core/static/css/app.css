@@ -304,6 +304,13 @@ tr:last-child td { border-bottom: none; }
   .topbar{padding:0 14px}
 }
 
+/* Read-only row + "Edit" reveals a full-width form (replaces inline-cell edits) */
+.edit-row > td{background:var(--paper);padding:14px 16px;border-top:none}
+.edit-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 16px;align-items:end;max-width:860px}
+.edit-form .frow{margin:0}
+.edit-form label{font-size:11px}
+.edit-form .btns{grid-column:1/-1;display:flex;gap:8px;margin-top:2px}
+
 /* Auto per-list search box injected above listing tables */
 .tbl-search{padding:10px 12px 0}
 .tbl-search input{width:100%;max-width:320px;border:1px solid var(--line-strong);border-radius:9px;

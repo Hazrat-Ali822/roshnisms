@@ -22,32 +22,40 @@
 </div>
 </details>
 <div class="card">
-  <div class="sec-head"><h3>Stock items</h3><span class="muted no-print" style="font-size:12.5px">Edit any field, then press <b>Save</b>.</span></div>
+  <div class="sec-head"><h3>Stock items</h3><span class="muted no-print" style="font-size:12.5px">Press <b>Edit</b> to change an item.</span></div>
   <div class="table-wrap"><table>
-    <thead><tr><th>Item</th><th>Category</th><th>Quantity</th><th>Unit</th><th>Reorder at</th><th>Status</th><th class="ta-c no-print">Actions</th></tr></thead>
+    <thead><tr><th>Item</th><th>Category</th><th class="ta-r">Quantity</th><th>Unit</th><th class="ta-r">Reorder at</th><th>Status</th><th class="ta-c no-print">Actions</th></tr></thead>
     <tbody>
     {% for i in items %}
       <tr>
-        <td><input name="name" value="{{ i.name }}" form="ed{{ i.id }}" style="min-width:120px"></td>
-        <td>
-          <select name="category" form="ed{{ i.id }}">
-            {% for c in categories %}<option value="{{ c }}" {% if c == i.category %}selected{% endif %}>{{ c }}</option>{% endfor %}
-          </select>
-        </td>
-        <td><input type="number" name="quantity" min="0" value="{{ i.quantity }}" form="ed{{ i.id }}" style="width:80px"></td>
-        <td><input name="unit" value="{{ i.unit }}" form="ed{{ i.id }}" style="width:64px"></td>
-        <td><input type="number" name="reorder_level" min="0" value="{{ i.reorder_level }}" form="ed{{ i.id }}" style="width:80px"></td>
+        <td><b style="color:var(--ink)">{{ i.name }}</b></td>
+        <td>{{ i.category }}</td>
+        <td class="ta-r num">{{ i.quantity }}</td>
+        <td>{{ i.unit|default:"&mdash;" }}</td>
+        <td class="ta-r num">{{ i.reorder_level }}</td>
         <td>{% if i.low %}<span class="pill pill-overdue">Low</span>{% else %}<span class="pill pill-paid">OK</span>{% endif %}</td>
         <td class="ta-c no-print" style="white-space:nowrap">
-          <form id="ed{{ i.id }}" method="post" class="inline-form">{% csrf_token %}
-            <input type="hidden" name="action" value="edit">
-            <input type="hidden" name="id" value="{{ i.id }}">
-            <button class="act-btn" type="submit">Save</button>
-          </form>
+          <button type="button" class="act-btn ghost" onclick="rowEdit(this)">Edit</button>
           <form method="post" class="inline-form" onsubmit="return confirm('Delete {{ i.name|escapejs }}?');">{% csrf_token %}
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="id" value="{{ i.id }}">
             <button class="act-btn ghost" type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      <tr class="edit-row no-print" hidden>
+        <td colspan="7">
+          <form method="post" class="edit-form">{% csrf_token %}
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="id" value="{{ i.id }}">
+            <div class="frow"><label>Item</label><input name="name" value="{{ i.name }}"></div>
+            <div class="frow"><label>Category</label>
+              <select name="category">{% for c in categories %}<option value="{{ c }}" {% if c == i.category %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+            </div>
+            <div class="frow"><label>Quantity</label><input type="number" name="quantity" min="0" value="{{ i.quantity }}"></div>
+            <div class="frow"><label>Unit</label><input name="unit" value="{{ i.unit }}"></div>
+            <div class="frow"><label>Reorder at</label><input type="number" name="reorder_level" min="0" value="{{ i.reorder_level }}"></div>
+            <div class="btns"><button class="btn-primary btn-auto" type="submit">Save changes</button></div>
           </form>
         </td>
       </tr>
