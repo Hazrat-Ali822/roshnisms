@@ -202,6 +202,18 @@ class TenantRoutingMiddleware:
         user = getattr(request, 'user', None)
         is_superuser = user.is_superuser if (user and user.is_authenticated) else False
 
+        # Public PWA / TWA assets (web manifest, service worker, Digital Asset
+        # Links) must ALWAYS be reachable — for anonymous crawlers like
+        # PWABuilder and Chrome's install check, and EVEN when a tenant's
+        # subscription has lapsed. Otherwise install/packaging can't find the
+        # manifest or service worker and reports "no manifest". Serve them
+        # before any of the tenant/subscription redirects below.
+        _p = request.path.rstrip('/')
+        if (_p.endswith('/manifest.webmanifest') or _p == '/manifest.webmanifest'
+                or _p.endswith('/sw.js') or _p == '/sw.js'
+                or _p.endswith('/assetlinks.json')):
+            return self.get_response(request)
+
         # 3. User session-based routing and verification
         if is_superuser and is_explicit_tenant:
             allowed_paths = [
