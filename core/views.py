@@ -5227,6 +5227,41 @@ def calendar(request):
 @role_required('admin')
 def inventory(request):
     if request.method == 'POST':
+        action = request.POST.get('action', 'add')
+
+        if action == 'delete':
+            item = InventoryItem.objects.filter(pk=_pk(request.POST.get('id'))).first()
+            if item:
+                messages.success(request, 'Item removed: %s.' % item.name)
+                item.delete()
+            return redirect('inventory')
+
+        if action == 'edit':
+            item = InventoryItem.objects.filter(pk=_pk(request.POST.get('id'))).first()
+            if item:
+                name = (request.POST.get('name', '') or '').strip()
+                if name:
+                    item.name = name
+                cat = request.POST.get('category')
+                if cat in dict(InventoryItem.CATEGORY_CHOICES):
+                    item.category = cat
+                try:
+                    item.quantity = max(0, int(request.POST.get('quantity') or item.quantity))
+                except (ValueError, TypeError):
+                    pass
+                try:
+                    item.reorder_level = max(0, int(
+                        request.POST.get('reorder_level') or item.reorder_level))
+                except (ValueError, TypeError):
+                    pass
+                unit = (request.POST.get('unit', '') or '').strip()
+                if unit:
+                    item.unit = unit[:20]
+                item.save()
+                messages.success(request, 'Updated: %s.' % item.name)
+            return redirect('inventory')
+
+        # default: add a new item
         name = (request.POST.get('name', '') or '').strip()
         if name:
             try:
@@ -5245,6 +5280,7 @@ def inventory(request):
     items = list(InventoryItem.objects.all())
     return render(request, 'inventory.html', {
         'role': 'admin', 'active': 'inventory', 'items': items,
+        'categories': [c for c, _ in InventoryItem.CATEGORY_CHOICES],
         'low': sum(1 for i in items if i.low), 'total': len(items),
     })
 
