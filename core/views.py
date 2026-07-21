@@ -1676,16 +1676,150 @@ _HELP_ROADMAP = [
 ]
 
 
+# Role-tailored guide: a short "this is your world" intro plus the exact pages
+# each role actually uses, so everyone (not only admins) opens Help and sees a
+# complete walkthrough written for their own job — "apne lehaz se".
+_ROLE_GUIDE = {
+    'owner': {
+        'label': 'School Owner',
+        'intro': 'You get the whole-school picture — students, staff and money '
+                 'at a glance. Everything here is view-only, so explore freely; '
+                 'you cannot break anything by looking around.',
+        'cards': [
+            ('Owner Dashboard', 'The headline numbers the moment you sign in — '
+             'students, staff, fees collected vs. pending, this month’s expenses.'),
+            ('Students overview', 'Strength by class, admissions trend and who '
+             'left — the enrolment picture without the paperwork.'),
+            ('Staff overview', 'How many teachers and staff you have, and the '
+             'monthly salary bill.'),
+            ('Finance overview', 'Collected, outstanding and expenses — is the '
+             'school healthy this month?'),
+        ],
+    },
+    'principal': {
+        'label': 'Principal',
+        'intro': 'You lead the academics and you approve things. The system '
+                 'routes staff leaves, fee concessions and admission offers to '
+                 'you for a simple yes or no.',
+        'cards': [
+            ('Academics', 'Classes, subjects and exam performance across the '
+             'whole school.'),
+            ('Staff', 'Your teaching and non-teaching team and their standing.'),
+            ('Approvals', 'One inbox for staff <b>leave requests</b>, fee '
+             '<b>concessions</b> and admission <b>offers</b>. Read each, then '
+             'Approve or Reject — the result applies instantly.'),
+            ('Year-End (Promotion)', 'After final results, move every class up a '
+             'grade in one controlled step. Take a backup first.'),
+        ],
+    },
+    'admin': {
+        'label': 'Office / Administrator',
+        'intro': 'This is the engine room — the Office role can see and do every '
+                 'module in the school. Here is the day-to-day map; the full '
+                 'reference for every screen is further down this page.',
+        'cards': [
+            ('Students', 'Add one, or Import CSV for a whole class. Report cards '
+             'and Export to Excel are one click away.'),
+            ('Classes, subjects &amp; timetable', 'Create classes &amp; subjects, '
+             'set class and subject teachers, then auto-generate a clash-free '
+             'timetable and drag any slot to adjust.'),
+            ('Attendance', 'Daily attendance, today’s absent list, and sessional '
+             'summaries.'),
+            ('Exams &amp; results', 'Datesheets, rooms, marks and auto-built '
+             'report cards.'),
+            ('Staff &amp; HR', 'Staff records, attendance, leave, payroll and '
+             'appraisals.'),
+            ('Operations', 'Transport, hostel, library, inventory, visitors, '
+             'discipline, complaints and the calendar.'),
+            ('Documents &amp; messages', 'Admissions, certificates, ID cards, '
+             'reports and SMS/WhatsApp announcements.'),
+            ('Control &amp; safety', 'Users &amp; Roles, Audit Log, Settings and '
+             'weekly Backup / Restore.'),
+        ],
+    },
+    'finance': {
+        'label': 'Finance &amp; Accounts',
+        'intro': 'You handle the money — collecting fees, printing receipts, '
+                 'chasing defaulters and recording expenses.',
+        'cards': [
+            ('Fee Collection', 'Search a student, enter the amount and method, '
+             'Save — a receipt is created and the parent gets an SMS.'),
+            ('Online Payments', 'Parents pay by JazzCash / Easypaisa / bank and '
+             'upload proof; you confirm it here.'),
+            ('Receipts', 'Every receipt, searchable and re-printable.'),
+            ('Defaulters', 'Everyone with overdue fees — send a reminder in one '
+             'tap.'),
+            ('Expenses', 'Record what the school spends so profit stays accurate.'),
+        ],
+    },
+    'teacher': {
+        'label': 'Teacher',
+        'intro': 'Your daily rhythm — take attendance, enter marks, set homework '
+                 'and talk to parents. The system only shows you your own classes.',
+        'cards': [
+            ('Mark Attendance', 'Open your class, tap the absentees, Save. '
+             'Parents are alerted automatically.'),
+            ('Enter Marks', 'Pick the exam and subject, type each student’s '
+             'marks, Save — report cards build themselves.'),
+            ('Assignments &amp; Quizzes', 'Set homework or an online quiz, then '
+             'collect and grade submissions.'),
+            ('Behaviour Notes', 'Log a quick good or bad note that stays on the '
+             'student’s record.'),
+            ('Class Analytics', 'See how your class is trending — attendance and '
+             'result patterns.'),
+            ('Messages', 'Two-way chat with the parents of your class.'),
+            ('My Timetable', 'Your weekly periods, always up to date.'),
+            ('My Pay &amp; Attendance', 'Your own salary slips and attendance '
+             'record.'),
+        ],
+    },
+    'student': {
+        'label': 'Student',
+        'intro': 'Your whole school life on your phone — results, timetable, '
+                 'homework and fees. Sign in with the username the school gave you.',
+        'cards': [
+            ('My Results', 'Marks and report cards for every exam.'),
+            ('My Timetable &amp; Datesheet', 'Your weekly classes and the exam '
+             'schedule.'),
+            ('My Assignments &amp; Quizzes', 'Homework to do and quizzes to '
+             'attempt online.'),
+            ('Subjects &amp; Materials', 'Your subjects and any notes the teacher '
+             'shared, ready to download.'),
+            ('My Attendance', 'Your present/absent record and percentage.'),
+            ('My Fees', 'Your fee voucher — view, download, or pay online.'),
+        ],
+    },
+    'parent': {
+        'label': 'Parent',
+        'intro': 'Stay on top of your child’s school without visiting — progress, '
+                 'attendance, fees and every notice, right in your pocket.',
+        'cards': [
+            ('Attendance &amp; Results', 'Your child’s daily record, results and '
+             'report cards.'),
+            ('Fees', 'View the fee voucher and pay online, then upload the proof.'),
+            ('Message the teacher', 'Ask the class teacher directly and get '
+             'replies.'),
+            ('Announcements', 'School notices, plus the timetable and datesheet.'),
+        ],
+        'tips': [
+            'More than one child here? A small <b>child-switcher</b> appears at '
+            'the top right — tap it to switch; each child has their own results, '
+            'fees and messages.',
+        ],
+    },
+}
+
+
 @login_required
 def help_guide(request):
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else 'admin'
-    is_admin = role in ('admin', 'owner', 'principal')
     return render(request, 'help_guide.html', {
         'role': role, 'active': 'help',
+        'guide': _ROLE_GUIDE.get(role),
         'quickstart': _HELP_QUICKSTART.get(role, []),
-        'modules': _HELP_MODULES if is_admin else [],
-        'paths': _HELP_PATHS if is_admin else [],
+        'modules': _HELP_MODULES if role == 'admin' else [],
+        'paths': _HELP_PATHS if role == 'admin' else [],
         'roadmap': _HELP_ROADMAP,
     })
 

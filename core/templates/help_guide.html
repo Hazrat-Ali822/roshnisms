@@ -1,7 +1,28 @@
 {% extends 'base.html' %}
 {% block heading %}Help &amp; Guide{% endblock %}
 {% block content %}
-<div class="welcome"><h1>Help &amp; Guide</h1><p>What each part of the system does, and how to use it. New here? Start with the steps below.</p></div>
+<div class="welcome"><h1>Help &amp; Guide</h1><p>What each part of the system does, and how to use it &mdash; shown for <b>your role</b>. New here? Start with the steps below.</p></div>
+
+{% if guide %}
+<div class="card card-pad" style="margin-bottom:18px">
+  <span class="pill pill-info" style="margin-bottom:10px;display:inline-block">Your role &middot; {{ guide.label|safe }}</span>
+  <h3 style="margin:6px 0 6px">Your guide</h3>
+  <p class="muted" style="margin:0 0 14px;max-width:70ch">{{ guide.intro|safe }}</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">
+    {% for title, desc in guide.cards %}
+    <div class="card" style="padding:14px 16px;margin:0">
+      <div style="font-weight:700;color:var(--ink);font-size:14px;margin-bottom:4px">{{ title|safe }}</div>
+      <div class="muted" style="font-size:13px;line-height:1.5">{{ desc|safe }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% if guide.tips %}
+  <ul style="margin:14px 0 0;padding-left:18px;color:var(--muted);font-size:13.5px;line-height:1.7">
+    {% for t in guide.tips %}<li>{{ t|safe }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% endif %}
 
 {% if quickstart %}
 <div class="card card-pad" style="margin-bottom:18px">

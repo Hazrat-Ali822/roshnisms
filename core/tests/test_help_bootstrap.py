@@ -20,6 +20,30 @@ class HelpGuideTests(TestCase):
             self.assertEqual(r.status_code, 200, 'help crashed for a role')
             self.assertIn('Getting started', r.content.decode())
 
+    def test_each_role_sees_its_own_tailored_guide(self):
+        # (user, role label that should appear, a card title only that role sees)
+        cases = [
+            (self.w.teacher_u, 'Teacher', 'Behaviour Notes'),
+            (self.w.finance_u, 'Finance', 'Defaulters'),
+            (self.w.parent_u, 'Parent', 'Message the teacher'),
+            (self.w.student_u, 'Student', 'My Results'),
+            (self.w.principal_u, 'Principal', 'Approvals'),
+            (self.w.owner_u, 'Owner', 'Owner Dashboard'),
+        ]
+        for u, label, card in cases:
+            c = Client(); c.force_login(u)
+            html = c.get('/help/').content.decode()
+            self.assertIn('Your guide', html, f'{label}: no tailored guide block')
+            self.assertIn(label, html, f'{label}: role label missing')
+            self.assertIn(card, html, f'{label}: expected card "{card}" missing')
+
+    def test_non_admin_roles_do_not_see_full_office_reference(self):
+        # The big "every module" office reference is for the Office role only.
+        for u in [self.w.teacher_u, self.w.parent_u, self.w.student_u]:
+            c = Client(); c.force_login(u)
+            self.assertNotIn('Every module, explained',
+                             c.get('/help/').content.decode())
+
     def test_admin_sees_module_reference(self):
         c = Client(); c.force_login(self.w.admin_u)
         html = c.get('/help/').content.decode()
