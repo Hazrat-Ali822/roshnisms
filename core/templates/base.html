@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ brand_name }}{% endblock %}</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Spectral:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260720b">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260721a">
   <link rel="manifest" href="{% url 'web_manifest' %}">
   <meta name="csrf-token" content="{{ csrf_token }}">
   <meta name="theme-color" content="{{ brand_primary }}">
@@ -43,167 +43,167 @@
     <nav class="nav">
       {% if active == 'saas_admin' %}
         <a class="nav-item active" href="{% url 'saas_admin_dashboard' %}">
-          SaaS Dashboard
+          <svg class="nav-ic" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>SaaS Dashboard
           {% if badge_counts.saas_admin_dashboard %}
             <span class="badge-pending">{{ badge_counts.saas_admin_dashboard }}</span>
           {% endif %}
         </a>
-        <a class="nav-item" href="/admin/" target="_blank">Django Admin</a>
+        <a class="nav-item" href="/admin/" target="_blank"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4"/></svg>Django Admin</a>
         <div class="nav-soon">System Administration Console. Manage subscriptions and school portals.</div>
       {% else %}
-        <a class="nav-item {% if active == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Dashboard</a>
+        <a class="nav-item {% if active == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>Dashboard</a>
         {% if role == 'admin' %}
-          <a class="nav-item {% if active == 'students' %}active{% endif %}" href="{% url 'students_list' %}">Students</a>
-          <a class="nav-item {% if active == 'classes' %}active{% endif %}" href="{% url 'classes_manage' %}">Classes &amp; Subjects</a>
-          <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'timetable_manage' %}">Timetable</a>
-          <a class="nav-item {% if active == 'discipline' %}active{% endif %}" href="{% url 'discipline' %}">Discipline</a>
-          <a class="nav-item {% if active == 'absent' %}active{% endif %}" href="{% url 'absent_list' %}">Daily Absent List</a>
-          <a class="nav-item {% if active == 'sessional' %}active{% endif %}" href="{% url 'attendance_sessional' %}">Sessional Attendance</a>
-          <a class="nav-item {% if active == 'insights' %}active{% endif %}" href="{% url 'insights' %}">Insights</a>
-          <a class="nav-item {% if active == 'staff' or active == 'staff_attendance' or active == 'leave' %}active{% endif %}" href="{% url 'staff_list' %}">Staff</a>
-          <a class="nav-item {% if active == 'payroll' %}active{% endif %}" href="{% url 'payroll' %}">Payroll</a>
-          <a class="nav-item {% if active == 'appraisal' %}active{% endif %}" href="{% url 'staff_appraisal' %}">Appraisals</a>
-          <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'fee_collection' %}">Fee Collection</a>
+          <a class="nav-item {% if active == 'students' %}active{% endif %}" href="{% url 'students_list' %}"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5M17.5 20a5.6 5.6 0 0 0-2-4.3"/></svg>Students</a>
+          <a class="nav-item {% if active == 'classes' %}active{% endif %}" href="{% url 'classes_manage' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20"/></svg>Classes &amp; Subjects</a>
+          <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'timetable_manage' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>Timetable</a>
+          <a class="nav-item {% if active == 'discipline' %}active{% endif %}" href="{% url 'discipline' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M12 9v3.5M12 16h.01"/></svg>Discipline</a>
+          <a class="nav-item {% if active == 'absent' %}active{% endif %}" href="{% url 'absent_list' %}"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16.5 8.5l4 4M20.5 8.5l-4 4"/></svg>Daily Absent List</a>
+          <a class="nav-item {% if active == 'sessional' %}active{% endif %}" href="{% url 'attendance_sessional' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="6" y="4.5" width="12" height="16" rx="2"/><path d="M9 4.5V3.5h6v1"/><path d="M9.3 12.5l2 2 3.4-3.5"/></svg>Sessional Attendance</a>
+          <a class="nav-item {% if active == 'insights' %}active{% endif %}" href="{% url 'insights' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 7-7"/><path d="M17 8h4v4"/></svg>Insights</a>
+          <a class="nav-item {% if active == 'staff' or active == 'staff_attendance' or active == 'leave' %}active{% endif %}" href="{% url 'staff_list' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="3" y="7.5" width="18" height="12.5" rx="2.2"/><path d="M8 7.5V6A1.7 1.7 0 0 1 9.7 4.3h4.6A1.7 1.7 0 0 1 16 6v1.5M3 12.5h18"/></svg>Staff</a>
+          <a class="nav-item {% if active == 'payroll' %}active{% endif %}" href="{% url 'payroll' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H18v3"/><rect x="3" y="7.5" width="18" height="12" rx="2.5"/><path d="M16.5 13.5h.5"/></svg>Payroll</a>
+          <a class="nav-item {% if active == 'appraisal' %}active{% endif %}" href="{% url 'staff_appraisal' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.6 1-5.8L3.5 9.7l5.9-.9z"/></svg>Appraisals</a>
+          <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'fee_collection' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-1.5L12 21l-3-1.5L6 21z"/><path d="M9 8h6M9 12h6"/></svg>Fee Collection</a>
           <a class="nav-item {% if active == 'online_payments' %}active{% endif %}" href="{% url 'online_payments' %}">
-            Online Payments
+            <svg class="nav-ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/></svg>Online Payments
             {% if badge_counts.online_payments %}
               <span class="badge-pending">{{ badge_counts.online_payments }}</span>
             {% endif %}
           </a>
-          <a class="nav-item {% if active == 'receipts' %}active{% endif %}" href="{% url 'receipts' %}">Receipts</a>
+          <a class="nav-item {% if active == 'receipts' %}active{% endif %}" href="{% url 'receipts' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>Receipts</a>
           <a class="nav-item {% if active == 'defaulters' %}active{% endif %}" href="{% url 'defaulters' %}">
-            Defaulters
+            <svg class="nav-ic" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>Defaulters
             {% if badge_counts.defaulters %}
               <span class="badge-pending">{{ badge_counts.defaulters }}</span>
             {% endif %}
           </a>
-          <a class="nav-item {% if active == 'expenses' %}active{% endif %}" href="{% url 'expenses' %}">Expenses</a>
-          <a class="nav-item {% if active == 'exams' %}active{% endif %}" href="{% url 'exam_datesheet' %}">Exams</a>
+          <a class="nav-item {% if active == 'expenses' %}active{% endif %}" href="{% url 'expenses' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M3 7l6 6 4-4 7 7"/><path d="M17 16h4v-4"/></svg>Expenses</a>
+          <a class="nav-item {% if active == 'exams' %}active{% endif %}" href="{% url 'exam_datesheet' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 15l2 2 3.4-3.5"/></svg>Exams</a>
           <a class="nav-item {% if active == 'admissions' %}active{% endif %}" href="{% url 'admissions' %}">
-            Admissions
+            <svg class="nav-ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M18 8v6M15 11h6"/></svg>Admissions
             {% if badge_counts.admissions %}
               <span class="badge-pending">{{ badge_counts.admissions }}</span>
             {% endif %}
           </a>
           <a class="nav-item {% if active == 'approvals' %}active{% endif %}" href="{% url 'principal_approvals' %}">
-            Approvals
+            <svg class="nav-ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>Approvals
             {% if badge_counts.principal_approvals %}
               <span class="badge-pending">{{ badge_counts.principal_approvals }}</span>
             {% endif %}
           </a>
-          <a class="nav-item {% if active == 'academics' %}active{% endif %}" href="{% url 'principal_academics' %}">Academics</a>
-          <a class="nav-item {% if active == 'promotion' %}active{% endif %}" href="{% url 'promotion' %}">Year-End (Promotion)</a>
-          <a class="nav-item {% if active == 'communication' %}active{% endif %}" href="{% url 'communication' %}">Communication</a>
-          <a class="nav-item {% if active == 'transport' %}active{% endif %}" href="{% url 'transport' %}">Transport</a>
-          <a class="nav-item {% if active == 'hostel' %}active{% endif %}" href="{% url 'hostel' %}">Hostel</a>
-          <a class="nav-item {% if active == 'library' %}active{% endif %}" href="{% url 'library' %}">Library</a>
-          <a class="nav-item {% if active == 'certificates' %}active{% endif %}" href="{% url 'certificates' %}">Certificates</a>
-          <a class="nav-item {% if active == 'idcards' %}active{% endif %}" href="{% url 'id_cards' %}">ID Cards</a>
-          <a class="nav-item {% if active == 'reports' %}active{% endif %}" href="{% url 'reports' %}">Reports</a>
-          <a class="nav-item {% if active == 'calendar' %}active{% endif %}" href="{% url 'calendar' %}">Calendar</a>
+          <a class="nav-item {% if active == 'academics' %}active{% endif %}" href="{% url 'principal_academics' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M12 6C10.5 5 8 4.5 4 5v13c4-.5 6.5 0 8 1 1.5-1 4-1.5 8-1V5c-4-.5-6.5 0-8 1z"/><path d="M12 6v13"/></svg>Academics</a>
+          <a class="nav-item {% if active == 'promotion' %}active{% endif %}" href="{% url 'promotion' %}"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16V8M8.5 11.5L12 8l3.5 3.5"/></svg>Year-End (Promotion)</a>
+          <a class="nav-item {% if active == 'communication' %}active{% endif %}" href="{% url 'communication' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M4 10v4a1 1 0 0 0 1 1h2l7 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M18 9a3 3 0 0 1 0 6"/></svg>Communication</a>
+          <a class="nav-item {% if active == 'transport' %}active{% endif %}" href="{% url 'transport' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="13" rx="2.2"/><path d="M4 11h16M8 17v2M16 17v2"/><circle cx="8" cy="14" r="1"/><circle cx="16" cy="14" r="1"/></svg>Transport</a>
+          <a class="nav-item {% if active == 'hostel' %}active{% endif %}" href="{% url 'hostel' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M3 18V7M3 13h13a5 5 0 0 1 5 5M21 18v-5"/><circle cx="7" cy="10.5" r="1.6"/></svg>Hostel</a>
+          <a class="nav-item {% if active == 'library' %}active{% endif %}" href="{% url 'library' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20"/></svg>Library</a>
+          <a class="nav-item {% if active == 'certificates' %}active{% endif %}" href="{% url 'certificates' %}"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="M9 13.5L8 21l4-2 4 2-1-7.5"/></svg>Certificates</a>
+          <a class="nav-item {% if active == 'idcards' %}active{% endif %}" href="{% url 'id_cards' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="8.5" cy="11" r="2"/><path d="M13 9.5h5M13 13h5M6 15.4c.7-1.3 4.3-1.3 5 0"/></svg>ID Cards</a>
+          <a class="nav-item {% if active == 'reports' %}active{% endif %}" href="{% url 'reports' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M5 20V11M12 20V5M19 20v-6"/><path d="M3 20h18"/></svg>Reports</a>
+          <a class="nav-item {% if active == 'calendar' %}active{% endif %}" href="{% url 'calendar' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>Calendar</a>
           <a class="nav-item {% if active == 'inventory' %}active{% endif %}" href="{% url 'inventory' %}">
-            Inventory
+            <svg class="nav-ic" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg>Inventory
             {% if badge_counts.inventory %}
               <span class="badge-pending">{{ badge_counts.inventory }}</span>
             {% endif %}
           </a>
-          <a class="nav-item {% if active == 'visitors' %}active{% endif %}" href="{% url 'visitors' %}">Visitors</a>
+          <a class="nav-item {% if active == 'visitors' %}active{% endif %}" href="{% url 'visitors' %}"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M15.5 12l2 2 3.4-3.5"/></svg>Visitors</a>
           <a class="nav-item {% if active == 'complaints' %}active{% endif %}" href="{% url 'office_complaints' %}">
-            Complaints
+            <svg class="nav-ic" viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 3z"/><path d="M12 8v3M12 13.5h.01"/></svg>Complaints
             {% if badge_counts.office_complaints %}<span class="badge-pending">{{ badge_counts.office_complaints }}</span>{% endif %}
           </a>
-          <a class="nav-item {% if active == 'users' %}active{% endif %}" href="{% url 'users_list' %}">Users &amp; Roles</a>
-          <a class="nav-item {% if active == 'audit' %}active{% endif %}" href="{% url 'audit_log' %}">Audit Log</a>
-          <a class="nav-item {% if active == 'settings' %}active{% endif %}" href="{% url 'school_settings' %}">School Settings</a>
+          <a class="nav-item {% if active == 'users' %}active{% endif %}" href="{% url 'users_list' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><circle cx="12" cy="10" r="1.8"/><path d="M9 15.5c.5-1.4 4.5-1.4 6 0"/></svg>Users &amp; Roles</a>
+          <a class="nav-item {% if active == 'audit' %}active{% endif %}" href="{% url 'audit_log' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>Audit Log</a>
+          <a class="nav-item {% if active == 'settings' %}active{% endif %}" href="{% url 'school_settings' %}"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 0 1-4 0v-.1A1.7 1.7 0 0 0 6.5 19l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H2a2 2 0 0 1 0-4h.1A1.7 1.7 0 0 0 3.3 6.5l-.1-.1A2 2 0 1 1 6 3.6l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V2a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.6 1H22a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>School Settings</a>
         {% elif role == 'teacher' %}
-          <a class="nav-item {% if active == 'attendance' %}active{% endif %}" href="{% url 'attendance_mark' %}">Mark Attendance</a>
-          <a class="nav-item {% if active == 'marks' %}active{% endif %}" href="{% url 'marks_entry' %}">Enter Marks</a>
+          <a class="nav-item {% if active == 'attendance' %}active{% endif %}" href="{% url 'attendance_mark' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>Mark Attendance</a>
+          <a class="nav-item {% if active == 'marks' %}active{% endif %}" href="{% url 'marks_entry' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M14 4l6 6M4 20l1-4L16 5l3 3L8 19z"/></svg>Enter Marks</a>
           <a class="nav-item {% if active == 'assignments' %}active{% endif %}" href="{% url 'teacher_assignments' %}">
-            Assignments
+            <svg class="nav-ic" viewBox="0 0 24 24"><rect x="6" y="4.5" width="12" height="16" rx="2"/><path d="M9 4.5V3.5h6v1"/><path d="M9.3 12.5l2 2 3.4-3.5"/></svg>Assignments
             {% if badge_counts.teacher_assignments %}
               <span class="badge-pending">{{ badge_counts.teacher_assignments }}</span>
             {% endif %}
           </a>
-          <a class="nav-item {% if active == 'quizzes' %}active{% endif %}" href="{% url 'teacher_quizzes' %}">Quizzes</a>
-          <a class="nav-item {% if active == 'notes' %}active{% endif %}" href="{% url 'teacher_notes' %}">Behaviour Notes</a>
-          <a class="nav-item {% if active == 'analytics' %}active{% endif %}" href="{% url 'teacher_analytics' %}">Class Analytics</a>
+          <a class="nav-item {% if active == 'quizzes' %}active{% endif %}" href="{% url 'teacher_quizzes' %}"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.5a2.5 2.5 0 0 1 4.4 1.5c0 1.7-2.5 2-2.5 3.5"/><path d="M12 17.5h.01"/></svg>Quizzes</a>
+          <a class="nav-item {% if active == 'notes' %}active{% endif %}" href="{% url 'teacher_notes' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M4 4h16v11l-5 5H4z"/><path d="M20 15h-5v5"/></svg>Behaviour Notes</a>
+          <a class="nav-item {% if active == 'analytics' %}active{% endif %}" href="{% url 'teacher_analytics' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M5 20V11M12 20V5M19 20v-6"/><path d="M3 20h18"/></svg>Class Analytics</a>
           <a class="nav-item {% if active == 'messages' %}active{% endif %}" href="{% url 'teacher_messages' %}">
-            Messages
+            <svg class="nav-ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M4 7l8 5.5L20 7"/></svg>Messages
             {% if badge_counts.teacher_messages %}<span class="badge-pending">{{ badge_counts.teacher_messages }}</span>{% endif %}
           </a>
-          <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'teacher_timetable' %}">My Timetable</a>
-          <a class="nav-item {% if active == 'myhr' %}active{% endif %}" href="{% url 'my_hr' %}">My Pay &amp; Attendance</a>
+          <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'teacher_timetable' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>My Timetable</a>
+          <a class="nav-item {% if active == 'myhr' %}active{% endif %}" href="{% url 'my_hr' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H18v3"/><rect x="3" y="7.5" width="18" height="12" rx="2.5"/><path d="M16.5 13.5h.5"/></svg>My Pay &amp; Attendance</a>
         {% elif role == 'finance' %}
-          <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'fee_collection' %}">Fee Collection</a>
+          <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'fee_collection' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-1.5L12 21l-3-1.5L6 21z"/><path d="M9 8h6M9 12h6"/></svg>Fee Collection</a>
           <a class="nav-item {% if active == 'online_payments' %}active{% endif %}" href="{% url 'online_payments' %}">
-            Online Payments
+            <svg class="nav-ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/></svg>Online Payments
             {% if badge_counts.online_payments %}
               <span class="badge-pending">{{ badge_counts.online_payments }}</span>
             {% endif %}
           </a>
-          <a class="nav-item {% if active == 'receipts' %}active{% endif %}" href="{% url 'receipts' %}">Receipts</a>
+          <a class="nav-item {% if active == 'receipts' %}active{% endif %}" href="{% url 'receipts' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>Receipts</a>
           <a class="nav-item {% if active == 'defaulters' %}active{% endif %}" href="{% url 'defaulters' %}">
-            Defaulters
+            <svg class="nav-ic" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>Defaulters
             {% if badge_counts.defaulters %}
               <span class="badge-pending">{{ badge_counts.defaulters }}</span>
             {% endif %}
           </a>
-          <a class="nav-item {% if active == 'expenses' %}active{% endif %}" href="{% url 'expenses' %}">Expenses</a>
-          <a class="nav-item {% if active == 'ledger' %}active{% endif %}" href="{% url 'finance_ledger' %}">Income vs Expense</a>
+          <a class="nav-item {% if active == 'expenses' %}active{% endif %}" href="{% url 'expenses' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M3 7l6 6 4-4 7 7"/><path d="M17 16h4v-4"/></svg>Expenses</a>
+          <a class="nav-item {% if active == 'ledger' %}active{% endif %}" href="{% url 'finance_ledger' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M5 20V11M12 20V5M19 20v-6"/><path d="M3 20h18"/></svg>Income vs Expense</a>
         {% elif role == 'student' %}
-          <a class="nav-item {% if active == 'subjects' %}active{% endif %}" href="{% url 'my_subjects' %}">Subjects &amp; Materials</a>
-          <a class="nav-item {% if active == 'attendance' %}active{% endif %}" href="{% url 'my_attendance' %}">Attendance</a>
-          <a class="nav-item {% if active == 'results' %}active{% endif %}" href="{% url 'my_results' %}">Results</a>
-          <a class="nav-item {% if active == 'progress' %}active{% endif %}" href="{% url 'my_progress' %}">Progress</a>
-          <a class="nav-item {% if active == 'assignments' %}active{% endif %}" href="{% url 'my_assignments' %}">Assignments</a>
-          <a class="nav-item {% if active == 'quizzes' %}active{% endif %}" href="{% url 'my_quizzes' %}">Quizzes</a>
-          <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'my_timetable' %}">Timetable</a>
-          <a class="nav-item {% if active == 'datesheet' %}active{% endif %}" href="{% url 'my_datesheet' %}">Datesheet</a>
-          <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'my_fees' %}">Fees</a>
+          <a class="nav-item {% if active == 'subjects' %}active{% endif %}" href="{% url 'my_subjects' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M12 6C10.5 5 8 4.5 4 5v13c4-.5 6.5 0 8 1 1.5-1 4-1.5 8-1V5c-4-.5-6.5 0-8 1z"/><path d="M12 6v13"/></svg>Subjects &amp; Materials</a>
+          <a class="nav-item {% if active == 'attendance' %}active{% endif %}" href="{% url 'my_attendance' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/><path d="M9 14l1.7 1.7L14.5 12"/></svg>Attendance</a>
+          <a class="nav-item {% if active == 'results' %}active{% endif %}" href="{% url 'my_results' %}"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="M9 13.5L8 21l4-2 4 2-1-7.5"/></svg>Results</a>
+          <a class="nav-item {% if active == 'progress' %}active{% endif %}" href="{% url 'my_progress' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 7-7"/><path d="M17 8h4v4"/></svg>Progress</a>
+          <a class="nav-item {% if active == 'assignments' %}active{% endif %}" href="{% url 'my_assignments' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="6" y="4.5" width="12" height="16" rx="2"/><path d="M9 4.5V3.5h6v1"/><path d="M9.3 12.5l2 2 3.4-3.5"/></svg>Assignments</a>
+          <a class="nav-item {% if active == 'quizzes' %}active{% endif %}" href="{% url 'my_quizzes' %}"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.5a2.5 2.5 0 0 1 4.4 1.5c0 1.7-2.5 2-2.5 3.5"/><path d="M12 17.5h.01"/></svg>Quizzes</a>
+          <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'my_timetable' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>Timetable</a>
+          <a class="nav-item {% if active == 'datesheet' %}active{% endif %}" href="{% url 'my_datesheet' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3M7.5 13h2M11 13h2M14.5 13h2M7.5 16.5h2M11 16.5h2"/></svg>Datesheet</a>
+          <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'my_fees' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 9.5h18"/></svg>Fees</a>
           <a class="nav-item {% if active == 'messages' %}active{% endif %}" href="{% url 'parent_messages' %}">
-            Messages
+            <svg class="nav-ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M4 7l8 5.5L20 7"/></svg>Messages
             {% if badge_counts.parent_messages %}<span class="badge-pending">{{ badge_counts.parent_messages }}</span>{% endif %}
           </a>
-          <a class="nav-item {% if active == 'complaints' %}active{% endif %}" href="{% url 'complaints' %}">Complaints</a>
-          <a class="nav-item {% if active == 'profile' %}active{% endif %}" href="{% url 'my_profile' %}">Profile</a>
+          <a class="nav-item {% if active == 'complaints' %}active{% endif %}" href="{% url 'complaints' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 3z"/><path d="M12 8v3M12 13.5h.01"/></svg>Complaints</a>
+          <a class="nav-item {% if active == 'profile' %}active{% endif %}" href="{% url 'my_profile' %}"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Profile</a>
         {% elif role == 'parent' %}
-          <a class="nav-item {% if active == 'subjects' %}active{% endif %}" href="{% url 'my_subjects' %}">Subjects &amp; Materials</a>
-          <a class="nav-item {% if active == 'attendance' %}active{% endif %}" href="{% url 'my_attendance' %}">Attendance</a>
-          <a class="nav-item {% if active == 'results' %}active{% endif %}" href="{% url 'my_results' %}">Results</a>
-          <a class="nav-item {% if active == 'progress' %}active{% endif %}" href="{% url 'my_progress' %}">Progress</a>
-          <a class="nav-item {% if active == 'assignments' %}active{% endif %}" href="{% url 'my_assignments' %}">Assignments</a>
-          <a class="nav-item {% if active == 'quizzes' %}active{% endif %}" href="{% url 'my_quizzes' %}">Quizzes</a>
-          <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'my_timetable' %}">Timetable</a>
-          <a class="nav-item {% if active == 'datesheet' %}active{% endif %}" href="{% url 'my_datesheet' %}">Datesheet</a>
-          <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'my_fees' %}">Fees</a>
+          <a class="nav-item {% if active == 'subjects' %}active{% endif %}" href="{% url 'my_subjects' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M12 6C10.5 5 8 4.5 4 5v13c4-.5 6.5 0 8 1 1.5-1 4-1.5 8-1V5c-4-.5-6.5 0-8 1z"/><path d="M12 6v13"/></svg>Subjects &amp; Materials</a>
+          <a class="nav-item {% if active == 'attendance' %}active{% endif %}" href="{% url 'my_attendance' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/><path d="M9 14l1.7 1.7L14.5 12"/></svg>Attendance</a>
+          <a class="nav-item {% if active == 'results' %}active{% endif %}" href="{% url 'my_results' %}"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="M9 13.5L8 21l4-2 4 2-1-7.5"/></svg>Results</a>
+          <a class="nav-item {% if active == 'progress' %}active{% endif %}" href="{% url 'my_progress' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 7-7"/><path d="M17 8h4v4"/></svg>Progress</a>
+          <a class="nav-item {% if active == 'assignments' %}active{% endif %}" href="{% url 'my_assignments' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="6" y="4.5" width="12" height="16" rx="2"/><path d="M9 4.5V3.5h6v1"/><path d="M9.3 12.5l2 2 3.4-3.5"/></svg>Assignments</a>
+          <a class="nav-item {% if active == 'quizzes' %}active{% endif %}" href="{% url 'my_quizzes' %}"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.5a2.5 2.5 0 0 1 4.4 1.5c0 1.7-2.5 2-2.5 3.5"/><path d="M12 17.5h.01"/></svg>Quizzes</a>
+          <a class="nav-item {% if active == 'timetable' %}active{% endif %}" href="{% url 'my_timetable' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>Timetable</a>
+          <a class="nav-item {% if active == 'datesheet' %}active{% endif %}" href="{% url 'my_datesheet' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3M7.5 13h2M11 13h2M14.5 13h2M7.5 16.5h2M11 16.5h2"/></svg>Datesheet</a>
+          <a class="nav-item {% if active == 'fees' %}active{% endif %}" href="{% url 'my_fees' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 9.5h18"/></svg>Fees</a>
           <a class="nav-item {% if active == 'messages' %}active{% endif %}" href="{% url 'parent_messages' %}">
-            Messages
+            <svg class="nav-ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M4 7l8 5.5L20 7"/></svg>Messages
             {% if badge_counts.parent_messages %}<span class="badge-pending">{{ badge_counts.parent_messages }}</span>{% endif %}
           </a>
-          <a class="nav-item {% if active == 'complaints' %}active{% endif %}" href="{% url 'complaints' %}">Complaints</a>
-          <a class="nav-item {% if active == 'profile' %}active{% endif %}" href="{% url 'my_profile' %}">Profile</a>
+          <a class="nav-item {% if active == 'complaints' %}active{% endif %}" href="{% url 'complaints' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 3z"/><path d="M12 8v3M12 13.5h.01"/></svg>Complaints</a>
+          <a class="nav-item {% if active == 'profile' %}active{% endif %}" href="{% url 'my_profile' %}"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Profile</a>
         {% elif role == 'owner' %}
-          <a class="nav-item {% if active == 'students' %}active{% endif %}" href="{% url 'owner_students' %}">Students</a>
-          <a class="nav-item {% if active == 'staff' %}active{% endif %}" href="{% url 'owner_staff' %}">Staff</a>
-          <a class="nav-item {% if active == 'finance' %}active{% endif %}" href="{% url 'owner_finance' %}">Finance</a>
+          <a class="nav-item {% if active == 'students' %}active{% endif %}" href="{% url 'owner_students' %}"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5M17.5 20a5.6 5.6 0 0 0-2-4.3"/></svg>Students</a>
+          <a class="nav-item {% if active == 'staff' %}active{% endif %}" href="{% url 'owner_staff' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="3" y="7.5" width="18" height="12.5" rx="2.2"/><path d="M8 7.5V6A1.7 1.7 0 0 1 9.7 4.3h4.6A1.7 1.7 0 0 1 16 6v1.5M3 12.5h18"/></svg>Staff</a>
+          <a class="nav-item {% if active == 'finance' %}active{% endif %}" href="{% url 'owner_finance' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M5 20V11M12 20V5M19 20v-6"/><path d="M3 20h18"/></svg>Finance</a>
         {% elif role == 'principal' %}
-          <a class="nav-item {% if active == 'approvals' %}active{% endif %}" href="{% url 'principal_approvals' %}">Approvals</a>
-          <a class="nav-item {% if active == 'academics' %}active{% endif %}" href="{% url 'principal_academics' %}">Academics</a>
-          <a class="nav-item {% if active == 'insights' %}active{% endif %}" href="{% url 'insights' %}">Insights</a>
-          <a class="nav-item {% if active == 'promotion' %}active{% endif %}" href="{% url 'promotion' %}">Year-End</a>
-          <a class="nav-item {% if active == 'staff' %}active{% endif %}" href="{% url 'principal_staff' %}">Staff</a>
+          <a class="nav-item {% if active == 'approvals' %}active{% endif %}" href="{% url 'principal_approvals' %}"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>Approvals</a>
+          <a class="nav-item {% if active == 'academics' %}active{% endif %}" href="{% url 'principal_academics' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M12 6C10.5 5 8 4.5 4 5v13c4-.5 6.5 0 8 1 1.5-1 4-1.5 8-1V5c-4-.5-6.5 0-8 1z"/><path d="M12 6v13"/></svg>Academics</a>
+          <a class="nav-item {% if active == 'insights' %}active{% endif %}" href="{% url 'insights' %}"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 7-7"/><path d="M17 8h4v4"/></svg>Insights</a>
+          <a class="nav-item {% if active == 'promotion' %}active{% endif %}" href="{% url 'promotion' %}"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16V8M8.5 11.5L12 8l3.5 3.5"/></svg>Year-End</a>
+          <a class="nav-item {% if active == 'staff' %}active{% endif %}" href="{% url 'principal_staff' %}"><svg class="nav-ic" viewBox="0 0 24 24"><rect x="3" y="7.5" width="18" height="12.5" rx="2.2"/><path d="M8 7.5V6A1.7 1.7 0 0 1 9.7 4.3h4.6A1.7 1.7 0 0 1 16 6v1.5M3 12.5h18"/></svg>Staff</a>
         {% endif %}
         <div class="nav-soon">All core modules are live. Mobile app &amp; offline sync come in the platform phase.</div>
       {% endif %}
     </nav>
     <div class="side-foot">
       {% if active == 'saas_admin' %}
-        <a class="nav-item {% if active == 'help' %}active{% endif %}" href="{% url 'help_guide' %}" style="margin-bottom:8px">Help &amp; Guide</a>
+        <a class="nav-item {% if active == 'help' %}active{% endif %}" href="{% url 'help_guide' %}" style="margin-bottom:8px"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.5a2.5 2.5 0 0 1 4.4 1.5c0 1.7-2.5 2-2.5 3.5"/><path d="M12 17.5h.01"/></svg>Help &amp; Guide</a>
         <a class="logout" href="{% url 'logout_get' %}" style="display: block; text-align: center; text-decoration: none;">Sign out</a>
       {% else %}
-        <a class="nav-item" href="{% url 'app_download' %}" style="margin-bottom:8px">Get the App</a>
-        <a class="nav-item {% if active == 'help' %}active{% endif %}" href="{% url 'help_guide' %}" style="margin-bottom:8px">Help &amp; Guide</a>
-        <a class="nav-item {% if active == 'account' or active == 'password' %}active{% endif %}" href="{% url 'account' %}" style="margin-bottom:8px">My account</a>
+        <a class="nav-item" href="{% url 'app_download' %}" style="margin-bottom:8px"><svg class="nav-ic" viewBox="0 0 24 24"><path d="M12 3v11M8 10l4 4 4-4"/><path d="M4 20h16"/></svg>Get the App</a>
+        <a class="nav-item {% if active == 'help' %}active{% endif %}" href="{% url 'help_guide' %}" style="margin-bottom:8px"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.5a2.5 2.5 0 0 1 4.4 1.5c0 1.7-2.5 2-2.5 3.5"/><path d="M12 17.5h.01"/></svg>Help &amp; Guide</a>
+        <a class="nav-item {% if active == 'account' or active == 'password' %}active{% endif %}" href="{% url 'account' %}" style="margin-bottom:8px"><svg class="nav-ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>My account</a>
         <a class="logout" href="{% url 'logout_get' %}" style="display: block; text-align: center; text-decoration: none;">Sign out</a>
       {% endif %}
     </div>

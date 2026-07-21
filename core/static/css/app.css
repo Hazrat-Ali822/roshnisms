@@ -119,6 +119,14 @@ a { text-decoration: none; color: inherit; }
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(14, 124, 102, 0.2);
 }
+/* Sidebar item icons — inherit the label colour, brighten on hover/active */
+.nav-ic {
+  width: 18px; height: 18px; flex: 0 0 18px; margin-right: 12px;
+  stroke: currentColor; fill: none; stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round; opacity: .8;
+}
+.nav-item:hover .nav-ic, .nav-item.active .nav-ic { opacity: 1; }
+.nav-item .badge-pending { margin-left: auto; }
 .nav-soon { margin-top: 14px; padding: 10px 12px; font-size: 11px; color: #64748B; border-top: 1px solid rgba(255, 255, 255, 0.05); line-height: 1.4; }
 .side-foot { padding: 16px; border-top: 1px solid rgba(255, 255, 255, 0.05); }
 .logout {
