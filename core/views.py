@@ -3064,6 +3064,31 @@ def communication(request):
 @role_required('admin')
 def transport(request):
     if request.method == 'POST':
+        action = request.POST.get('action', 'add')
+
+        if action == 'delete':
+            r = TransportRoute.objects.filter(pk=_pk(request.POST.get('id'))).first()
+            if r:
+                messages.success(request, 'Route removed: %s.' % r.name)
+                r.delete()          # riders' route FK is SET_NULL (safe)
+            return redirect('transport')
+
+        if action == 'edit':
+            r = TransportRoute.objects.filter(pk=_pk(request.POST.get('id'))).first()
+            if r:
+                name = (request.POST.get('name', '') or '').strip()
+                if name:
+                    r.name = name
+                r.vehicle = (request.POST.get('vehicle', '') or '').strip()
+                r.driver = (request.POST.get('driver', '') or '').strip()
+                try:
+                    r.fee = max(0, int(request.POST.get('fee') or r.fee))
+                except (ValueError, TypeError):
+                    pass
+                r.save()
+                messages.success(request, 'Route updated: %s.' % r.name)
+            return redirect('transport')
+
         name = (request.POST.get('name', '') or '').strip()
         if name:
             try:
@@ -5207,6 +5232,34 @@ def certificate_view(request, pk):
 @role_required('admin')
 def calendar(request):
     if request.method == 'POST':
+        action = request.POST.get('action', 'add')
+
+        if action == 'delete':
+            e = CalendarEvent.objects.filter(pk=_pk(request.POST.get('id'))).first()
+            if e:
+                messages.success(request, 'Event removed: %s.' % e.title)
+                e.delete()
+            return redirect('calendar')
+
+        if action == 'edit':
+            e = CalendarEvent.objects.filter(pk=_pk(request.POST.get('id'))).first()
+            if e:
+                title = (request.POST.get('title', '') or '').strip()
+                if title:
+                    e.title = title
+                et = request.POST.get('event_type')
+                if et in dict(CalendarEvent.TYPE_CHOICES):
+                    e.event_type = et
+                raw = request.POST.get('date')
+                try:
+                    if raw:
+                        e.date = datetime.date.fromisoformat(raw)
+                except (ValueError, TypeError):
+                    pass
+                e.save()
+                messages.success(request, 'Event updated: %s.' % e.title)
+            return redirect('calendar')
+
         title = (request.POST.get('title', '') or '').strip()
         if title:
             raw = request.POST.get('date')
@@ -5220,6 +5273,7 @@ def calendar(request):
         return redirect('calendar')
     return render(request, 'calendar.html', {
         'role': 'admin', 'active': 'calendar', 'events': CalendarEvent.objects.all(),
+        'event_types': [t for t, _ in CalendarEvent.TYPE_CHOICES],
     })
 
 
