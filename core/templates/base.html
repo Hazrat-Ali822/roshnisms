@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ brand_name }}{% endblock %}</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Spectral:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260721b">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260721c">
   <link rel="manifest" href="{% url 'web_manifest' %}">
   <meta name="csrf-token" content="{{ csrf_token }}">
   <meta name="theme-color" content="{{ brand_primary }}">
@@ -473,6 +473,43 @@ function exportTableToCSV(tableSelector, filename) {
     showToast("Data successfully exported to Excel!", "success");
   }
 }
+
+// Auto "search this list": every listing table gets a search box that filters
+// its rows as you type. Reads both plain cell text AND the values of inline-edit
+// inputs/selects (so editable rows like Inventory are searchable too). Small
+// tables (<6 rows) and any table marked .no-search are skipped.
+(function(){
+  function rowText(r){
+    var t = (r.innerText || '').toLowerCase();
+    r.querySelectorAll('input,select,textarea').forEach(function(c){
+      if(c.type==='hidden'||c.type==='checkbox'||c.type==='radio') return;
+      if(c.tagName==='SELECT'){ if(c.selectedIndex>=0) t+=' '+(c.options[c.selectedIndex].text||'').toLowerCase(); }
+      else t+=' '+((c.value||'')).toLowerCase();
+    });
+    return t;
+  }
+  document.querySelectorAll('.table-wrap > table').forEach(function(table){
+    if(table.classList.contains('no-search')) return;
+    var tb = table.tBodies[0];
+    if(!tb || tb.rows.length < 6) return;
+    var box = document.createElement('div'); box.className = 'tbl-search no-print';
+    var inp = document.createElement('input');
+    inp.type = 'search'; inp.placeholder = 'Search this list…';
+    inp.setAttribute('aria-label','Search this list');
+    box.appendChild(inp);
+    table.parentNode.insertBefore(box, table);
+    var cache = null;
+    inp.addEventListener('input', function(){
+      var q = inp.value.trim().toLowerCase();
+      if(cache === null){ cache = Array.prototype.map.call(tb.rows, rowText); }
+      for(var i=0;i<tb.rows.length;i++){
+        tb.rows[i].style.display = (!q || cache[i].indexOf(q) >= 0) ? '' : 'none';
+      }
+    });
+    // Rebuild the text cache if the user edits an inline field.
+    tb.addEventListener('change', function(){ cache = null; });
+  });
+})();
 </script>
 {% if user.is_authenticated and vapid_public_key %}
 {% if user.profile.role == 'parent' or user.profile.role == 'student' %}

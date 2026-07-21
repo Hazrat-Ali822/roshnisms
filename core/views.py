@@ -347,11 +347,19 @@ def dashboard(request):
             if p.classroom_id and p.classroom_id not in teacher_by_class:
                 teacher_by_class[p.classroom_id] = (
                     p.user.get_full_name() or p.user.username)
+
+        def _class_teacher(c):
+            # Prefer the explicitly-assigned class teacher; fall back to the
+            # teacher whose home class this is.
+            if c.class_teacher_id and c.class_teacher:
+                u = c.class_teacher.user
+                return u.get_full_name() or u.username
+            return teacher_by_class.get(c.id, '—')
         classes_overview = [{
             'room': c,
             'count': Student.objects.filter(classroom=c).count(),
-            'teacher': teacher_by_class.get(c.id, '—'),
-        } for c in ClassRoom.objects.all()]
+            'teacher': _class_teacher(c),
+        } for c in ClassRoom.objects.select_related('class_teacher__user')]
         a_paid = Student.objects.filter(fee_status='Paid').count()
         a_pending = Student.objects.filter(fee_status='Pending').count()
         a_overdue = Student.objects.filter(fee_status='Overdue').count()
@@ -4216,14 +4224,109 @@ def classes_manage(request):
                 subj.name = nm
                 subj.save(update_fields=['name'])
                 messages.success(request, 'Subject renamed to "%s".' % nm)
+        elif action == 'set_class_teacher':
+            c = ClassRoom.objects.filter(pk=_pk(request.POST.get('class_id'))).first()
+            if c:
+                tid = _pk(request.POST.get('teacher_id'))
+                teacher = (Profile.objects.filter(pk=tid, role='teacher').first()
+                           if tid else None)
+                c.class_teacher = teacher
+                c.save(update_fields=['class_teacher'])
+                if teacher:
+                    messages.success(request, 'Class teacher for %s set to %s.'
+                                     % (c, teacher.user.get_full_name()
+                                        or teacher.user.username))
+                else:
+                    messages.success(request, 'Class teacher cleared for %s.' % c)
         return redirect('classes_manage')
 
-    classes = ClassRoom.objects.prefetch_related('subjects').order_by('name', 'section')
+    classes = ClassRoom.objects.select_related('class_teacher__user').prefetch_related(
+        'subjects').order_by('name', 'section')
+    teachers = list(Profile.objects.filter(role='teacher').select_related('user'))
     rows = [{'c': c, 'count': Student.objects.filter(classroom=c).count(),
              'subjects': list(c.subjects.all())} for c in classes]
     return render(request, 'classes_manage.html', {
-        'role': 'admin', 'active': 'classes', 'rows': rows,
+        'role': 'admin', 'active': 'classes', 'rows': rows, 'teachers': teachers,
     })
+
+
+def _period_time(p, start_h=8, minutes=40):
+    """A simple clock time for period p (08:00, 08:40, ...) — a sensible default
+    the admin can override per slot afterwards."""
+    total = start_h * 60 + (p - 1) * minutes
+    return '%02d:%02d' % (total // 60, total % 60)
+
+
+def _generate_timetable():
+    """Auto-build a CLASH-FREE weekly timetable for every class in one pass.
+
+    Hard rules enforced: a teacher is never in two classes at the same time, and
+    a class never has two subjects in the same slot. Soft rule: spread a subject
+    so it doesn't repeat twice in a day when possible.
+
+    Reads Subject.periods_per_week (how many periods each subject needs) and
+    TeachingAssignment (which teacher takes each class+subject). Overwrites the
+    whole TimetableSlot table. Returns the lessons it could NOT place without a
+    clash, as (classroom, subject, teacher_name) — report these to the admin."""
+    school = School.objects.first()
+    days = [d.strip() for d in ((school.tt_days if school else '') or
+            'Mon,Tue,Wed,Thu,Fri').split(',') if d.strip()]
+    ppd = (school.tt_periods_per_day if school else 8) or 8
+    brk = school.tt_break_period if school else 0
+    periods = [p for p in range(1, ppd + 1) if p != brk]
+    slots_order = [(d, p) for d in days for p in periods]
+
+    # (classroom_id, subject_name) -> Profile of the teacher who takes it.
+    teach = {}
+    for ta in TeachingAssignment.objects.select_related('teacher__user'):
+        teach[(ta.classroom_id, ta.subject)] = ta.teacher
+
+    # One lesson entry per required period; track teacher load to schedule the
+    # busiest teachers first (fewer dead-ends).
+    lessons, load = [], {}
+    for c in ClassRoom.objects.all():
+        for sub in Subject.objects.filter(classroom=c):
+            t = teach.get((c.id, sub.name))
+            for _ in range(max(0, sub.periods_per_week)):
+                lessons.append((c, sub.name, t))
+                if t:
+                    load[t.id] = load.get(t.id, 0) + 1
+    lessons.sort(key=lambda L: -(load.get(L[2].id, 0) if L[2] else 0))
+
+    class_busy, teacher_busy, day_subject = set(), set(), set()
+    placements, unplaced = [], []
+    for c, subject, teacher in lessons:
+        tname = ''
+        if teacher:
+            tname = (teacher.user.get_full_name() or '').strip() or teacher.user.username
+        done = False
+        # Pass 1 keeps a subject to once-a-day; pass 2 relaxes that if needed.
+        for spread in (True, False):
+            for d, p in slots_order:
+                if (c.id, d, p) in class_busy:
+                    continue
+                if spread and (c.id, d, subject) in day_subject:
+                    continue
+                if teacher and (teacher.id, d, p) in teacher_busy:
+                    continue
+                class_busy.add((c.id, d, p))
+                day_subject.add((c.id, d, subject))
+                if teacher:
+                    teacher_busy.add((teacher.id, d, p))
+                placements.append((c, d, p, subject, tname))
+                done = True
+                break
+            if done:
+                break
+        if not done:
+            unplaced.append((c, subject, tname))
+
+    TimetableSlot.objects.all().delete()
+    TimetableSlot.objects.bulk_create([
+        TimetableSlot(classroom=c, day=d, period=p, start_time=_period_time(p),
+                      subject=subject, teacher=tname)
+        for c, d, p, subject, tname in placements])
+    return unplaced
 
 
 @login_required
@@ -4236,7 +4339,11 @@ def timetable_manage(request):
     classroom = next((c for c in classes if str(c.id) == str(sel)), None) if sel else None
     if classroom is None:
         classroom = classes[0] if classes else None
-    days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+    school = School.objects.first()
+    days = [d.strip() for d in ((school.tt_days if school else '') or
+            'Mon,Tue,Wed,Thu,Fri').split(',') if d.strip()]
+    ppd = (school.tt_periods_per_day if school else 8) or 8
+    all_days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
     if request.method == 'POST' and classroom:
         action = request.POST.get('action')
@@ -4262,6 +4369,46 @@ def timetable_manage(request):
             TimetableSlot.objects.filter(
                 pk=request.POST.get('slot_id'), classroom=classroom).delete()
             messages.success(request, 'Slot removed.')
+        elif action == 'generate':
+            unplaced = _generate_timetable()
+            if unplaced:
+                preview = '; '.join('%s %s' % (c, s) for c, s, _ in unplaced[:6])
+                messages.warning(
+                    request, '%d lesson(s) could not be placed without a clash: '
+                    '%s%s. Add more teachers/periods or lower a subject\'s '
+                    'periods-per-week, then fix by hand.'
+                    % (len(unplaced), preview, ' …' if len(unplaced) > 6 else ''))
+            else:
+                messages.success(request, 'Clash-free timetable generated for all '
+                                 'classes. You can still edit any slot below.')
+            return redirect('%s?class=%s' % (reverse('timetable_manage'), classroom.id))
+        elif action == 'save_periods':
+            for sub in Subject.objects.filter(classroom=classroom):
+                v = request.POST.get('ppw_%d' % sub.id)
+                if v is not None:
+                    try:
+                        sub.periods_per_week = max(0, min(40, int(v)))
+                        sub.save(update_fields=['periods_per_week'])
+                    except (ValueError, TypeError):
+                        pass
+            messages.success(request, 'Weekly periods saved for %s.' % classroom)
+            return redirect('%s?class=%s' % (reverse('timetable_manage'), classroom.id))
+        elif action == 'save_structure' and school:
+            sel_days = [d for d in request.POST.getlist('tt_day') if d in all_days]
+            school.tt_days = ','.join(sel_days) or 'Mon,Tue,Wed,Thu,Fri'
+            try:
+                school.tt_periods_per_day = max(1, min(14, int(
+                    request.POST.get('tt_periods_per_day') or 8)))
+            except (ValueError, TypeError):
+                pass
+            try:
+                school.tt_break_period = max(0, min(14, int(
+                    request.POST.get('tt_break_period') or 0)))
+            except (ValueError, TypeError):
+                pass
+            school.save(update_fields=['tt_days', 'tt_periods_per_day', 'tt_break_period'])
+            messages.success(request, 'Timetable structure saved.')
+            return redirect('%s?class=%s' % (reverse('timetable_manage'), classroom.id))
         return redirect('%s?class=%s' % (reverse('timetable_manage'), classroom.id))
 
     slots = list(TimetableSlot.objects.filter(classroom=classroom)) if classroom else []
@@ -4269,15 +4416,25 @@ def timetable_manage(request):
     time_by_period = {}
     for s in slots:
         time_by_period.setdefault(s.period, s.start_time)
+    brk = school.tt_break_period if school else 0
     rows = []
-    for p in sorted(time_by_period):
+    for p in range(1, ppd + 1):
         cells = [{'day': d, 'slot': by_cell.get((d, p))} for d in days]
-        rows.append({'period': p, 'time': time_by_period.get(p, ''), 'cells': cells})
+        rows.append({'period': p, 'time': time_by_period.get(p) or _period_time(p),
+                     'is_break': p == brk, 'cells': cells})
     subjects = list(Subject.objects.filter(classroom=classroom)) if classroom else []
+    teach = {}
+    if classroom:
+        for ta in TeachingAssignment.objects.filter(
+                classroom=classroom).select_related('teacher__user'):
+            teach[ta.subject] = (ta.teacher.user.get_full_name()
+                                 or ta.teacher.user.username)
+    subject_rows = [{'sub': s, 'teacher': teach.get(s.name, '')} for s in subjects]
     return render(request, 'timetable_manage.html', {
         'role': 'admin', 'active': 'timetable', 'classes': classes,
         'classroom': classroom, 'days': days, 'rows': rows,
-        'subjects': subjects, 'periods': [1, 2, 3, 4, 5, 6, 7, 8],
+        'subjects': subjects, 'subject_rows': subject_rows,
+        'periods': list(range(1, ppd + 1)), 'school': school, 'all_days': all_days,
     })
 
 

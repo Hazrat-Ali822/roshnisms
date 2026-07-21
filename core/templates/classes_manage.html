@@ -23,13 +23,24 @@
   <div class="sec-head"><h3>All classes ({{ rows|length }})</h3></div>
   {% if rows %}
   <div class="table-wrap"><table>
-    <thead><tr><th>Class</th><th class="ta-r">Students</th><th class="ta-r">Monthly fee</th><th>Subjects</th><th>Manage</th></tr></thead>
+    <thead><tr><th>Class</th><th class="ta-r">Students</th><th class="ta-r">Monthly fee</th><th>Class teacher</th><th>Subjects</th><th>Manage</th></tr></thead>
     <tbody>
     {% for row in rows %}
       <tr>
         <td><b style="color:var(--ink)">{{ row.c.name }}-{{ row.c.section }}</b></td>
         <td class="ta-r num">{{ row.count }}</td>
         <td class="ta-r num">Rs {{ row.c.monthly_fee }}</td>
+        <td>
+          <form method="post" style="display:flex;gap:6px;align-items:center">{% csrf_token %}
+            <input type="hidden" name="action" value="set_class_teacher">
+            <input type="hidden" name="class_id" value="{{ row.c.id }}">
+            <select name="teacher_id" class="mini-select" style="max-width:150px">
+              <option value="">&mdash; None &mdash;</option>
+              {% for t in teachers %}<option value="{{ t.id }}" {% if row.c.class_teacher_id == t.id %}selected{% endif %}>{{ t.user.get_full_name|default:t.user.username }}</option>{% endfor %}
+            </select>
+            <button class="act-btn ghost" type="submit" style="padding:5px 11px">Save</button>
+          </form>
+        </td>
         <td style="max-width:340px">
           {% for sub in row.subjects %}<span class="pill pill-info" style="margin:0 4px 4px 0;display:inline-flex;align-items:center;gap:5px">
             <form method="post" style="display:inline-flex" title="Edit name, press Enter to rename">{% csrf_token %}

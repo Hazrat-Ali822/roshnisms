@@ -89,6 +89,10 @@ class School(models.Model):
     # chosen to hide (e.g. "hostel,transport,library"). Core items can't be
     # hidden. Empty = show everything the role normally sees.
     hidden_nav = models.TextField(blank=True)
+    # --- Timetable structure (used by the auto-generator) ---
+    tt_days = models.CharField(max_length=40, default='Mon,Tue,Wed,Thu,Fri')
+    tt_periods_per_day = models.PositiveIntegerField(default=8)
+    tt_break_period = models.PositiveIntegerField(default=0)   # 0 = no break slot
 
     # --- SMS / notifications (configurable from the Settings page) ---
     # backend: 'console' (log only, default), 'http' (generic gateway / WhatsApp
@@ -170,6 +174,11 @@ class ClassRoom(models.Model):
     name = models.CharField(max_length=20)            # e.g. "9"
     section = models.CharField(max_length=5, default='A')
     monthly_fee = models.PositiveIntegerField(default=5500)
+    # The class teacher (form teacher) responsible for this section. Optional;
+    # picked from the school's teachers on the Classes page.
+    class_teacher = models.ForeignKey(
+        'Profile', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='class_teacher_of')
 
     class Meta:
         ordering = ['name', 'section']
@@ -364,6 +373,9 @@ class Subject(models.Model):
     name = models.CharField(max_length=60)
     classroom = models.ForeignKey(
         ClassRoom, on_delete=models.CASCADE, related_name='subjects')
+    # How many periods this subject needs per week — the auto timetable
+    # generator places exactly this many lessons for the subject.
+    periods_per_week = models.PositiveIntegerField(default=5)
 
     class Meta:
         ordering = ['name']

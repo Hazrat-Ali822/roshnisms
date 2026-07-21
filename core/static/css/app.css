@@ -304,6 +304,13 @@ tr:last-child td { border-bottom: none; }
   .topbar{padding:0 14px}
 }
 
+/* Auto per-list search box injected above listing tables */
+.tbl-search{padding:10px 12px 0}
+.tbl-search input{width:100%;max-width:320px;border:1px solid var(--line-strong);border-radius:9px;
+  padding:8px 12px 8px 32px;font-size:13.5px;font-family:inherit;color:var(--ink);outline:none;background:#fff
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='M15 15l-4-4'/%3E%3C/svg%3E") no-repeat 10px center}
+.tbl-search input:focus{border-color:var(--accent)}
+
 /* ---------- Step 2: attendance + marks ---------- */
 .bar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
 .bar-label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}

@@ -12,6 +12,64 @@
   <noscript><button class="btn-ghost" type="submit">Show</button></noscript>
 </form>
 
+<div class="card card-pad" style="margin-bottom:16px">
+  <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between">
+    <div>
+      <h3 style="margin:0 0 4px">Auto-generate timetable</h3>
+      <p class="muted" style="font-size:12.5px;margin:0;max-width:560px">Builds a <b>clash-free</b> weekly grid for <b>every class</b> at once — no teacher is booked in two places, no class gets two subjects in one slot. It uses each subject's <b>weekly periods</b> (below) and the <b>teacher</b> from Classes &amp; Subjects. You can still edit any slot afterwards.</p>
+    </div>
+    <form method="post" onsubmit="return confirm('Generate a fresh timetable for ALL classes? This replaces the current timetable (you can still edit slots after).');">{% csrf_token %}
+      <input type="hidden" name="action" value="generate">
+      <input type="hidden" name="class_id" value="{{ classroom.id }}">
+      <button class="btn-primary btn-auto" type="submit">Generate now</button>
+    </form>
+  </div>
+
+  <details class="row-edit" style="margin-top:14px">
+    <summary class="act-btn ghost" style="list-style:none;display:inline-block">Timetable structure (days, periods, break)</summary>
+    <form method="post" style="margin-top:12px">{% csrf_token %}
+      <input type="hidden" name="action" value="save_structure">
+      <input type="hidden" name="class_id" value="{{ classroom.id }}">
+      <div class="frow"><label>Working days</label>
+        <div style="display:flex;flex-wrap:wrap;gap:12px">
+          {% for d in all_days %}<label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-weight:500"><input type="checkbox" name="tt_day" value="{{ d }}" style="width:auto" {% if d in days %}checked{% endif %}> {{ d }}</label>{% endfor %}
+        </div>
+      </div>
+      <div class="row-2x">
+        <div class="frow"><label>Periods per day</label><input type="number" name="tt_periods_per_day" min="1" max="14" value="{{ school.tt_periods_per_day }}"></div>
+        <div class="frow"><label>Break after period (0 = none)</label><input type="number" name="tt_break_period" min="0" max="14" value="{{ school.tt_break_period }}"></div>
+      </div>
+      <button class="btn-primary btn-auto" type="submit">Save structure</button>
+    </form>
+  </details>
+</div>
+
+{% if subject_rows %}
+<details class="add-wrap" style="margin-bottom:16px">
+  <summary class="add-btn">Weekly periods per subject &middot; {{ classroom }}</summary>
+  <div class="card card-pad" style="max-width:620px">
+    <p class="muted" style="font-size:12.5px;margin:0 0 12px">How many periods each subject needs per week (the generator places exactly this many). Teacher comes from Classes &amp; Subjects.</p>
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="action" value="save_periods">
+      <input type="hidden" name="class_id" value="{{ classroom.id }}">
+      <div class="table-wrap"><table class="no-search">
+        <thead><tr><th>Subject</th><th>Teacher</th><th class="ta-r">Periods / week</th></tr></thead>
+        <tbody>
+        {% for r in subject_rows %}
+          <tr>
+            <td><b style="color:var(--ink)">{{ r.sub.name }}</b></td>
+            <td class="muted">{% if r.teacher %}{{ r.teacher }}{% else %}<span style="color:#7A5712">not assigned</span>{% endif %}</td>
+            <td class="ta-r"><input type="number" name="ppw_{{ r.sub.id }}" min="0" max="40" value="{{ r.sub.periods_per_week }}" style="width:80px"></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+      <button class="btn-primary btn-auto" type="submit" style="margin-top:12px">Save weekly periods</button>
+    </form>
+  </div>
+</details>
+{% endif %}
+
 <details class="add-wrap">
   <summary class="add-btn">Add / update a slot</summary>
   <div class="card card-pad" style="max-width:720px">
