@@ -7,6 +7,12 @@
   <title>Sign in &middot; {{ brand_name }}</title>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Spectral:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260721a">
+  <!-- PWA: expose the manifest + icons on the login page too, so an
+       unauthenticated visitor (and tools like PWABuilder / Chrome's install
+       check) discover the app here — not only after signing in. -->
+  <link rel="manifest" href="{% url 'web_manifest' %}">
+  <meta name="theme-color" content="{{ brand_primary }}">
+  <link rel="apple-touch-icon" href="{% if brand_logo %}{% url 'school_logo' %}{% else %}{% static 'icons/icon-192.png' %}{% endif %}">
   <style>:root{--ink:{{ brand_primary }};--accent:{{ brand_accent }};--accent-d:{{ brand_accent }}}</style>
   <script>(function(){try{if(localStorage.getItem('rs-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
 </head>
@@ -87,6 +93,13 @@ document.querySelectorAll('input[type=password]').forEach(function(inp){
   wrap.appendChild(b);
   b.addEventListener('click',function(){var s=inp.type==='password';inp.type=s?'text':'password';b.textContent=s?'Hide':'Show';});
 });
+// Register the service worker here too, so the app is installable straight from
+// the login screen (and PWABuilder can detect it without signing in).
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('{% url "service_worker" %}').catch(function(){});
+  });
+}
 </script>
 </body>
 </html>

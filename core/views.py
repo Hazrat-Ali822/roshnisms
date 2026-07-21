@@ -5582,6 +5582,8 @@ def web_manifest(request):
         'id': start,
         'name': name,
         'short_name': (name[:12] or 'Roshni'),
+        'description': '%s — school management portal for parents, students and '
+                       'staff.' % name,
         'start_url': start,
         'scope': start,
         'display': 'standalone',
