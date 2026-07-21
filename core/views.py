@@ -5739,11 +5739,19 @@ def student_photo(request, pk):
 
 
 def school_logo(request):
-    """Serve the school's uploaded logo (used in the sidebar, login, docs)."""
+    """Serve the school's uploaded logo (used in the sidebar, login, docs).
+
+    Cached hard in the browser so it does NOT re-download and flicker on every
+    page load. The templates append ?v=<logo timestamp>, so a new upload gets a
+    new URL and busts the cache automatically."""
     school = School.objects.first()
     if not school or not school.logo:
         raise Http404('No logo uploaded.')
-    return FileResponse(school.logo.open('rb'))
+    resp = FileResponse(school.logo.open('rb'))
+    # A year — safe because the URL carries a version token that changes on
+    # re-upload. 'immutable' stops revalidation requests entirely.
+    resp['Cache-Control'] = 'public, max-age=31536000, immutable'
+    return resp
 
 
 def app_icon(request):

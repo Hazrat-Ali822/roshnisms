@@ -25,7 +25,7 @@
   <!-- Left: brand hero (hidden on small screens) -->
   <aside class="login-hero">
     <div class="lh-brand">
-      <div class="lh-crest">{% if brand_logo %}<img src="{% url 'school_logo' %}" alt="{{ brand_name }}">{% else %}{{ brand_name|slice:":1"|upper }}{% endif %}</div>
+      <div class="lh-crest">{% if brand_logo %}<img src="{% url 'school_logo' %}?v={{ brand_logo_ver }}" alt="{{ brand_name }}">{% else %}{{ brand_name|slice:":1"|upper }}{% endif %}</div>
       <div><b>{{ brand_name }}</b><span>School Management System</span></div>
     </div>
 
@@ -45,7 +45,7 @@
   <!-- Right: sign-in card -->
   <main class="login-main">
   <div class="login-card">
-    <div class="lc-crest">{% if brand_logo %}<img src="{% url 'school_logo' %}" alt="{{ brand_name }}">{% else %}{{ brand_name|slice:":1"|upper }}{% endif %}</div>
+    <div class="lc-crest">{% if brand_logo %}<img src="{% url 'school_logo' %}?v={{ brand_logo_ver }}" alt="{{ brand_name }}">{% else %}{{ brand_name|slice:":1"|upper }}{% endif %}</div>
     <h3>{{ brand_name }}</h3>
     <p>Sign in to your account</p>
     {% if locked_minutes %}

@@ -19,7 +19,7 @@
       <div class="frow"><label>Date of birth</label><input type="date" name="date_of_birth" value="{{ st.date_of_birth|date:'Y-m-d' }}"></div>
       <div class="frow"><label>Gender</label><select name="gender"><option value="">&mdash;</option><option {% if st.gender == 'Male' %}selected{% endif %}>Male</option><option {% if st.gender == 'Female' %}selected{% endif %}>Female</option></select></div>
       <div class="frow"><label>Blood group</label><input name="blood_group" placeholder="e.g. B+" value="{{ st.blood_group }}"></div>
-      <div class="frow"><label>B-Form / CRC no</label><input name="b_form" placeholder="Child registration number" value="{{ st.b_form }}"></div>
+      <div class="frow"><label>B-Form / CRC no</label><input name="b_form" class="js-cnic" inputmode="numeric" maxlength="15" placeholder="xxxxx-xxxxxxx-x" value="{{ st.b_form }}"></div>
       <div class="frow"><label>Religion</label><input name="religion" value="{{ st.religion }}"></div>
       <div class="frow"><label>Nationality</label><input name="nationality" value="{{ st.nationality|default:'Pakistani' }}"></div>
       <div class="frow" style="grid-column:1/-1"><label>Photo</label><input type="file" name="photo" accept="image/*">{% if st.photo %}<span class="muted" style="font-size:12px;margin-top:4px;display:block">A photo is already on file. Choose a new file only to replace it.</span>{% endif %}</div>
@@ -30,7 +30,7 @@
     <div class="sec-head"><h3>Family &amp; Guardian</h3></div>
     <div class="card-pad" style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
       <div class="frow"><label>Father's name</label><input name="father_name" value="{{ st.father_name }}"></div>
-      <div class="frow"><label>Father's CNIC</label><input name="father_cnic" placeholder="xxxxx-xxxxxxx-x" value="{{ st.father_cnic }}"></div>
+      <div class="frow"><label>Father's CNIC</label><input name="father_cnic" class="js-cnic" inputmode="numeric" maxlength="15" placeholder="xxxxx-xxxxxxx-x" value="{{ st.father_cnic }}"></div>
       <div class="frow"><label>Father's occupation</label><input name="father_occupation" value="{{ st.father_occupation }}"></div>
       <div class="frow"><label>Father's phone</label><input name="father_phone" placeholder="03xx-xxxxxxx" value="{{ st.father_phone }}"></div>
       <div class="frow"><label>Mother's name</label><input name="mother_name" value="{{ st.mother_name }}"></div>

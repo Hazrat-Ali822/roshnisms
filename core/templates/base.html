@@ -29,7 +29,7 @@
         {% if active == 'saas_admin' %}
           S
         {% else %}
-          {% if brand_logo %}<img src="{% url 'school_logo' %}" alt="{{ brand_name }}">{% else %}{{ brand_name|slice:":1"|upper }}{% endif %}
+          {% if brand_logo %}<img src="{% url 'school_logo' %}?v={{ brand_logo_ver }}" alt="{{ brand_name }}">{% else %}{{ brand_name|slice:":1"|upper }}{% endif %}
         {% endif %}
       </div>
       <div>
@@ -514,6 +514,27 @@ function exportTableToCSV(tableSelector, filename) {
 </script>
 {% endif %}
 {% endif %}
+<script>
+// CNIC auto-format: keep digits only, cap at 13, insert dashes as XXXXX-XXXXXXX-X.
+// Applies to any input with class "js-cnic" (works on typing and paste).
+(function(){
+  function fmt(v){
+    var d=(v||'').replace(/\D/g,'').slice(0,13), out=d;
+    if(d.length>5) out=d.slice(0,5)+'-'+d.slice(5);
+    if(d.length>12) out=d.slice(0,5)+'-'+d.slice(5,12)+'-'+d.slice(12);
+    return out;
+  }
+  document.addEventListener('input',function(e){
+    var el=e.target;
+    if(el&&el.classList&&el.classList.contains('js-cnic')){
+      var start=el.selectionStart, before=el.value;
+      el.value=fmt(el.value);
+      // keep the caret roughly in place when a dash is auto-inserted
+      if(el.value.length>before.length && start===before.length){/* at end */}
+    }
+  });
+})();
+</script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

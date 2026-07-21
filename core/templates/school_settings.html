@@ -25,7 +25,7 @@
       <label>School logo</label>
       {% if brand_logo %}
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-          <img src="{% url 'school_logo' %}" alt="logo" style="width:48px;height:48px;border-radius:10px;object-fit:cover;border:1px solid var(--line)">
+          <img src="{% url 'school_logo' %}?v={{ brand_logo_ver }}" alt="logo" style="width:48px;height:48px;border-radius:10px;object-fit:cover;border:1px solid var(--line)">
           <label style="font-size:12.5px;font-weight:600;color:var(--overdue);text-transform:none;letter-spacing:0"><input type="checkbox" name="remove_logo"> Remove current logo</label>
         </div>
       {% endif %}

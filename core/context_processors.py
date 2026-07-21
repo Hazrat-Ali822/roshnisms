@@ -45,6 +45,22 @@ def _shade(hexstr, factor):
     return '#%02X%02X%02X' % (r, g, b)
 
 
+def _logo_version(school):
+    """A stable token that changes only when the logo file changes, used to
+    cache-bust the browser's copy of the logo (so it caches hard but still
+    updates after a re-upload). Falls back to file size, then a constant."""
+    logo = getattr(school, 'logo', None)
+    if not logo:
+        return ''
+    try:
+        return str(int(logo.storage.get_modified_time(logo.name).timestamp()))
+    except Exception:
+        try:
+            return str(logo.size)
+        except Exception:
+            return '1'
+
+
 def _brand_theme(primary, accent):
     """Derive every colour the theme needs from the two brand colours so text
     stays readable on any chosen colour and the sidebar follows the primary."""
@@ -79,7 +95,8 @@ def branding(request):
 
     if not is_explicit_tenant or not school:
         ctx = {'brand_name': 'Roshni SMS', 'brand_logo': False,
-               'current_session': '2025-26', 'my_photo': my_photo}
+               'brand_logo_ver': '', 'current_session': '2025-26',
+               'my_photo': my_photo}
         ctx.update(_brand_theme('#15294D', '#0E7C66'))
         return ctx
 
@@ -91,6 +108,7 @@ def branding(request):
     ctx = {
         'brand_name': tenant_school.name,
         'brand_logo': bool(tenant_school.logo),
+        'brand_logo_ver': _logo_version(tenant_school),
         'current_session': tenant_school.session or '2025-26',
         'my_photo': my_photo,
     }
