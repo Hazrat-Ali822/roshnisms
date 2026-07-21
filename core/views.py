@@ -1503,9 +1503,14 @@ _HELP_QUICKSTART = {
         '<b>Import CSV</b>). A login is created automatically for each student '
         'and parent.',
         'Add teachers/staff in <b>Staff</b>; tick “Create login” to give them '
-        'access. Set who teaches what.',
-        'Build each class timetable in <b>Timetable</b>, and set exams in '
-        '<b>Exams</b>.',
+        'access. In <b>Classes &amp; Subjects</b>, pick the <b>teacher for each '
+        'subject</b> and set each class’s <b>class teacher</b>.',
+        'In <b>Timetable</b>, set each subject’s weekly periods, then press '
+        '<b>Generate</b> — the system builds a clash-free timetable for one class '
+        'or all classes. Fine-tune by dragging any slot.',
+        'Set exams and datesheets in <b>Exams</b>.',
+        'Make it yours in <b>School Settings</b>: contact info on printouts, '
+        'login-page wording, which menu items show, and “match colours to logo”.',
         'Turn on <b>SMS</b> and daily <b>Backup</b> in Settings when you are '
         'ready.',
     ],
@@ -1556,13 +1561,21 @@ _HELP_MODULES = [
     ]),
     ('Academics', [
         ('Classes &amp; Subjects', 'Set up your classes (e.g. 9-A) and the '
-         'subjects taught in each.'),
-        ('Timetable', 'Build each class’s weekly period timetable.'),
+         'subjects taught in each. Assign a <b>teacher to each subject</b>, and '
+         'choose the class’s <b>class teacher</b> (form teacher).'),
+        ('Timetable', 'Set each subject’s weekly periods, then <b>auto-generate</b> '
+         'a clash-free grid — one class or all classes at once (no teacher is '
+         'double-booked). <b>Drag</b> any slot to move or swap it, or edit slots '
+         'by hand. Working days (incl. Saturday), periods and break are '
+         'configurable under “Timetable structure”.'),
         ('Exams', 'Create exams and their datesheets. Marks and results are '
          'grouped by academic session so different years never mix.'),
         ('Enter Marks / Results', 'Teachers enter marks per exam; students and '
          'parents see results with grade, percentage and class position. Print '
          'one report card, or a whole class at once.'),
+        ('Insights', 'A plain-language read of your data — weak/at-risk students, '
+         'attendance and result trends — built from what you already record (no '
+         'internet needed).'),
     ]),
     ('Attendance', [
         ('Mark Attendance', 'Teachers mark daily attendance per class. Guardians '
@@ -1612,12 +1625,32 @@ _HELP_MODULES = [
          'A safety copy of the current data is saved first, and everyone signs '
          'in again afterwards.'),
     ]),
+    ('Make it your own', [
+        ('Branding &amp; colours', 'Settings → upload your logo and set the '
+         'primary (sidebar) and accent (buttons) colours. “Match colours to my '
+         'logo” sets them automatically. Every readable text colour adapts.'),
+        ('Contact info on printouts', 'Settings → Contact &amp; public info: '
+         'address, phone, principal, motto and a receipt footer — printed on '
+         'vouchers, fee cards, result cards and certificates.'),
+        ('Login page &amp; app', 'Set your own login headline/tagline, a short '
+         'app name and upload a branded app (.apk) parents can install from /app.'),
+        ('Sidebar menu', 'Settings → Sidebar menu: untick modules you don’t use '
+         'to hide them (core items always stay).'),
+        ('Search &amp; edit', 'Every list has a search box — start typing to '
+         'filter. Press <b>Edit</b> on a row to change it in a small form.'),
+    ]),
 ]
 
 
 # Breadcrumb-style "where to click" paths for common tasks (Section 8 docs).
 _HELP_PATHS = [
     ('Add a student', 'Students → Add student'),
+    ('Assign a teacher to a subject', 'Classes &amp; Subjects → subject’s teacher dropdown'),
+    ('Set a class teacher', 'Classes &amp; Subjects → Class teacher → Save'),
+    ('Auto-generate the timetable', 'Timetable → Generate (this class or all)'),
+    ('Move a period', 'Timetable → drag a slot to another cell'),
+    ('Match theme colours to logo', 'School Settings → Match colours to my logo'),
+    ('Hide a menu item', 'School Settings → Sidebar menu → untick it'),
     ('Collect a fee', 'Fee Collection → open a student → Collect payment'),
     ('Verify an online / bank payment', 'Online Payments → To verify → Verify & record'),
     ('Turn on online payments', 'School Settings → Online fee payments'),
@@ -1632,8 +1665,9 @@ _HELP_PATHS = [
 
 # Roadmap / coming soon — set expectations honestly about what is planned next.
 _HELP_ROADMAP = [
-    ('Mobile app', 'A dedicated Android/iOS app for parents. The system is '
-     'already mobile-friendly in the browser.'),
+    ('iPhone app', 'A dedicated iOS app. Android is already available — build '
+     'your branded app and let parents install it from /app; the browser is '
+     'fully mobile-friendly on any phone.'),
     ('Automatic online-payment confirmation', 'Live JazzCash/Easypaisa auto-'
      'reconciliation once a school deploys online with a merchant account.'),
     ('Multi-campus / multi-school (SaaS)', 'One login managing several campuses. '

@@ -67,6 +67,7 @@ def _brand_theme(primary, accent):
     # If the primary is already very dark, lighten the second gradient stop a
     # touch so the sidebar still shows depth; otherwise darken it.
     p_dark = _luminance(primary) < 0.15
+    ar = _rgb(accent) or (14, 124, 102)
     return {
         'brand_primary': primary,
         'brand_primary_d': _shade(primary, 1.7 if p_dark else 0.72),
@@ -74,6 +75,9 @@ def _brand_theme(primary, accent):
         'brand_accent': accent,
         'brand_accent_d': _shade(accent, 0.82),
         'brand_accent_ink': _ink_on(accent),
+        # "r, g, b" of the accent, so shadows/tints can be rgba(var(--accent-rgb),a)
+        # and always harmonise with the chosen accent instead of a fixed colour.
+        'brand_accent_rgb': '%d, %d, %d' % ar,
     }
 
 

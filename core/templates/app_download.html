@@ -6,7 +6,7 @@
   <title>{% if school %}{{ school.name }} &mdash; {% endif %}Get the App</title>
   <link rel="manifest" href="{% url 'web_manifest' %}">
   <meta name="theme-color" content="{% if school %}{{ school.primary_color }}{% else %}#15294D{% endif %}">
-  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260721e">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260721f">
   <style>
     .app-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;
       padding:24px;background:var(--bg,#0B1120)}
@@ -38,27 +38,27 @@
         <div class="app-badge">{% if school %}{{ school.name|slice:':1'|upper }}{% else %}R{% endif %}</div>
       {% endif %}
       <h1>{% if school %}{{ school.name }}{% else %}Roshni{% endif %} App</h1>
-      <p class="sub">Apna school phone par app ki tarah &mdash; attendance, results, fees aur notices, sab ek jagah.</p>
+      <p class="sub">Your school as a phone app &mdash; attendance, results, fees and notices, all in one place.</p>
 
       {% if apk_url %}
         <a class="dl-btn" href="{{ apk_url }}" download>&#11015;&nbsp; Download App (.apk)</a>
         <div class="dl-note">
-          <b>Install kaise karein:</b><br>
-          1. Upar button se <b>.apk</b> download karein.<br>
-          2. Download hone par file kholein &mdash; phone <b>"Unknown sources / is source se install"</b> ki ijazat maange to <b>Allow</b> karein.<br>
-          3. <b>Install</b> dabayein &mdash; home screen par app icon aa jayega.<br>
-          4. App kholein aur apne <b>username &amp; password</b> se login karein.
+          <b>How to install:</b><br>
+          1. Tap the button above to download the <b>.apk</b>.<br>
+          2. Open the downloaded file &mdash; if the phone asks to allow <b>"Unknown sources / install from this source"</b>, tap <b>Allow</b>.<br>
+          3. Tap <b>Install</b> &mdash; the app icon appears on your home screen.<br>
+          4. Open the app and sign in with your <b>username &amp; password</b>.
         </div>
       {% else %}
-        <p class="sub" style="margin-bottom:0">App abhi taiyaar ho rahi hai. Tab tak aap browser se <b>"Install app"</b> laga sakte hain 👇</p>
+        <p class="sub" style="margin-bottom:0">The app is being prepared. In the meantime you can install it from your browser using the option below.</p>
       {% endif %}
 
       <div class="alt">
-        <p style="margin:0 0 6px;color:var(--muted,#778);font-size:.9rem">Ya browser se install karein:</p>
+        <p style="margin:0 0 6px;color:var(--muted,#778);font-size:.9rem">Or install from your browser:</p>
         <p style="margin:0;font-size:.9rem">Chrome menu (&#8942;) &rarr; <b>"Install app"</b> / <b>"Add to Home screen"</b></p>
       </div>
 
-      <a class="back" href="{% url 'dashboard' %}">&larr; Portal par wapas jayein</a>
+      <a class="back" href="{% url 'dashboard' %}">&larr; Back to portal</a>
     </div>
   </div>
 </body>
