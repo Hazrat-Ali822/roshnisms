@@ -90,7 +90,7 @@ class School(models.Model):
     # hidden. Empty = show everything the role normally sees.
     hidden_nav = models.TextField(blank=True)
     # --- Timetable structure (used by the auto-generator) ---
-    tt_days = models.CharField(max_length=40, default='Mon,Tue,Wed,Thu,Fri')
+    tt_days = models.CharField(max_length=40, default='Mon,Tue,Wed,Thu,Fri,Sat')
     tt_periods_per_day = models.PositiveIntegerField(default=8)
     tt_break_period = models.PositiveIntegerField(default=0)   # 0 = no break slot
 

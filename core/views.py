@@ -4215,15 +4215,40 @@ def classes_manage(request):
                 Subject.objects.create(classroom=c, name=nm)
                 messages.success(request, 'Subject "%s" added to %s.' % (nm, c))
         elif action == 'delete_subject':
-            Subject.objects.filter(pk=request.POST.get('subject_id')).delete()
+            subj = Subject.objects.filter(pk=request.POST.get('subject_id')).first()
+            if subj:
+                # clean up its teacher assignment too
+                TeachingAssignment.objects.filter(
+                    classroom=subj.classroom, subject=subj.name).delete()
+                subj.delete()
             messages.success(request, 'Subject removed.')
         elif action == 'edit_subject':
             subj = Subject.objects.filter(pk=_pk(request.POST.get('subject_id'))).first()
             nm = (request.POST.get('subject', '') or '').strip()
             if subj and nm:
+                old = subj.name
                 subj.name = nm
                 subj.save(update_fields=['name'])
+                # keep the teacher assignment pointing at the renamed subject
+                TeachingAssignment.objects.filter(
+                    classroom=subj.classroom, subject=old).update(subject=nm)
                 messages.success(request, 'Subject renamed to "%s".' % nm)
+        elif action == 'assign_subject_teacher':
+            c = ClassRoom.objects.filter(pk=_pk(request.POST.get('class_id'))).first()
+            sname = (request.POST.get('subject_name', '') or '').strip()
+            if c and sname:
+                tid = _pk(request.POST.get('teacher_id'))
+                teacher = (Profile.objects.filter(pk=tid, role='teacher').first()
+                           if tid else None)
+                # one teacher per class+subject: clear then set
+                TeachingAssignment.objects.filter(classroom=c, subject=sname).delete()
+                if teacher:
+                    TeachingAssignment.objects.create(
+                        teacher=teacher, classroom=c, subject=sname)
+                    messages.success(request, '%s in %s: %s.' % (
+                        sname, c, teacher.user.get_full_name() or teacher.user.username))
+                else:
+                    messages.success(request, 'Teacher cleared for %s in %s.' % (sname, c))
         elif action == 'set_class_teacher':
             c = ClassRoom.objects.filter(pk=_pk(request.POST.get('class_id'))).first()
             if c:
@@ -4243,8 +4268,15 @@ def classes_manage(request):
     classes = ClassRoom.objects.select_related('class_teacher__user').prefetch_related(
         'subjects').order_by('name', 'section')
     teachers = list(Profile.objects.filter(role='teacher').select_related('user'))
-    rows = [{'c': c, 'count': Student.objects.filter(classroom=c).count(),
-             'subjects': list(c.subjects.all())} for c in classes]
+    # (classroom_id, subject_name) -> teacher_id, so each subject shows its teacher
+    assigned = {(ta.classroom_id, ta.subject): ta.teacher_id
+                for ta in TeachingAssignment.objects.all()}
+    rows = []
+    for c in classes:
+        subs = [{'sub': s, 'teacher_id': assigned.get((c.id, s.name))}
+                for s in c.subjects.all()]
+        rows.append({'c': c, 'count': Student.objects.filter(classroom=c).count(),
+                     'subjects': subs})
     return render(request, 'classes_manage.html', {
         'role': 'admin', 'active': 'classes', 'rows': rows, 'teachers': teachers,
     })
@@ -4270,7 +4302,7 @@ def _generate_timetable():
     clash, as (classroom, subject, teacher_name) — report these to the admin."""
     school = School.objects.first()
     days = [d.strip() for d in ((school.tt_days if school else '') or
-            'Mon,Tue,Wed,Thu,Fri').split(',') if d.strip()]
+            'Mon,Tue,Wed,Thu,Fri,Sat').split(',') if d.strip()]
     ppd = (school.tt_periods_per_day if school else 8) or 8
     brk = school.tt_break_period if school else 0
     periods = [p for p in range(1, ppd + 1) if p != brk]
@@ -4341,7 +4373,7 @@ def timetable_manage(request):
         classroom = classes[0] if classes else None
     school = School.objects.first()
     days = [d.strip() for d in ((school.tt_days if school else '') or
-            'Mon,Tue,Wed,Thu,Fri').split(',') if d.strip()]
+            'Mon,Tue,Wed,Thu,Fri,Sat').split(',') if d.strip()]
     ppd = (school.tt_periods_per_day if school else 8) or 8
     all_days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -4395,7 +4427,7 @@ def timetable_manage(request):
             return redirect('%s?class=%s' % (reverse('timetable_manage'), classroom.id))
         elif action == 'save_structure' and school:
             sel_days = [d for d in request.POST.getlist('tt_day') if d in all_days]
-            school.tt_days = ','.join(sel_days) or 'Mon,Tue,Wed,Thu,Fri'
+            school.tt_days = ','.join(sel_days) or 'Mon,Tue,Wed,Thu,Fri,Sat'
             try:
                 school.tt_periods_per_day = max(1, min(14, int(
                     request.POST.get('tt_periods_per_day') or 8)))

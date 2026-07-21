@@ -101,3 +101,57 @@ class ClassTeacherTests(TestCase):
             'teacher_id': ''})
         self.w.c9.refresh_from_db()
         self.assertIsNone(self.w.c9.class_teacher_id)
+
+
+class SubjectTeacherTests(TestCase):
+    def setUp(self):
+        self.w = build_world()
+        self.c = Client()
+        self.c.login(username='admin1', password=PASSWORD)
+        # A second teacher to reassign to.
+        from django.contrib.auth.models import User
+        from core.models import Profile
+        u = User.objects.create_user('teacher2', password=PASSWORD,
+                                     first_name='Sana')
+        self.t2 = Profile.objects.create(user=u, role='teacher')
+
+    def test_assign_subject_teacher(self):
+        # English in 9-A has no teacher in the factory; assign one.
+        self.c.post(reverse('classes_manage'), {
+            'action': 'assign_subject_teacher', 'class_id': self.w.c9.id,
+            'subject_name': 'English', 'teacher_id': self.t2.id})
+        self.assertTrue(TeachingAssignment.objects.filter(
+            classroom=self.w.c9, subject='English', teacher=self.t2).exists())
+
+    def test_reassign_replaces_teacher(self):
+        for tid in (self.w.teacher_p.id, self.t2.id):
+            self.c.post(reverse('classes_manage'), {
+                'action': 'assign_subject_teacher', 'class_id': self.w.c9.id,
+                'subject_name': 'English', 'teacher_id': tid})
+        qs = TeachingAssignment.objects.filter(classroom=self.w.c9, subject='English')
+        self.assertEqual(qs.count(), 1)                 # not duplicated
+        self.assertEqual(qs.first().teacher_id, self.t2.id)
+
+    def test_clear_subject_teacher(self):
+        TeachingAssignment.objects.create(
+            teacher=self.t2, classroom=self.w.c9, subject='English')
+        self.c.post(reverse('classes_manage'), {
+            'action': 'assign_subject_teacher', 'class_id': self.w.c9.id,
+            'subject_name': 'English', 'teacher_id': ''})
+        self.assertFalse(TeachingAssignment.objects.filter(
+            classroom=self.w.c9, subject='English').exists())
+
+    def test_rename_subject_keeps_teacher(self):
+        self.c.post(reverse('classes_manage'), {
+            'action': 'edit_subject', 'subject_id': self.w.math9.id,
+            'subject': 'Maths'})
+        # the factory's Mathematics teacher assignment follows the rename
+        self.assertTrue(TeachingAssignment.objects.filter(
+            classroom=self.w.c9, subject='Maths').exists())
+        self.assertFalse(TeachingAssignment.objects.filter(
+            classroom=self.w.c9, subject='Mathematics').exists())
+
+    def test_new_school_defaults_to_six_days(self):
+        from core.models import School
+        s = School.objects.create(name='Fresh School')
+        self.assertIn('Sat', s.tt_days)

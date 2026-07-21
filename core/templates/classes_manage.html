@@ -41,16 +41,28 @@
             <button class="act-btn ghost" type="submit" style="padding:5px 11px">Save</button>
           </form>
         </td>
-        <td style="max-width:340px">
-          {% for sub in row.subjects %}<span class="pill pill-info" style="margin:0 4px 4px 0;display:inline-flex;align-items:center;gap:5px">
-            <form method="post" style="display:inline-flex" title="Edit name, press Enter to rename">{% csrf_token %}
-              <input type="hidden" name="action" value="edit_subject"><input type="hidden" name="subject_id" value="{{ sub.id }}">
-              <input name="subject" value="{{ sub.name }}" size="9" style="border:none;background:transparent;font:inherit;color:inherit;padding:0;width:auto;min-width:40px">
+        <td style="min-width:340px">
+          {% for s in row.subjects %}
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+            <form method="post" style="display:flex" title="Rename subject, press Enter">{% csrf_token %}
+              <input type="hidden" name="action" value="edit_subject"><input type="hidden" name="subject_id" value="{{ s.sub.id }}">
+              <input name="subject" value="{{ s.sub.name }}" class="mini-select" style="min-width:96px;width:104px">
             </form>
-            <form method="post" style="display:inline" onsubmit="return confirm('Remove subject {{ sub.name|escapejs }}?');">{% csrf_token %}
-              <input type="hidden" name="action" value="delete_subject"><input type="hidden" name="subject_id" value="{{ sub.id }}">
-              <button type="submit" title="Remove" style="border:none;background:none;color:#922A1B;cursor:pointer;font-weight:700;padding:0;line-height:1">&times;</button>
-            </form></span>{% empty %}<span class="muted">No subjects yet</span>{% endfor %}
+            <form method="post" style="display:flex" title="Assign the teacher for this subject">{% csrf_token %}
+              <input type="hidden" name="action" value="assign_subject_teacher">
+              <input type="hidden" name="class_id" value="{{ row.c.id }}">
+              <input type="hidden" name="subject_name" value="{{ s.sub.name }}">
+              <select name="teacher_id" class="mini-select" style="max-width:150px" onchange="this.form.submit()">
+                <option value="">&mdash; Teacher &mdash;</option>
+                {% for t in teachers %}<option value="{{ t.id }}" {% if s.teacher_id == t.id %}selected{% endif %}>{{ t.user.get_full_name|default:t.user.username }}</option>{% endfor %}
+              </select>
+            </form>
+            <form method="post" style="display:flex" onsubmit="return confirm('Remove subject {{ s.sub.name|escapejs }}?');">{% csrf_token %}
+              <input type="hidden" name="action" value="delete_subject"><input type="hidden" name="subject_id" value="{{ s.sub.id }}">
+              <button type="submit" title="Remove subject" style="border:none;background:none;color:#922A1B;cursor:pointer;font-weight:700;padding:0 2px;line-height:1;font-size:16px">&times;</button>
+            </form>
+          </div>
+          {% empty %}<span class="muted">No subjects yet</span>{% endfor %}
           <form method="post" style="margin-top:6px;display:flex;gap:6px;max-width:280px">{% csrf_token %}
             <input type="hidden" name="action" value="add_subject"><input type="hidden" name="class_id" value="{{ row.c.id }}">
             <input name="subject" placeholder="Add subject" style="flex:1">
