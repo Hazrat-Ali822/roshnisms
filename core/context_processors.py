@@ -4,6 +4,63 @@ from django.conf import settings
 from .models import School
 
 
+def _rgb(hexstr):
+    """Parse #rgb / #rrggbb into an (r, g, b) tuple, or None if unparseable."""
+    h = (hexstr or '').lstrip('#')
+    if len(h) == 3:
+        h = ''.join(c * 2 for c in h)
+    if len(h) != 6:
+        return None
+    try:
+        return int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    except ValueError:
+        return None
+
+
+def _luminance(hexstr):
+    """Perceived brightness 0..1 (sRGB relative luminance)."""
+    rgb = _rgb(hexstr)
+    if not rgb:
+        return 0.0
+
+    def lin(c):
+        c = c / 255
+        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+    r, g, b = rgb
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+
+
+def _ink_on(hexstr):
+    """Return a readable text colour (near-black or white) for the given bg."""
+    return '#0F172A' if _luminance(hexstr) > 0.42 else '#FFFFFF'
+
+
+def _shade(hexstr, factor):
+    """Scale each channel by factor (<1 darkens, >1 lightens), clamped."""
+    rgb = _rgb(hexstr)
+    if not rgb:
+        return hexstr
+    r, g, b = (max(0, min(255, int(c * factor))) for c in rgb)
+    return '#%02X%02X%02X' % (r, g, b)
+
+
+def _brand_theme(primary, accent):
+    """Derive every colour the theme needs from the two brand colours so text
+    stays readable on any chosen colour and the sidebar follows the primary."""
+    # If the primary is already very dark, lighten the second gradient stop a
+    # touch so the sidebar still shows depth; otherwise darken it.
+    p_dark = _luminance(primary) < 0.15
+    return {
+        'brand_primary': primary,
+        'brand_primary_d': _shade(primary, 1.7 if p_dark else 0.72),
+        'brand_primary_ink': _ink_on(primary),
+        'brand_accent': accent,
+        'brand_accent_d': _shade(accent, 0.82),
+        'brand_accent_ink': _ink_on(accent),
+    }
+
+
 def pwa(request):
     """Expose the Web Push public key (applicationServerKey) to templates so the
     browser can subscribe. Empty string disables push cleanly."""
@@ -21,23 +78,25 @@ def branding(request):
     is_explicit_tenant = getattr(request, 'is_explicit_tenant', False)
 
     if not is_explicit_tenant or not school:
-        return {'brand_name': 'Roshni SMS', 'brand_logo': False,
-                'brand_primary': '#15294D', 'brand_accent': '#0E7C66',
-                'current_session': '2025-26', 'my_photo': my_photo}
+        ctx = {'brand_name': 'Roshni SMS', 'brand_logo': False,
+               'current_session': '2025-26', 'my_photo': my_photo}
+        ctx.update(_brand_theme('#15294D', '#0E7C66'))
+        return ctx
 
     # We're in a real tenant context, and by now the DB connection is switched
     # to the tenant's own database. Read the school's OWN record so name, logo
     # and colours reflect what that school set in its Settings (the request
     # .tenant object came from the master registry and would show stale values).
     tenant_school = School.objects.first() or school
-    return {
+    ctx = {
         'brand_name': tenant_school.name,
         'brand_logo': bool(tenant_school.logo),
-        'brand_primary': tenant_school.primary_color or '#15294D',
-        'brand_accent': tenant_school.accent_color or '#0E7C66',
         'current_session': tenant_school.session or '2025-26',
         'my_photo': my_photo,
     }
+    ctx.update(_brand_theme(tenant_school.primary_color or '#15294D',
+                            tenant_school.accent_color or '#0E7C66'))
+    return ctx
 
 
 def nav_children(request):
