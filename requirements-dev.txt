@@ -1,0 +1,4 @@
+# Developer / testing tools — NOT needed to run the app, only to test it.
+#   pip install -r requirements-dev.txt
+coverage>=7.0     # code-coverage measurement (python run_tests.py --coverage)
+locust>=2.0       # performance / load testing (see locustfile.py)

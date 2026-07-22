@@ -209,11 +209,20 @@ keys auto-generate into dotfiles next to the DB — **back them up with the DB**
 
 ## 10. Testing
 
-- `python manage.py test core` runs ~60 test modules (`core/tests/test_*.py`).
-- `core/tests/factory.py::build_world()` builds a full school with one user per
-  role — use it in new tests.
+- **Run everything:** `python run_tests.py` (add `--coverage` or `--all`). Plain
+  Django: `python manage.py test core`, or one module e.g.
+  `python manage.py test core.tests.test_smoke`.
+- ~60 test modules in `core/tests/test_*.py` (unit + integration + functional +
+  smoke + security). `core/tests/factory.py::build_world()` builds a full school
+  with one user per role — use it in new tests.
+- `core/tests/test_smoke.py` = fast "does every role's main page return 200".
+- **Coverage:** `.coveragerc` present; `python run_tests.py --coverage` writes
+  `htmlcov/index.html`.
+- **CI:** `.github/workflows/tests.yml` runs the suite + `check --deploy` on every
+  push/PR to `main`.
 - Remember tenancy/DB-switching is disabled under test (`'test' in sys.argv`).
 - Add/adjust tests for any behaviour you change; this repo keeps tests green.
+- Full details + the testing-type map: **`TESTING.md`**.
 
 ---
 

@@ -1,0 +1,41 @@
+name: Tests
+
+# Automated testing on every push and pull request to main.
+# GitHub runs the whole suite for you — a green check means the product still
+# works; a red X means a change broke something. No manual step needed.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install coverage
+
+      - name: Run test suite (with coverage)
+        run: |
+          coverage run manage.py test core --verbosity 1
+          coverage report
+
+      - name: Django security check (production config)
+        env:
+          ROSHNI_DEBUG: "0"
+          ROSHNI_HTTPS: "1"
+          ROSHNI_ALLOWED_HOSTS: "example.com"
+        run: python manage.py check --deploy
+        continue-on-error: true

@@ -1,0 +1,18 @@
+# Coverage.py configuration — measures how much of core/ the tests exercise.
+[run]
+branch = True
+source = core
+omit =
+    */migrations/*
+    */tests/*
+    core/apps.py
+    manage.py
+
+[report]
+show_missing = True
+skip_covered = False
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
+    if __name__ == .__main__.:
