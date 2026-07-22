@@ -235,6 +235,11 @@ python manage.py collectstatic --noinput # if you touched static/CSS
 # then reload the app server (e.g. touch the wsgi file)
 ```
 
+- **PythonAnywhere:** full guide in **`DEPLOY_PYTHONANYWHERE.md`**. The big
+  performance levers there: set `ROSHNI_DEBUG=0` in the WSGI file (enables
+  template caching + fast static), **map `/static/` in the Web tab** so PA serves
+  assets directly, and `collectstatic` (WhiteNoise `CompressedStaticFilesStorage`
+  pre-builds `.gz`/`.br`). Static config lives in `settings.py` `STORAGES`.
 - **Convention in this repo:** changes are committed **and pushed to `main`**
   after each task (the maintainer wants auto-push). Commit messages end with a
   `Co-Authored-By:` trailer.

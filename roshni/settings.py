@@ -217,6 +217,20 @@ STATIC_URL = 'static/'
 # collectstatic gathers CSS/JS here; WhiteNoise serves them in production.
 STATIC_ROOT = DATA_DIR / 'staticfiles'
 
+# WhiteNoise: pre-compress static files (gzip + brotli) at collectstatic time and
+# serve them with proper caching headers. This makes CSS/JS/fonts load much
+# faster on a slow host (e.g. PythonAnywhere) than Django's plain static serving,
+# and needs no manifest (we already cache-bust with ?v= query strings, so there
+# is zero risk of collectstatic failing on a missing reference).
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
+    },
+}
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = DATA_DIR / 'media'
 
