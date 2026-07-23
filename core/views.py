@@ -928,7 +928,9 @@ def insights(request):
 
     # --- Fee risk: students with an outstanding challan balance ---
     bal_by_student = {}
-    for c in FeeChallan.objects.all():
+    # balance reads payments + lines, so prefetch both: without this the loop
+    # fired two queries per challan (thousands on a full school).
+    for c in FeeChallan.objects.prefetch_related('payments', 'lines'):
         if c.student_id and c.balance > 0:
             bal_by_student[c.student_id] = bal_by_student.get(c.student_id, 0) + c.balance
     fee_rows = [{'student': id_to_student[sid], 'balance': bal}
@@ -1875,6 +1877,37 @@ def _sync_fee_status(student):
     else:
         student.fee_status = 'Pending'
     student.save(update_fields=['fee_status'])
+
+
+def _sync_fee_status_bulk(student_ids):
+    """Recompute fee_status for MANY students in a handful of queries.
+
+    Exactly the same rules as _sync_fee_status, but batched. The daily
+    automation used to call the single-student version once per overdue
+    challan, which meant thousands of queries on the first page load of the
+    day — the user felt it as a long, recurring delay. Returns how many
+    students actually changed."""
+    ids = list(student_ids)
+    if not ids:
+        return 0
+    students = (Student.objects.filter(id__in=ids)
+                .prefetch_related('challans__payments', 'challans__lines'))
+    changed = []
+    for s in students:
+        challans = [c for c in s.challans.all() if not c.carried_forward]
+        outstanding = sum(c.balance for c in challans)
+        if outstanding <= 0:
+            status = 'Paid'
+        elif any(c.is_overdue for c in challans):
+            status = 'Overdue'
+        else:
+            status = 'Pending'
+        if s.fee_status != status:
+            s.fee_status = status
+            changed.append(s)
+    if changed:
+        Student.objects.bulk_update(changed, ['fee_status'])
+    return len(changed)
 
 
 def _escalating_late_fee(school, challan, today):
@@ -7700,30 +7733,54 @@ def run_daily_jobs(school, today):
     import datetime
     
     # 1. Auto-Apply / escalate Late Fees on overdue, unpaid, unlocked challans.
+    # Done in bulk: challan.balance reads payments + lines, so without the
+    # prefetch this loop fired several queries PER challan and then re-synced
+    # the same student once per challan. On a full school that was thousands of
+    # queries on the first page load of the day — a long, recurring delay for
+    # whoever happened to open the site first.
     if school.late_fee_amount > 0:
-        for ch in FeeChallan.objects.filter(due_date__lt=today,
-                                            carried_forward=False):
-            if _refresh_late_fee(school, ch, today):
-                _sync_fee_status(ch.student)
-                print(f"[Automation] Late fee now Rs {ch.late_fee} on {ch}")
-                
+        overdue = (FeeChallan.objects
+                   .filter(due_date__lt=today, carried_forward=False,
+                           late_fee_locked=False)
+                   .select_related('student')
+                   .prefetch_related('payments', 'lines'))
+        bumped, touched = [], set()
+        for ch in overdue:
+            expected = _escalating_late_fee(school, ch, today)
+            if expected > ch.late_fee:
+                ch.late_fee = expected
+                bumped.append(ch)
+                touched.add(ch.student_id)
+        if bumped:
+            FeeChallan.objects.bulk_update(bumped, ['late_fee'])
+            _sync_fee_status_bulk(touched)
+            print('[Automation] Late fee updated on %d challan(s)' % len(bumped))
+
+
     # 2. Auto-Generate Monthly Challans (Runs on 1st of the month).
     # Use the SAME _make_challan the office uses, so auto-generated challans
     # include fee heads / one-time / annual charges (the old inline version
     # silently dropped them). _make_challan is idempotent (skips if one exists).
     if today.day == 1:
-        active_students = Student.objects.filter(graduated=False, status='Active')
+        active_students = (Student.objects.filter(graduated=False, status='Active')
+                           .select_related('classroom', 'route'))
+        made = set()
         for s in active_students:
             _challan, created = _make_challan(s, today.year, today.month)
             if created:
-                _sync_fee_status(s)
-                print(f"[Automation] Generated monthly challan for {s.name}")
+                made.add(s.id)
+        if made:
+            _sync_fee_status_bulk(made)
+            print('[Automation] Generated %d monthly challan(s)' % len(made))
 
     # 3. Auto-Send Defaulter Reminders (Runs on 5th and 15th of the month)
     if today.day in (5, 15):
-        overdue_students = Student.objects.filter(fee_status='Overdue', graduated=False)
+        overdue_students = (Student.objects
+                            .filter(fee_status='Overdue', graduated=False)
+                            .prefetch_related('challans__payments',
+                                              'challans__lines'))
         for s in overdue_students:
-            unpaid_ch = s.challans.filter(carried_forward=False)
+            unpaid_ch = [c for c in s.challans.all() if not c.carried_forward]
             total_balance = sum(ch.balance for ch in unpaid_ch)
             if total_balance > 0 and s.guardian_phone:
                 sname = school.name if school else 'School'
