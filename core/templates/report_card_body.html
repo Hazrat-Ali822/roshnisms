@@ -1,7 +1,11 @@
 <div class="card card-pad rc-sheet report-card-sheet" style="max-width:720px;margin:0 auto">
   <div style="text-align:center;border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:16px">
-    <div class="serif" style="font-size:26px;font-weight:700;color:var(--ink)">{{ school.name|default:"Roshni Public School" }}</div>
-    <div class="muted" style="font-size:13px">{{ school.campus }}{% if school.session %} &middot; Session {{ school.session }}{% endif %}</div>
+    <div class="rc-crest">{% include '_crest.html' %}</div>
+    <div class="serif" style="font-size:26px;font-weight:700;color:var(--ink)">{{ doc_name }}</div>
+    <div class="muted" style="font-size:13px">{{ doc_school.campus }}{% if doc_school.session %} &middot; Session {{ doc_school.session }}{% endif %}</div>
+    {% if doc_school.address or doc_school.phone %}
+      <div class="muted" style="font-size:11.5px">{{ doc_school.address }}{% if doc_school.address and doc_school.phone %} &middot; {% endif %}{{ doc_school.phone }}</div>
+    {% endif %}
     <div style="margin-top:8px;display:inline-block;background:var(--ink);color:#fff;padding:4px 16px;border-radius:6px;font-weight:600;letter-spacing:.04em">REPORT CARD &middot; {{ exam.name }}</div>
   </div>
 

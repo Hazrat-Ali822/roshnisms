@@ -1,7 +1,15 @@
 {% extends 'base.html' %}
 {% block heading %}Exams{% endblock %}
 {% block content %}
-<div class="welcome"><h1>Exam Seating</h1><p>Auto-allocate students to rooms for an exam.{% if rooms_count == 0 %} Add rooms first from the Rooms tab.{% endif %}</p></div>
+<div class="welcome no-print"><h1>Exam Seating</h1><p>Auto-allocate students to rooms for an exam.{% if rooms_count == 0 %} Add rooms first from the Rooms tab.{% endif %}</p></div>
+
+{# Printed seating charts are posted on room doors — they must carry the school's identity. #}
+<div class="print-head only-print" style="text-align:center;margin-bottom:10px">
+  <div class="rc-crest">{% include '_crest.html' %}</div>
+  <b style="font-size:18px">{{ doc_name }}</b><br>
+  {% if doc_school.address or doc_school.phone %}<span class="muted" style="font-size:11px">{{ doc_school.address }}{% if doc_school.address and doc_school.phone %} &middot; {% endif %}{{ doc_school.phone }}</span><br>{% endif %}
+  <span class="muted">Exam Seating Plan{% if exam %} &middot; {{ exam.name }}{% endif %}</span>
+</div>
 
 <div class="bar no-print" style="margin-bottom:18px">
   <a class="act-btn ghost" href="{% url 'exam_datesheet' %}{% if exam %}?exam={{ exam.id }}{% endif %}" style="text-decoration:none">Datesheet</a>

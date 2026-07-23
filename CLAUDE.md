@@ -201,6 +201,15 @@ model edits (`python manage.py makemigrations core`) and keep them in order.
 - **Editing pattern:** listing rows are read-only with an **Edit** button that
   reveals an inline form (`.edit-row` + `rowEdit()` in `base.html`) — not
   inline-cell editing. Every listing page has a client-side search box.
+- ⚠️ **Printed documents use `doc_*`, not `brand_*`.** `brand_name`/`brand_school`
+  stay neutral ("Roshni SMS", `None`) when there is no tenant in the URL — right
+  for the app chrome, wrong for a certificate. `branding()` also exposes
+  `doc_school` / `doc_name` / `doc_logo` / `doc_logo_ver`, which resolve to the
+  tenant's school **or** `School.objects.first()` on a single-school install. Any
+  certificate, receipt, payslip, ID card, report card, voucher or printable
+  register must use those, and render the crest with
+  `{% include '_crest.html' %}`. Never hardcode a school name or initial.
+  `core/tests/test_doc_branding.py` enforces this.
 
 ---
 

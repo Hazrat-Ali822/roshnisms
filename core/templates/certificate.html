@@ -7,9 +7,12 @@
 </div>
 <div class="card doc">
   <div class="doc-head">
-    <div class="doc-crest">{{ school.name|slice:":1" }}</div>
-    <h2>{{ school.name }}</h2>
-    <div class="doc-sub">{{ school.campus|default:"Main Campus" }}</div>
+    <div class="doc-crest">{% include '_crest.html' %}</div>
+    <h2>{{ doc_name }}</h2>
+    <div class="doc-sub">{{ doc_school.campus|default:"Main Campus" }}{% if doc_school.session %} &middot; {{ doc_school.session }}{% endif %}</div>
+    {% if doc_school.address or doc_school.phone %}
+      <div class="doc-sub" style="text-transform:none;letter-spacing:0;font-weight:500">{{ doc_school.address }}{% if doc_school.address and doc_school.phone %} &middot; {% endif %}{{ doc_school.phone }}</div>
+    {% endif %}
   </div>
   <div class="doc-body">
     <div class="doc-title">{{ cert.get_cert_type_display }}</div>
@@ -28,7 +31,10 @@
   </div>
   <div class="doc-sign">
     <div>Class Teacher</div>
-    <div>Principal - Asad Mehmood</div>
+    <div>Principal{% if doc_school.principal_name %} &mdash; {{ doc_school.principal_name }}{% endif %}</div>
   </div>
+  {% if doc_school.receipt_footer %}
+    <div class="doc-foot muted" style="text-align:center;font-size:11px;padding:0 22px 16px">{{ doc_school.receipt_footer }}</div>
+  {% endif %}
 </div>
 {% endblock %}

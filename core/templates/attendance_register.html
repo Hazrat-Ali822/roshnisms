@@ -27,7 +27,9 @@
 </div>
 
 <div class="print-head only-print" style="text-align:center;margin-bottom:10px">
-  <b style="font-size:18px">{{ brand_name }}</b><br>
+  <div class="rc-crest">{% include '_crest.html' %}</div>
+  <b style="font-size:18px">{{ doc_name }}</b><br>
+  {% if doc_school.address or doc_school.phone %}<span class="muted" style="font-size:11px">{{ doc_school.address }}{% if doc_school.address and doc_school.phone %} &middot; {% endif %}{{ doc_school.phone }}</span><br>{% endif %}
   <span class="muted">Attendance Register &middot; {{ classroom }} &middot; {{ month_name }} {{ year }}</span>
 </div>
 

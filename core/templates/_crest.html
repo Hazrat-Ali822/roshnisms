@@ -1,0 +1,12 @@
+{% comment %}
+The school's crest for any printed document: the real uploaded logo when the
+school has one, otherwise the first letter of its name.
+
+Uses doc_logo / doc_name from the branding context processor, NOT brand_*.
+brand_* stays neutral ("Roshni SMS") when there is no tenant in the URL — right
+for the app chrome, wrong for a certificate — while doc_* always resolves to the
+school this database belongs to. So documents are correct on a single-school
+offline install AND on every SaaS tenant.
+
+Use inside a crest box, e.g.:  <div class="doc-crest">{% include '_crest.html' %}</div>
+{% endcomment %}{% if doc_logo %}<img src="{% url 'school_logo' %}?v={{ doc_logo_ver }}" alt="{{ doc_name }}">{% else %}{{ doc_name|slice:":1"|upper }}{% endif %}

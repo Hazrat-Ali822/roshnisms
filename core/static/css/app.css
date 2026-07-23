@@ -497,6 +497,10 @@ th.ta-r,td.ta-r{text-align:right}
 .report{max-width:720px;margin:0 auto}
 .rc-head{text-align:center;padding:24px 24px 18px;border-bottom:2px solid #15294D}
 .rc-crest{width:46px;height:46px;border-radius:13px;background:linear-gradient(150deg,#21406E,#16284A);display:grid;place-items:center;color:#F4D58D;font-weight:800;font-size:22px;margin:0 auto 10px;font-family:'Spectral',serif}
+/* Every printed document's crest shows the school's real logo when one is
+   uploaded. Without these rules the image overflowed its rounded box. */
+.doc-crest img,.rc-crest img,.rcpt-crest img,.ic-crest img,.crest img{
+  width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
 .rc-head h2{font-family:'Spectral',serif;font-size:22px}
 .rc-head .sub{color:#6B7686;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:700;margin-top:3px}
 .rc-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#E3E8EF}

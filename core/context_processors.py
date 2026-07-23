@@ -98,9 +98,20 @@ def branding(request):
     is_explicit_tenant = getattr(request, 'is_explicit_tenant', False)
 
     if not is_explicit_tenant or not school:
+        # No tenant in the URL. The chrome stays neutral ("Roshni SMS") so the
+        # SaaS master never wears one school's identity — but PRINTED DOCUMENTS
+        # still belong to whichever school this database holds (that is the
+        # single-school offline install's own record). doc_school/doc_name give
+        # certificates, receipts and report cards the right identity there.
+        own = School.objects.first()
         ctx = {'brand_name': 'Roshni SMS', 'brand_logo': False,
                'brand_logo_ver': '', 'brand_school': None, 'hidden_nav': set(),
-               'current_session': '2025-26', 'my_photo': my_photo}
+               'current_session': (own.session if own else '') or '2025-26',
+               'my_photo': my_photo,
+               'doc_school': own,
+               'doc_name': (own.name if own else '') or 'Roshni SMS',
+               'doc_logo': bool(own and own.logo),
+               'doc_logo_ver': _logo_version(own) if own else ''}
         ctx.update(_brand_theme('#15294D', '#0E7C66'))
         return ctx
 
@@ -118,6 +129,11 @@ def branding(request):
                        (tenant_school.hidden_nav or '').split(',') if k.strip()},
         'current_session': tenant_school.session or '2025-26',
         'my_photo': my_photo,
+        # Printed documents use the same school here — see the branch above.
+        'doc_school': tenant_school,
+        'doc_name': tenant_school.name,
+        'doc_logo': bool(tenant_school.logo),
+        'doc_logo_ver': _logo_version(tenant_school),
     }
     ctx.update(_brand_theme(tenant_school.primary_color or '#15294D',
                             tenant_school.accent_color or '#0E7C66'))

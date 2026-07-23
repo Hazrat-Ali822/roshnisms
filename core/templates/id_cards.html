@@ -24,10 +24,10 @@
   {% for s in students %}
   <div class="idcard">
     <div class="ic-head">
-      <span class="ic-crest">RP</span>
+      <span class="ic-crest">{% include '_crest.html' %}</span>
       <div>
-        <div class="ic-school">{{ school.name|default:"Roshni Public School" }}</div>
-        <div class="ic-campus">{{ school.campus|default:"Main Campus" }}{% if school.session %} &middot; {{ school.session }}{% endif %}</div>
+        <div class="ic-school">{{ doc_name }}</div>
+        <div class="ic-campus">{{ doc_school.campus|default:"Main Campus" }}{% if doc_school.session %} &middot; {{ doc_school.session }}{% endif %}</div>
       </div>
     </div>
     <div class="ic-body">

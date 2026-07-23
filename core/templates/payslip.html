@@ -7,8 +7,8 @@
 </div>
 <div class="card receipt">
   <div class="rcpt-head">
-    <div class="rcpt-crest">R</div>
-    <div><b>{{ school.name|default:"Roshni Public School" }}</b><span>{{ school.campus|default:"Main Campus, Lahore" }} &middot; Salary Slip</span></div>
+    <div class="rcpt-crest">{% include '_crest.html' %}</div>
+    <div><b>{{ doc_name }}</b><span>{% if doc_school.address %}{{ doc_school.address }}{% else %}{{ doc_school.campus|default:"Main Campus" }}{% endif %}{% if doc_school.phone %} &middot; {{ doc_school.phone }}{% endif %} &middot; Salary Slip</span></div>
     <div class="rcpt-no">{{ p.label }}</div>
   </div>
   <div class="rcpt-body">

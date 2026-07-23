@@ -8,9 +8,9 @@
 
 <div class="card report">
   <div class="rc-head">
-    <div class="rc-crest">{% if brand_logo %}<img src="{% url 'school_logo' %}" alt="">{% else %}{{ brand_name|slice:":1"|upper }}{% endif %}</div>
-    <h2>{{ brand_name }}</h2>
-    {% if brand_school.address or brand_school.phone %}<div class="sub" style="font-size:11.5px">{{ brand_school.address }}{% if brand_school.address and brand_school.phone %} &middot; {% endif %}{{ brand_school.phone }}</div>{% endif %}
+    <div class="rc-crest">{% include '_crest.html' %}</div>
+    <h2>{{ doc_name }}</h2>
+    {% if doc_school.address or doc_school.phone %}<div class="sub" style="font-size:11.5px">{{ doc_school.address }}{% if doc_school.address and doc_school.phone %} &middot; {% endif %}{{ doc_school.phone }}</div>{% endif %}
     <div class="sub">{{ title }}{% if subtitle %} &middot; {{ subtitle }}{% endif %}</div>
   </div>
 
@@ -26,7 +26,7 @@
   {% endfor %}
 
   <div class="rc-foot" style="justify-content:center">
-    <div class="muted" style="font-size:12px">Generated from {{ brand_name }} SMS &middot; {{ subtitle }}</div>
+    <div class="muted" style="font-size:12px">Generated from {{ doc_name }} SMS &middot; {{ subtitle }}</div>
   </div>
 </div>
 {% endblock %}
