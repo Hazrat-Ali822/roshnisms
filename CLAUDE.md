@@ -52,7 +52,7 @@ fields like CNIC/B-Form, timezone **Asia/Karachi**.
 ```bash
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py seed --demo        # demo data (SKIP for a real school)
+python manage.py seed --demo        # FULL demo school (SKIP for a real school)
 python manage.py runserver          # http://127.0.0.1:8000/
 ```
 
@@ -60,7 +60,16 @@ python manage.py runserver          # http://127.0.0.1:8000/
   (creates one school + one `admin` login, no demo data). First real login is
   `admin` / `admin123` → forced password change.
 - **Demo logins** (password `roshni123`): `admin` (superuser), `principal`,
-  `teacher`, `finance`, `parent`, `student`.
+  `office`, `finance`, `director`, `teacher`, `parent`, `student` (plus
+  `teacher01…22`, `parent01…08`, `student01…08`).
+- **`seed --demo` builds a complete, realistic school** (~55s): 14 classes
+  (Nursery→10), ~280 students, 30 staff / 22 teachers (more teachers than
+  subjects), a class teacher per class and a subject teacher per subject, a
+  clash-free Mon–Sat timetable, 2 exams with marks, 3 months of fee challans
+  covering every scenario, plus HR, library, transport, hostel, inventory,
+  discipline, complaints, messages and certificates — so **no screen is empty**
+  while testing. Deterministic (fixed random seed). Add `--tenant <sub>` to seed
+  a tenant's own DB. `core/tests/test_seed_demo.py` guards this.
 - **Run tests:** `python manage.py test core` (or a module, e.g.
   `python manage.py test core.tests.test_timetable`).
 
