@@ -9,8 +9,11 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Django local database
+# Databases — the master AND every tenant school's own file. Real school data
+# must never be committed. (seed_all_tenants writes copies into backups/.)
+*.sqlite3
 db.sqlite3
+backups/
 
 # Per-install secrets — MUST NEVER be committed. Each install generates its own;
 # back these up alongside the database (losing them logs users out / needs
